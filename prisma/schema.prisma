@@ -1,0 +1,456 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  role_id    Int
+  region_id  Int?
+  vendor_id  Int?
+  name       String
+  email      String    @unique
+  password   String
+  npp        String    @unique
+  dob        DateTime?
+  phone      String?
+  created_by Int?
+  updated_by Int?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  role        Role          @relation(fields: [role_id], references: [id])
+  region      Region?       @relation(fields: [region_id], references: [id])
+  vendor      Vendor?       @relation(fields: [vendor_id], references: [id])
+  UserSession UserSession[]
+}
+
+model UserSession {
+  id            Int       @id @default(autoincrement())
+  user_id       Int
+  identifier    String
+  access_token  String?
+  refresh_token String?
+  created_by    Int?
+  updated_by    Int?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, identifier])
+}
+
+model Role {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  code        String    @unique
+  type        String
+  description String?
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  deleted_at  DateTime?
+  User        User[]
+}
+
+model Vendor {
+  id                           Int                            @id @default(autoincrement())
+  name                         String
+  code                         String                         @unique
+  description                  String?
+  created_by                   Int?
+  updated_by                   Int?
+  created_at                   DateTime                       @default(now())
+  updated_at                   DateTime                       @updatedAt
+  deleted_at                   DateTime?
+  User                         User[]
+  ElectronicDataCaptureMachine ElectronicDataCaptureMachine[]
+  JobOrder                     JobOrder[]
+}
+
+model Region {
+  id          Int        @id @default(autoincrement())
+  name        String
+  code        String     @unique
+  description String?
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+  deleted_at  DateTime?
+  User        User[]
+  Merchant    Merchant[]
+  JobOrder    JobOrder[]
+}
+
+model Merchant {
+  id            Int       @id @default(autoincrement())
+  region_id     Int
+  mid           Int       @unique
+  name          String
+  category      String
+  customer_name String
+  telephone     String?
+  pic           String
+  phone1        String
+  phone2        String?
+  address1      String
+  address2      String
+  address3      String
+  address4      String
+  district      String?
+  subdistrict   String?
+  city          String?
+  province      String?
+  postal_code   String
+  created_by    Int?
+  updated_by    Int?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+
+  region Region @relation(fields: [region_id], references: [id])
+}
+
+model ElectronicDataCaptureMachine {
+  id                  Int       @id @default(autoincrement())
+  owner_id            Int?
+  mid                 String
+  tid                 String
+  brand               String
+  brand_type          String
+  serial_number       String
+  status_owner        String
+  status_owner_desc   String?
+  status_machine      String
+  status_machine_desc String?
+  status_active       Boolean
+  simcard_provider    String?
+  simcard_number      String?
+  info                String?
+  region              String?
+  created_by          Int?
+  updated_by          Int?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  deleted_at          DateTime?
+
+  owner Vendor? @relation(fields: [owner_id], references: [id])
+}
+
+model JobOrder {
+  id                                                         Int       @id @default(autoincrement())
+  vendor_id                                                  Int
+  region_id                                                  Int
+  no                                                         String    @unique
+  type                                                       String
+  date                                                       DateTime  @db.Date
+  mid                                                        String
+  tid                                                        String
+  officer_name                                               String?
+  status                                                     String
+  merchant_name                                              String
+  address1                                                   String
+  address2                                                   String
+  address3                                                   String
+  address4                                                   String
+  subdistrict                                                String?
+  village                                                    String?
+  city                                                       String?
+  postal_code                                                String?
+  pic                                                        String
+  phone_number1                                              String
+  phone_number2                                              String?
+  provider                                                   String?
+  trx_type_mini_atm                                          String?
+  trx_type_visa                                              String?
+  trx_type_master                                            String?
+  trx_type_jcb                                               String?
+  trx_type_maestro                                           String?
+  trx_type_gpn                                               String?
+  trx_type_tapcash_topup                                     String?
+  trx_type_tapcash_purchase                                  String?
+  trx_type_qrcode_qris                                       String?
+  trx_type_qrcode_linkaja                                    String?
+  trx_type_contactless_master                                String?
+  trx_type_contractless_visa                                 String?
+  edc_facility_cepp_plan1                                    String?
+  edc_facility_cepp_plan2                                    String?
+  edc_facility_cepp_plan3                                    String?
+  edc_facility_reedem_point                                  String?
+  edc_facility_activation_keyinsales                         String?
+  edc_facility_activation_keyinsales_keyinpreauth_completion String?
+  edc_facility_activation_keyinpreauth_completion            String?
+  edc_facility_activation_preauth_completion                 String?
+  edc_facility_activation_keyinsales_preauth_completion      String?
+  edc_facility_offline                                       String?
+  edc_facility_card_ver                                      String?
+  edc_facility_refund                                        String?
+  edc_facility_adjust_tip                                    String?
+  trx_test_credit                                            String?
+  trx_test_debit                                             String?
+  trx_test_inquiry                                           String?
+  trx_test_transfer                                          String?
+  trx_test_jcb                                               String?
+  trx_test_gpn                                               String?
+  trx_test_tapcash                                           String?
+  trx_test_qris                                              String?
+  trx_test_linkaja                                           String?
+  trx_test_visa_contactless                                  String?
+  trx_test_master_contactless                                String?
+  trx_test_instalment                                        String?
+  trx_test_reedemption                                       String?
+  thermal_paper                                              Int
+  sticker_bni                                                String?
+  acrylic                                                    String?
+  description1                                               String?
+  description2                                               String?
+  merchant_category                                          String?
+  ownership                                                  String
+  created_by                                                 Int?
+  updated_by                                                 Int?
+  created_at                                                 DateTime  @default(now())
+  updated_at                                                 DateTime  @updatedAt
+  deleted_at                                                 DateTime?
+
+  vendor         Vendor           @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  region         Region           @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  JobOrderReport JobOrderReport[]
+}
+
+model Media {
+  id                               Int                                @id @default(autoincrement())
+  filename                         String
+  ext                              String
+  size                             Int
+  mime                             String
+  path                             String
+  destination                      String
+  created_by                       Int?
+  updated_by                       Int?
+  created_at                       DateTime                           @default(now())
+  updated_at                       DateTime                           @updatedAt
+  deleted_at                       DateTime?
+  MediaJobOrderReportProofOfVisit  MediaJobOrderReportProofOfVisit[]
+  MediaJobOrderReportOptionalPhoto MediaJobOrderReportOptionalPhoto[]
+}
+
+// model JobOrderResultParameter {
+//   id                Int       @id @default(autoincrement())
+//   key               String?   @unique
+//   widget            String
+//   label             String
+//   label_description String?
+//   label_hint        String?
+//   options           String?
+//   is_required       Boolean   @default(true)
+//   is_default        Boolean   @default(false)
+//   is_active         Boolean   @default(true)
+//   order             Int
+//   created_by        Int?
+//   updated_by        Int?
+//   created_at        DateTime  @default(now())
+//   updated_at        DateTime  @updatedAt
+//   deleted_at        DateTime?
+// }
+
+// model JobOrderResultParameterValue {
+//   id                            Int       @id @default(autoincrement())
+//   job_order_result_parameter_id Int
+//   widget                        String
+//   label                         String
+//   label_description             String?
+//   label_hint                    String?
+//   value                         String?
+//   created_by                    Int?
+//   updated_by                    Int?
+//   created_at                    DateTime  @default(now())
+//   updated_at                    DateTime  @updatedAt
+//   deleted_at                    DateTime?
+// }
+
+model JobOrderReport {
+  id                    Int       @id @default(autoincrement())
+  job_order_no          String
+  status                String
+  edc_brand             String
+  edc_brand_type        String
+  edc_serial_number     String
+  edc_note              String?
+  edc_action            String?
+  information           String
+  arrival_time          DateTime?
+  start_time            DateTime?
+  end_time              DateTime?
+  communication_line    String?
+  direct_line_number    String?
+  simcard_provider      String?
+  paper_supply          String?
+  merchant_pic          String?
+  merchant_pic_phone    String?
+  swipe_cash_indication String?
+  created_by            Int?
+  updated_by            Int?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+  deleted_at            DateTime?
+
+  job_order JobOrder @relation(fields: [job_order_no], references: [no])
+
+  MediaJobOrderReportProofOfVisit  MediaJobOrderReportProofOfVisit[]
+  MediaJobOrderReportOptionalPhoto MediaJobOrderReportOptionalPhoto[]
+  JobOrderReportMaterialTraining   JobOrderReportMaterialTraining[]
+  JobOrderReportMaterialPromo      JobOrderReportMaterialPromo[]
+  JobOrderReportEdcEquipmentDongle JobOrderReportEdcEquipmentDongle[]
+  JobOrderReportProduct            JobOrderReportProduct[]
+}
+
+model JobOrderReportProduct {
+  id                  Int       @id @default(autoincrement())
+  job_order_report_id Int
+  product             String
+  serial_number       String
+  note                String?
+  action              String?
+  created_by          Int?
+  updated_by          Int?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  deleted_at          DateTime?
+
+  job_order_report JobOrderReport @relation(fields: [job_order_report_id], references: [id])
+}
+
+model JobOrderReportEdcEquipmentDongle {
+  id                      Int       @id @default(autoincrement())
+  job_order_report_id     Int
+  battery_cover           Boolean   @default(false)
+  battery                 Boolean   @default(false)
+  edc_adapter             Boolean   @default(false)
+  edc_bracket             Boolean   @default(false)
+  edc_holder              Boolean   @default(false)
+  dongle_holder           Boolean   @default(false)
+  dongle_adapter          Boolean   @default(false)
+  cable_ecr               Boolean   @default(false)
+  cable_lan               Boolean   @default(false)
+  cable_telephone_line    Boolean   @default(false)
+  mid_tid                 Boolean   @default(false)
+  magic_box               Boolean   @default(false)
+  transaction_guide       Boolean   @default(false)
+  pin_cover               Boolean   @default(false)
+  telephone_line_splitter Boolean   @default(false)
+  sticker_bank            Boolean   @default(false)
+  sticer_dongle           Boolean   @default(false)
+  sticer_gpn              Boolean   @default(false)
+  sticker_qrcode          Boolean   @default(false)
+  created_by              Int?
+  updated_by              Int?
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
+  deleted_at              DateTime?
+
+  JobOrderReport   JobOrderReport? @relation(fields: [jobOrderReportId], references: [id])
+  jobOrderReportId Int?
+}
+
+model JobOrderReportMaterialPromo {
+  id                  Int       @id @default(autoincrement())
+  job_order_report_id Int
+  flyer               Boolean   @default(false)
+  tent_card           Boolean   @default(false)
+  holder_card         Boolean   @default(false)
+  holder_pen          Boolean   @default(false)
+  holder_bill         Boolean   @default(false)
+  sign_pad            Boolean   @default(false)
+  pen                 Boolean   @default(false)
+  acrylic_open_close  Boolean   @default(false)
+  logo_sticker        Boolean   @default(false)
+  banner              Boolean   @default(false)
+  created_by          Int?
+  updated_by          Int?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  deleted_at          DateTime?
+
+  job_order_report JobOrderReport @relation(fields: [job_order_report_id], references: [id])
+}
+
+model JobOrderReportMaterialTraining {
+  id                          Int       @id @default(autoincrement())
+  job_order_report_id         Int
+  fraud_awareness             Boolean   @default(false)
+  sale_void_settlement_logon  Boolean   @default(false)
+  installment                 Boolean   @default(false)
+  audit_report                Boolean   @default(false)
+  top_up                      Boolean   @default(false)
+  redeem_point                Boolean   @default(false)
+  cardverif_preauth_offline   Boolean   @default(false)
+  manual_key_in               Boolean   @default(false)
+  tips_adjust                 Boolean   @default(false)
+  mini_atm                    Boolean   @default(false)
+  fare_non_fare               Boolean   @default(false)
+  dcc_download_bin            Boolean   @default(false)
+  first_level_maintenance     Boolean   @default(false)
+  transaction_receipt_storage Boolean   @default(false)
+  created_by                  Int?
+  updated_by                  Int?
+  created_at                  DateTime  @default(now())
+  updated_at                  DateTime  @updatedAt
+  deleted_at                  DateTime?
+
+  job_order_report JobOrderReport @relation(fields: [job_order_report_id], references: [id])
+}
+
+model MediaJobOrderReportProofOfVisit {
+  id                  Int       @id @default(autoincrement())
+  media_id            Int
+  job_order_report_id Int
+  created_by          Int?
+  updated_by          Int?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  deleted_at          DateTime?
+
+  media            Media          @relation(fields: [media_id], references: [id])
+  job_order_report JobOrderReport @relation(fields: [job_order_report_id], references: [id])
+}
+
+model MediaJobOrderReportOptionalPhoto {
+  id                  Int       @id @default(autoincrement())
+  media_id            Int
+  job_order_report_id Int
+  created_by          Int?
+  updated_by          Int?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  deleted_at          DateTime?
+
+  media            Media          @relation(fields: [media_id], references: [id])
+  job_order_report JobOrderReport @relation(fields: [job_order_report_id], references: [id])
+}
+
+model EdcBrandType {
+  id          Int       @id @default(autoincrement())
+  brand       String
+  type        String
+  description String?
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  deleted_at  DateTime?
+
+  @@unique([brand, type])
+}
