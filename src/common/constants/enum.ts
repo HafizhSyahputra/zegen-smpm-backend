@@ -25,6 +25,21 @@ export enum ColumnRole {
   description = 'description',
 }
 
+export enum ColumnAudit  {  
+  id = 'id',  
+  url = 'Url',  
+  ActionName = 'ActionName',  
+  MenuName = 'MenuName',  
+  DataBefore = 'DataBefore',  
+  DataAfter = 'DataAfter',  
+  UserName = 'UserName',  
+  IpAddress = 'IpAddress',  
+  ActivityDate = 'ActivityDate',  
+  Browser = 'Browser',  
+  OS = 'OS',  
+  AppSource = 'AppSource',
+}  
+
 export enum ColumnUser {
   id = 'id',
   role_id = 'role_id',

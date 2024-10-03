@@ -14,7 +14,9 @@ import { MerchantModule } from './merchant/merchant.module';
 import { ElectronicDataCaptureModule } from './electronic-data-capture/electronic-data-capture.module';
 import { JobOrderModule } from './job-order/job-order.module';
 import { MediaModule } from './media/media.module';
-
+import { AuditModule } from './audit/audit.module';
+import { LookUpModule } from './lookup/lookup.module';
+ 
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -32,6 +34,8 @@ import { MediaModule } from './media/media.module';
     ElectronicDataCaptureModule,
     JobOrderModule,
     MediaModule,
+    AuditModule,
+    LookUpModule,
   ],
   controllers: [AppController],
   providers: [AppService],

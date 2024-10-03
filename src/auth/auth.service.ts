@@ -19,12 +19,13 @@ export class AuthService {
     return hash(data, 12);
   }
 
-  async getTokens(user_id: number, email: string) {
+  async getTokens(user_id: number, email: string, name: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
           sub: user_id,
           email,
+          name,  
         },
         {
           secret: this.configService.get<IJwtConfig>('jwt').secret,
@@ -35,6 +36,7 @@ export class AuthService {
         {
           sub: user_id,
           email,
+          name,  
         },
         {
           secret: this.configService.get<IJwtConfig>('jwt').refresh_secret,
@@ -66,3 +68,4 @@ export class AuthService {
     });
   }
 }
+ 

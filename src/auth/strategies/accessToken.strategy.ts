@@ -9,7 +9,8 @@ import { IJwtConfig } from 'src/common/interfaces/config.interface';
 
 type JwtPayload = {
   sub: string;
-  username: string;
+  name: string;
+
 };
 
 @Injectable()

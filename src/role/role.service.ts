@@ -14,11 +14,18 @@ import { RoleEntity } from './entities/role.entity';
 export class RoleService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  create(createRoleDto: CreateRoleDto): Promise<Role> {
-    return this.prismaService.role.create({
-      data: createRoleDto,
-    });
-  }
+  
+  async create(createRoleDto: CreateRoleDto): Promise<Role> {  
+     try {  
+      const role = await this.prismaService.role.create({  
+        data: createRoleDto,  
+      });  
+       return role;  
+    } catch (error) {  
+       throw error;  
+    }  
+  }  
+  
 
   async findAll(pageOptionRoleDto: PageOptionRoleDto): Promise<PageDto<Role>> {
     const filter: Prisma.RoleWhereInput = {};

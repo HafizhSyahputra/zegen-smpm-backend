@@ -9,6 +9,7 @@ import {
   BadRequestException,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -21,6 +22,9 @@ import { PageOptionUserDto } from './dto/page-option-user.dto';
 import { PageDto } from '@smpm/common/decorator/page.dto';
 import { transformEntity } from '@smpm/common/transformer/entity.transformer';
 import { AccessTokenGuard } from '@smpm/common/guards/access-token.guard';
+import { AuditService } from '@smpm/audit/audit.service';
+import { User } from '@smpm/common/decorator/currentuser.decorator';
+import { Request } from 'express';
 
 @UseGuards(AccessTokenGuard)
 @Controller('user')
@@ -28,10 +32,15 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly roleService: RoleService,
+    private readonly auditService: AuditService,
   ) {}
 
   @Post()
-  async create(@Body() createUserDto: CreateUserDto): Promise<UserEntity> {
+  async create(
+    @Body() createUserDto: CreateUserDto,
+    @User() user: any,
+    @Req() req: Request,
+  ): Promise<UserEntity> {
     const findRole = await this.roleService.findOne(createUserDto.role_id);
     if (!findRole) throw new BadRequestException('Role not found.');
 
@@ -52,6 +61,22 @@ export class UserController {
 
     delete createUserDto.password_confirmation;
     const data = await this.userService.create(createUserDto);
+
+    await this.auditService.create({
+      Url: req.url,
+      ActionName: 'Create User',
+      MenuName: 'User',
+      DataBefore: '',
+      DataAfter: JSON.stringify(data),
+      UserName: user.name,
+      IpAddress: req.ip,
+      ActivityDate: new Date(),
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
+      AppSource: 'Desktop',
+      created_by: user.sub,
+      updated_by: user.id,
+    });
 
     return transformEntity(UserEntity, data);
   }
@@ -78,6 +103,8 @@ export class UserController {
   async update(
     @Param() param: ParamIdDto,
     @Body() updateUserDto: UpdateUserDto,
+    @User() user: any,
+    @Req() req: Request,
   ): Promise<UserEntity> {
     const find = await this.userService.findOne(param.id);
     if (!find) throw new BadRequestException('Data not found.');
@@ -115,14 +142,65 @@ export class UserController {
     delete updateUserDto.password_confirmation;
     const data = await this.userService.update(param.id, updateUserDto);
 
+    await this.auditService.create({
+      Url: req.url,
+      ActionName: 'Update User',
+      MenuName: 'User',
+      DataBefore: JSON.stringify(find),
+      DataAfter: JSON.stringify(data),
+      UserName: user.name,
+      IpAddress: req.ip,
+      ActivityDate: new Date(),
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
+      AppSource: 'Desktop',
+      created_by: user.sub,
+      updated_by: user.id,
+    });
+
+
     return transformEntity(UserEntity, data);
   }
 
   @Delete(':id')
-  async remove(@Param() param: ParamIdDto): Promise<null> {
+  async remove(@Param() param: ParamIdDto, @User() user: any, @Req() req: Request): Promise<null> {
     const find = await this.userService.findOne(param.id);
     if (!find) throw new BadRequestException('Data not found');
 
+    await this.auditService.create({
+      Url: req.url,
+      ActionName: 'Delete User',
+      MenuName: 'User',
+      DataBefore: JSON.stringify(find),
+      DataAfter: '',
+      UserName: user.name,
+      IpAddress: req.ip,
+      ActivityDate: new Date(),
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
+      AppSource: 'Desktop',
+      created_by: user.sub,
+      updated_by: user.id,
+    });
+
     return this.userService.remove(param.id);
+  }
+
+  private getBrowserFromUserAgent(userAgent: string): string {
+    if (userAgent.includes('Chrome')) return 'Chrome';
+    if (userAgent.includes('Firefox')) return 'Firefox';
+    if (userAgent.includes('Safari')) return 'Safari';
+    return 'Unknown';
+  }
+
+  private getOSFromUserAgent(userAgent: string, request: Request): string {
+    const testOS = request.headers['x-test-os'];
+    if (/PostmanRuntime/i.test(userAgent))
+      return 'Postman (Testing Environment)';
+    if (testOS) return testOS as string;
+    if (userAgent.includes('Win')) return 'Windows';
+    if (userAgent.includes('Mac')) return 'MacOS';
+    if (userAgent.includes('Linux')) return 'Linux';
+    return 'Unknown';
   }
 }
