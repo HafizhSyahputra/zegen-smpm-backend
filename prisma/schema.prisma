@@ -32,6 +32,19 @@ model User {
   region      Region?       @relation(fields: [region_id], references: [id])
   vendor      Vendor?       @relation(fields: [vendor_id], references: [id])
   UserSession UserSession[]
+
+  Notification Notification[]
+}
+
+model Notification {
+  id     Int @id @default(autoincrement())
+  iduser Int
+
+  title     String
+  detail    String   @db.NVarChar(max)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [iduser], references: [id])
 }
 
 model UserSession {
@@ -62,11 +75,33 @@ model Role {
   created_at  DateTime  @default(now())
   updated_at  DateTime  @updatedAt
   deleted_at  DateTime?
-  User        User[]
+  isActive    Boolean   @default(true)
+
+  User            User[]
+  Role_Permission Role_Permission[]
+  Menu_Role       Menu_Role[]
 
   Role_Action Role_Action[]
+}
 
-  Menu_Role Menu_Role[]
+model Permission {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  deleted_at  DateTime?
+  isActive    Boolean   @default(true)
+
+  Role_Permission Role_Permission[]
+}
+
+model Role_Permission {
+  id           Int        @id @default(autoincrement())
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  roleId       Int
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  permissionId Int
 }
 
 model Role_Action {
@@ -136,6 +171,8 @@ model Vendor {
   JobOrder                     JobOrder[]
 
   Approved Approved[]
+
+  ReceivedIn ReceivedIn[]
 }
 
 model Region {
@@ -153,6 +190,8 @@ model Region {
   JobOrder    JobOrder[]
 
   Approved Approved[]
+
+  ReceivedIn ReceivedIn[]
 }
 
 model Merchant {
@@ -182,11 +221,32 @@ model Merchant {
   deleted_at    DateTime?
 
   region Region @relation(fields: [region_id], references: [id])
+
+  DocumentMerchant DocumentMerchant[]
+
+  ReceivedIn ReceivedIn[]
+
+  ElectronicDataCaptureMachine ElectronicDataCaptureMachine[]
+}
+
+model DocumentMerchant {
+  id          Int       @id @default(autoincrement())
+  merchant_id Int
+  file1       String    @db.Text
+  file2       String    @db.Text
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  deleted_at  DateTime?
+
+  merchant Merchant @relation(fields: [merchant_id], references: [id])
 }
 
 model ElectronicDataCaptureMachine {
   id                  Int       @id @default(autoincrement())
   owner_id            Int?
+  merchant_id         Int?
   mid                 String
   tid                 String
   brand               String
@@ -207,7 +267,9 @@ model ElectronicDataCaptureMachine {
   updated_at          DateTime  @updatedAt
   deleted_at          DateTime?
 
-  owner Vendor? @relation(fields: [owner_id], references: [id])
+  owner      Vendor?      @relation(fields: [owner_id], references: [id])
+  merchant   Merchant?    @relation(fields: [merchant_id], references: [id])
+  ReceivedIn ReceivedIn[]
 }
 
 model JobOrder {
@@ -290,6 +352,8 @@ model JobOrder {
   JobOrderReport JobOrderReport[]
 
   Approved Approved[]
+
+  ReceivedIn ReceivedIn[]
 }
 
 model Approved {
@@ -396,8 +460,8 @@ model JobOrderReport {
   MediaJobOrderReportOptionalPhoto MediaJobOrderReportOptionalPhoto[]
   JobOrderReportMaterialTraining   JobOrderReportMaterialTraining[]
   JobOrderReportMaterialPromo      JobOrderReportMaterialPromo[]
-  JobOrderReportEdcEquipmentDongle JobOrderReportEdcEquipmentDongle[]
   JobOrderReportProduct            JobOrderReportProduct[]
+  JobOrderReportEdcEquipmentDongle JobOrderReportEdcEquipmentDongle[]
 }
 
 model JobOrderReportProduct {
@@ -417,35 +481,33 @@ model JobOrderReportProduct {
 }
 
 model JobOrderReportEdcEquipmentDongle {
-  id                      Int       @id @default(autoincrement())
+  id                      Int            @id @default(autoincrement())
+  job_order_report        JobOrderReport @relation(fields: [job_order_report_id], references: [id])
   job_order_report_id     Int
-  battery_cover           Boolean   @default(false)
-  battery                 Boolean   @default(false)
-  edc_adapter             Boolean   @default(false)
-  edc_bracket             Boolean   @default(false)
-  edc_holder              Boolean   @default(false)
-  dongle_holder           Boolean   @default(false)
-  dongle_adapter          Boolean   @default(false)
-  cable_ecr               Boolean   @default(false)
-  cable_lan               Boolean   @default(false)
-  cable_telephone_line    Boolean   @default(false)
-  mid_tid                 Boolean   @default(false)
-  magic_box               Boolean   @default(false)
-  transaction_guide       Boolean   @default(false)
-  pin_cover               Boolean   @default(false)
-  telephone_line_splitter Boolean   @default(false)
-  sticker_bank            Boolean   @default(false)
-  sticer_dongle           Boolean   @default(false)
-  sticer_gpn              Boolean   @default(false)
-  sticker_qrcode          Boolean   @default(false)
+  battery_cover           Boolean        @default(false)
+  battery                 Boolean        @default(false)
+  edc_adapter             Boolean        @default(false)
+  edc_bracket             Boolean        @default(false)
+  edc_holder              Boolean        @default(false)
+  dongle_holder           Boolean        @default(false)
+  dongle_adapter          Boolean        @default(false)
+  cable_ecr               Boolean        @default(false)
+  cable_lan               Boolean        @default(false)
+  cable_telephone_line    Boolean        @default(false)
+  mid_tid                 Boolean        @default(false)
+  magic_box               Boolean        @default(false)
+  transaction_guide       Boolean        @default(false)
+  pin_cover               Boolean        @default(false)
+  telephone_line_splitter Boolean        @default(false)
+  sticker_bank            Boolean        @default(false)
+  sticer_dongle           Boolean        @default(false)
+  sticer_gpn              Boolean        @default(false)
+  sticker_qrcode          Boolean        @default(false)
   created_by              Int?
   updated_by              Int?
-  created_at              DateTime  @default(now())
-  updated_at              DateTime  @updatedAt
+  created_at              DateTime       @default(now())
+  updated_at              DateTime       @updatedAt
   deleted_at              DateTime?
-
-  JobOrderReport   JobOrderReport? @relation(fields: [jobOrderReportId], references: [id])
-  jobOrderReportId Int?
 }
 
 model JobOrderReportMaterialPromo {
@@ -567,4 +629,27 @@ model AuditTrail {
   created_at   DateTime  @default(now())
   updated_at   DateTime  @updatedAt
   deleted_at   DateTime?
+}
+
+model ReceivedIn {
+  id            Int                           @id @default(autoincrement())
+  id_joborder   Int?
+  joborder      JobOrder?                     @relation(fields: [id_joborder], references: [id])
+  id_edc        Int?
+  edc           ElectronicDataCaptureMachine? @relation(fields: [id_edc], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id_region     Int?
+  region        Region?                       @relation(fields: [id_region], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id_vendor     Int?
+  vendor        Vendor?                       @relation(fields: [id_vendor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id_merchant   Int?
+  merchant      Merchant?                     @relation(fields: [id_merchant], references: [id])
+  status        String                        @default("waiting") @db.VarChar(255)
+  approved_by   Int?
+  created_by    Int?
+  updated_by    Int?
+  created_at    DateTime                      @default(now()) @db.Date
+  updated_at    DateTime                      @updatedAt @db.Date
+  serial_number String?                       @db.VarChar(100)
+  tid           String?                       @db.VarChar(100)
+  deleted_at    DateTime?
 }

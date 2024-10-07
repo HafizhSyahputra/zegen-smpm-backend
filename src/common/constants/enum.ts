@@ -83,19 +83,6 @@ export enum ColumnJobOrder {
   'region.name' = 'region.name',
 }
 
-
-export enum ColumnApproved {
-  id = 'id',  
-  id_jobOrder = 'id_jobOrder',  
-  vendor_id = 'vendor_id',  
-  region_id = 'region_id',  
-  reason = 'reason',  
-  info_remark = 'info_remark',  
-  status = 'status',  
-  approved_by = 'approved_by',  
-  rejected_by = 'rejected_by', 
-}
-
 export enum ColumnJobOrderReport{  
   id = 'id',  
   job_order_no = 'job_order_no',  
@@ -117,6 +104,19 @@ export enum ColumnJobOrderReport{
   merchant_pic_phone = 'merchant_pic_phone',  
   swipe_cash_indication = 'swipe_cash_indication',  
 }
+
+export enum ColumnApproved {
+  id = 'id',  
+  id_jobOrder = 'id_jobOrder',  
+  vendor_id = 'vendor_id',  
+  region_id = 'region_id',  
+  reason = 'reason',  
+  info_remark = 'info_remark',  
+  status = 'status',  
+  approved_by = 'approved_by',  
+  rejected_by = 'rejected_by', 
+}
+
 
 export enum Ownersip {
   'Milik' = 'Milik',

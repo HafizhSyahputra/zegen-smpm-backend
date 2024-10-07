@@ -5,6 +5,7 @@ export class RoleEntity implements Role {
   constructor(partial: Partial<RoleEntity>) {
     Object.assign(this, partial);
   }
+  isActive: boolean;
 
   @Expose()
   id: number;

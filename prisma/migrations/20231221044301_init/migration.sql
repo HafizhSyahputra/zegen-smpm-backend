@@ -312,7 +312,6 @@ CREATE TABLE [dbo].[JobOrderReportEdcEquipmentDongle] (
     [created_at] DATETIME2 NOT NULL CONSTRAINT [JobOrderReportEdcEquipmentDongle_created_at_df] DEFAULT CURRENT_TIMESTAMP,
     [updated_at] DATETIME2 NOT NULL,
     [deleted_at] DATETIME2,
-    [jobOrderReportId] INT,
     CONSTRAINT [JobOrderReportEdcEquipmentDongle_pkey] PRIMARY KEY CLUSTERED ([id])
 );
 

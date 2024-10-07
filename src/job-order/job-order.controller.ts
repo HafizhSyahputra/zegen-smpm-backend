@@ -45,7 +45,7 @@ export class JobOrderController {
     private readonly vendorService: VendorService,
     private readonly userService: UserService,
     private readonly mediaService: MediaService,
-    private readonly approveService: ApproveService,  
+    private readonly approveService: ApproveService,
   ) {}
 
   @Get('open')
@@ -770,66 +770,83 @@ export class JobOrderController {
           ...item,
         })),
       );
-
-    await this.jobOrderService.createActivityReportEdcEquipmentDongle({
-      job_order_report_id: jobOrderReport.id,
-      battery_cover:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes(
-          'battery_cover',
-        ),
-      battery:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes('battery'),
-      edc_adapter:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes('edc_adapter'),
-      edc_bracket:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes('edc_bracket'),
-      edc_holder:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes('edc_holder'),
-      dongle_holder:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes(
-          'dongle_holder',
-        ),
-      dongle_adapter:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes(
-          'dongle_adapter',
-        ),
-      cable_ecr:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_ecr'),
-      cable_lan:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_lan'),
-      cable_telephone_line:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes(
-          'cable_telephone_line',
-        ),
-      mid_tid:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes('mid_tid'),
-      magic_box:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes('magic_box'),
-      transaction_guide:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes(
-          'transaction_guide',
-        ),
-      pin_cover:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes('pin_cover'),
-      telephone_line_splitter:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes(
-          'telephone_line_splitter',
-        ),
-      sticker_bank:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes(
-          'sticker_bank',
-        ),
-      sticer_dongle:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes(
-          'sticer_dongle',
-        ),
-      sticer_gpn:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes('sticer_gpn'),
-      sticker_qrcode:
-        createActivityJobOrderDto.edc_dongle_equipment?.includes(
-          'sticker_qrcode',
-        ),
-    });
+    try {
+      await this.jobOrderService.createActivityReportEdcEquipmentDongle({
+        job_order_report: {  
+          connect: { id: jobOrderReport.id }, 
+        },  
+        battery_cover:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'battery_cover',
+          ),
+        battery:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes('battery'),
+        edc_adapter:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'edc_adapter',
+          ),
+        edc_bracket:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'edc_bracket',
+          ),
+        edc_holder:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'edc_holder',
+          ),
+        dongle_holder:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'dongle_holder',
+          ),
+        dongle_adapter:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'dongle_adapter',
+          ),
+        cable_ecr:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_ecr'),
+        cable_lan:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_lan'),
+        cable_telephone_line:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'cable_telephone_line',
+          ),
+        mid_tid:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes('mid_tid'),
+        magic_box:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes('magic_box'),
+        transaction_guide:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'transaction_guide',
+          ),
+        pin_cover:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes('pin_cover'),
+        telephone_line_splitter:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'telephone_line_splitter',
+          ),
+        sticker_bank:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'sticker_bank',
+          ),
+        sticer_dongle:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'sticer_dongle',
+          ),
+        sticer_gpn:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'sticer_gpn',
+          ),
+        sticker_qrcode:
+          createActivityJobOrderDto.edc_dongle_equipment?.includes(
+            'sticker_qrcode',
+          ),
+      });
+    } catch (error) {
+      console.error(
+        'Error inserting into JobOrderReportEdcEquipmentDongle:',
+        error,
+      );
+    }
+    console.log(createActivityJobOrderDto.edc_dongle_equipment);
 
     await this.jobOrderService.createActivityReportMaterialPromo({
       job_order_report_id: jobOrderReport.id,
@@ -896,14 +913,14 @@ export class JobOrderController {
         ),
     });
 
-    await this.approveService.create({  
-      id_jobOrder: jobOrder.id,  
-      vendor_id: jobOrder.vendor_id,  
-      region_id: jobOrder.region_id,  
-      status: 'Waiting',  
-      created_by: user.sub,  
+    await this.approveService.create({
+      id_jobOrder: jobOrder.id,
+      vendor_id: jobOrder.vendor_id,
+      region_id: jobOrder.region_id,
+      status: 'Waiting',
+      created_by: user.sub,
       updated_by: user.sub,
-     });  
+    });
     return jobOrderReport;
   }
 }

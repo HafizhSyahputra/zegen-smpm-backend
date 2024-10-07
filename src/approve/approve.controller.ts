@@ -149,7 +149,7 @@ export class ApproveController {
     @Req() req: Request,
   ): Promise<{ count: number }> {
     console.log('Received IDs:', ids); 
-    const result = await this.approveService.bulkApprove(ids); // Use body.ids to get the array  
+    const result = await this.approveService.bulkApprove(ids); 
 
     await this.auditService.create({
       Url: req.url,
