@@ -17,6 +17,7 @@ import { MediaModule } from './media/media.module';
 import { AuditModule } from './audit/audit.module';
 import { LookUpModule } from './lookup/lookup.module';
 import { ApproveModule } from './approve/approve.module';
+import { JobOrderReportModule } from './job-order-report/job-order-report.module';
  
 @Module({
   imports: [

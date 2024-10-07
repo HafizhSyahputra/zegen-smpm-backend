@@ -8,9 +8,10 @@ import { JobOrderService } from './job-order.service';
 import { MediaService } from '@smpm/media/media.service';
 import { AuditService } from '@smpm/audit/audit.service';
 import { ApproveService } from '@smpm/approve/approve.service';
+import { JobOrderReportModule } from '@smpm/job-order-report/job-order-report.module';
 
 @Module({
-  imports: [PrismaModule, UserModule],
+  imports: [PrismaModule, UserModule, JobOrderReportModule],
   controllers: [JobOrderController],
   providers: [JobOrderService, RegionService, VendorService, MediaService, AuditService, ApproveService],
 })

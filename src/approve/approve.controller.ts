@@ -112,6 +112,88 @@ export class ApproveController {
     return update;
   }
 
+  @Patch(':id/approve')
+  async approveItem(
+    @Param() param: ParamIdDto,
+    @User() user: any,
+    @Req() req: Request,
+  ): Promise<ApproveEntity> {
+    const find = await this.approveService.findOne(param.id);
+    if (!find) throw new BadRequestException('Data not found.');
+
+    const approved = await this.approveService.approveItem(param.id);
+
+    await this.auditService.create({
+      Url: req.url,
+      ActionName: 'Approve Item',
+      MenuName: 'Approve',
+      DataBefore: JSON.stringify(find),
+      DataAfter: JSON.stringify(approved),
+      UserName: user.name,
+      IpAddress: req.ip,
+      ActivityDate: new Date(),
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
+      AppSource: 'Desktop',
+      created_by: user.sub,
+      updated_by: user.sub,
+    });
+
+    return new ApproveEntity(approved);
+  }
+
+  @Post('bulk-approve')
+  async bulkApprove(
+    @Body('ids') ids: number[],
+    @User() user: any,
+    @Req() req: Request,
+  ): Promise<{ count: number }> {
+    console.log('Received IDs:', ids); 
+    const result = await this.approveService.bulkApprove(ids); // Use body.ids to get the array  
+
+    await this.auditService.create({
+      Url: req.url,
+      ActionName: 'Bulk Approve',
+      MenuName: 'Approve',
+      DataBefore: JSON.stringify(ids),
+      DataAfter: JSON.stringify(result),
+      UserName: user.name,
+      IpAddress: req.ip,
+      ActivityDate: new Date(),
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
+      AppSource: 'Desktop',
+      created_by: user.sub,
+      updated_by: user.sub,
+    });
+
+    return { count: result.count };
+  }
+
+  @Get('statistics')
+  async getApprovalStatistics(): Promise<{
+    waiting: number;
+    approved: number;
+    rejected: number;
+  }> {
+    return this.approveService.getApprovalStatistics();
+  }
+
+  @Get('waiting')
+  async getWaitingApprovals(
+    @Query() pageOptionApproveDto: PageOptionApproveDto,
+  ): Promise<PageDto<ApproveEntity>> {
+    const data =
+      await this.approveService.getWaitingApprovals(pageOptionApproveDto);
+    data.data = data.data.map(
+      (item) =>
+        new ApproveEntity({
+          ...item,
+        }),
+    );
+    return data;
+  }
+
   @Delete(':id')
   async remove(
     @Param() param: ParamIdDto,

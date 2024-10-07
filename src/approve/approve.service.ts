@@ -86,19 +86,27 @@ export class ApproveService {
     });
   }
 
-  async approveItem(id: number, sub: any): Promise<Approved> {  
+  async approveItem(id: number): Promise<Approved> {  
     return this.prisma.approved.update({  
       where: { id },  
       data: { status: 'Approved' },  
     });  
   }  
 
-  async bulkApprove(ids: number[], sub: any): Promise<Prisma.BatchPayload> {  
+  async bulkApprove(ids: number[]): Promise<Prisma.BatchPayload> {  
     return this.prisma.approved.updateMany({  
-      where: { id: { in: ids } },  
-      data: { status: 'Approved' },  
+      where: {  
+        id: {  
+          in: ids  // Corrected this line  
+        },  
+        deleted_at: null  
+      },  
+      data: {  
+        status: 'Approved'  
+      }  
     });  
-  }  
+  }
+  
   async bulkReject(ids: number[]): Promise<Prisma.BatchPayload> {
     return this.prisma.approved.updateMany({
       where: { id: { in: ids } },

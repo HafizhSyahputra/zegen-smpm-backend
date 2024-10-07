@@ -96,6 +96,28 @@ export enum ColumnApproved {
   rejected_by = 'rejected_by', 
 }
 
+export enum ColumnJobOrderReport{  
+  id = 'id',  
+  job_order_no = 'job_order_no',  
+  status = 'status',  
+  edc_brand = 'edc_brand',  
+  edc_brand_type = 'edc_brand_type',  
+  edc_serial_number = 'edc_serial_number',  
+  edc_note = 'edc_note',  
+  edc_action = 'edc_action',  
+  information = 'information',  
+  arrival_time = 'arrival_time',  
+  start_time = 'start_time',  
+  end_time = 'end_time',  
+  communication_line = 'communication_line',  
+  direct_line_number = 'direct_line_number',  
+  simcard_provider = 'simcard_provider',  
+  paper_supply = 'paper_supply',  
+  merchant_pic = 'merchant_pic',  
+  merchant_pic_phone = 'merchant_pic_phone',  
+  swipe_cash_indication = 'swipe_cash_indication',  
+}
+
 export enum Ownersip {
   'Milik' = 'Milik',
   'Sewa' = 'Sewa',
