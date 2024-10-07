@@ -69,7 +69,6 @@ model Role {
   Menu_Role Menu_Role[]
 }
 
-
 model Role_Action {
   id_role_action Int          @id @default(autoincrement())
   role           Role?        @relation(fields: [id_role], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -79,16 +78,20 @@ model Role_Action {
 }
 
 model Menu {
-  id_menu     Int           @id @default(autoincrement())
-  name        String        @db.VarChar(255)
-  routh       String?       @db.VarChar(255)
-  path        String?       @db.VarChar(255)
-  api_path    String?       @db.VarChar(255)
-  icon        String?       @db.VarChar(255)
-  parent      Int?
-  platform    String        @db.VarChar(255)
-  active      Int
-  order       Int
+  id_menu    Int       @id @default(autoincrement())
+  name       String    @db.VarChar(255)
+  routh      String?   @db.VarChar(255)
+  path       String?   @db.VarChar(255)
+  api_path   String?   @db.VarChar(255)
+  icon       String?   @db.VarChar(255)
+  parent     Int?
+  platform   String    @db.VarChar(255)
+  isActive   Boolean   @db.Bit
+  order      Int
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime? @default(now())
+
   Menu_Action Menu_Action[]
 
   MenuRole Menu_Role[]
@@ -118,7 +121,6 @@ model Menu_Role {
   id_role      Int?
 }
 
-
 model Vendor {
   id                           Int                            @id @default(autoincrement())
   name                         String
@@ -132,6 +134,8 @@ model Vendor {
   User                         User[]
   ElectronicDataCaptureMachine ElectronicDataCaptureMachine[]
   JobOrder                     JobOrder[]
+
+  Approved Approved[]
 }
 
 model Region {
@@ -147,6 +151,8 @@ model Region {
   User        User[]
   Merchant    Merchant[]
   JobOrder    JobOrder[]
+
+  Approved Approved[]
 }
 
 model Merchant {
@@ -282,6 +288,29 @@ model JobOrder {
   vendor         Vendor           @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   region         Region           @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   JobOrderReport JobOrderReport[]
+
+  Approved Approved[]
+}
+
+model Approved {
+  id          Int       @id @default(autoincrement())
+  id_jobOrder Int
+  vendor_id   Int
+  region_id   Int
+  reason      String?   @db.Text
+  info_remark String?   @db.Text
+  status      String    @db.Text
+  approved_by Int?
+  rejected_by Int?
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  deleted_at  DateTime?
+
+  jobOrder JobOrder @relation(fields: [id_jobOrder], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendor   Vendor   @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  region   Region   @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model Media {
@@ -510,32 +539,32 @@ model EdcBrandType {
 }
 
 model LookUp {
-  id          Int       @id @default(autoincrement())
-  name        String
-  category    String
-  created_by  Int?
-  updated_by  Int?
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  deleted_at  DateTime?
+  id         Int       @id @default(autoincrement())
+  name       String
+  category   String
+  created_by Int?
+  updated_by Int?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
 }
 
 model AuditTrail {
-  id           Int      @id @default(autoincrement())
-  Url          String   @db.VarChar(255)
-  ActionName   String   @db.VarChar(255)
-  MenuName     String   @db.VarChar(255)
-  DataBefore   String   @db.Text
-  DataAfter    String   @db.Text
-  UserName     String   @db.VarChar(255)
-  IpAddress    String   @db.VarChar(255)
+  id           Int       @id @default(autoincrement())
+  Url          String    @db.VarChar(255)
+  ActionName   String    @db.VarChar(255)
+  MenuName     String    @db.VarChar(255)
+  DataBefore   String    @db.Text
+  DataAfter    String    @db.Text
+  UserName     String    @db.VarChar(255)
+  IpAddress    String    @db.VarChar(255)
   ActivityDate DateTime
-  Browser      String   @db.VarChar(255)
-  OS           String   @db.VarChar(255)
-  AppSource    String   @db.VarChar(20)
+  Browser      String    @db.VarChar(255)
+  OS           String    @db.VarChar(255)
+  AppSource    String    @db.VarChar(20)
   created_by   Int
   updated_by   Int
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  deleted_at   DateTime? 
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  deleted_at   DateTime?
 }

@@ -40,6 +40,7 @@ export enum ColumnAudit  {
   AppSource = 'AppSource',
 }  
 
+
 export enum ColumnUser {
   id = 'id',
   role_id = 'role_id',
@@ -80,6 +81,19 @@ export enum ColumnJobOrder {
   ownership = 'ownership',
   'vendor.name' = 'vendor.name',
   'region.name' = 'region.name',
+}
+
+
+export enum ColumnApproved {
+  id = 'id',  
+  id_jobOrder = 'id_jobOrder',  
+  vendor_id = 'vendor_id',  
+  region_id = 'region_id',  
+  reason = 'reason',  
+  info_remark = 'info_remark',  
+  status = 'status',  
+  approved_by = 'approved_by',  
+  rejected_by = 'rejected_by', 
 }
 
 export enum Ownersip {

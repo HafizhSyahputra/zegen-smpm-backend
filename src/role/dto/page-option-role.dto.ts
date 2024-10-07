@@ -9,8 +9,7 @@ import {
   ArrayNotEmpty,
   ArrayUnique,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ColumnRole, Order } from '@smpm/common/constants/enum'; // Pastikan path ini sesuai
+import { ColumnRole, Order } from '@smpm/common/constants/enum';
 
 export class PageOptionRoleDto extends PageOptionsDto {
   @IsOptional()
@@ -32,7 +31,6 @@ export class PageOptionRoleDto extends PageOptionsDto {
   @IsEnum(ColumnRole)
   order_by?: ColumnRole;
 
-  // Jika ada filter tambahan, tambahkan di sini
   @IsOptional()
   @IsEnum(ColumnRole, { each: true })
   type?: ColumnRole[];

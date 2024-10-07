@@ -16,6 +16,7 @@ import { JobOrderModule } from './job-order/job-order.module';
 import { MediaModule } from './media/media.module';
 import { AuditModule } from './audit/audit.module';
 import { LookUpModule } from './lookup/lookup.module';
+import { ApproveModule } from './approve/approve.module';
  
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { LookUpModule } from './lookup/lookup.module';
     MediaModule,
     AuditModule,
     LookUpModule,
+    ApproveModule,
   ],
   controllers: [AppController],
   providers: [AppService],

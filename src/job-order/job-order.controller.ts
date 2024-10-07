@@ -24,7 +24,7 @@ import { UserService } from '@smpm/user/user.service';
 import { VendorService } from '@smpm/vendor/vendor.service';
 import * as dayjs from 'dayjs';
 import * as ExcelJS from 'exceljs';
-import { Request, Response } from 'express';
+import { request, Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PageOptionJobOrderDto } from './dto/page-option-job-order.dto';
@@ -33,6 +33,8 @@ import { JobOrderService } from './job-order.service';
 import { CreateActivityJobOrderDto } from './dto/create-activity-job-order.dto';
 import { FileFieldsUploadInterceptor } from '@smpm/common/interceptors/file-fields-upload.interceptor';
 import { MediaService } from '@smpm/media/media.service';
+import { ApproveService } from '@smpm/approve/approve.service';
+import { User } from '@smpm/common/decorator/currentuser.decorator';
 
 @UseGuards(AccessTokenGuard)
 @Controller('job-order')
@@ -43,6 +45,7 @@ export class JobOrderController {
     private readonly vendorService: VendorService,
     private readonly userService: UserService,
     private readonly mediaService: MediaService,
+    private readonly approveService: ApproveService,  
   ) {}
 
   @Get('open')
@@ -704,10 +707,12 @@ export class JobOrderController {
       prefixName: 'job-order-activity',
     }),
   )
+  
   @Post('activity')
   async createActivity(
     @Body() createActivityJobOrderDto: CreateActivityJobOrderDto,
     @UploadedFiles() files: Record<string, Express.Multer.File[]>,
+    @User() user: any,
   ) {
     console.log(files);
     if (!files['evidence'] || files['evidence'].length == 0) {
@@ -891,6 +896,14 @@ export class JobOrderController {
         ),
     });
 
+    await this.approveService.create({  
+      id_jobOrder: jobOrder.id,  
+      vendor_id: jobOrder.vendor_id,  
+      region_id: jobOrder.region_id,  
+      status: 'Waiting',  
+      created_by: user.sub,  
+      updated_by: user.sub,
+     });  
     return jobOrderReport;
   }
 }
