@@ -7,6 +7,7 @@ import { PageOptionApproveDto } from './dto/page-option.dto';
 import { PageDto } from '@smpm/common/decorator/page.dto';
 import { ColumnApproved } from '@smpm/common/constants/enum';
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
+import { UpdateApprovedDto } from './dto/update-approve.dto';
 
 @Injectable()
 export class ApproveService {
@@ -72,7 +73,7 @@ export class ApproveService {
     });
   }
 
-  async update(id: number, updateApproveDto: CreateApproveDto): Promise<Approved> {
+  async update(id: number, updateApproveDto: UpdateApprovedDto): Promise<Approved> {
     return this.prisma.approved.update({
       where: { id },
       data: updateApproveDto,

@@ -117,6 +117,15 @@ export enum ColumnApproved {
   rejected_by = 'rejected_by', 
 }
 
+export enum ColumntDocMerchant {
+  id = 'id',  
+  merchant_id = 'merchant_id',  
+  file1 = 'file1',  
+  file2 = 'file2',  
+  created_by = 'created_by',
+  updated_by = 'updated_by',
+}
+
 
 export enum Ownersip {
   'Milik' = 'Milik',

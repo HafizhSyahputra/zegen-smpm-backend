@@ -3,9 +3,12 @@ import { MerchantService } from './merchant.service';
 import { MerchantController } from './merchant.controller';
 import { PrismaService } from '@smpm/prisma/prisma.service';
 import { AuditService } from '@smpm/audit/audit.service';
+import { DocumentMerchantModule } from '@smpm/document-merchant/document-merchant.module';
+import { DocumentMerchantService } from '@smpm/document-merchant/document-merchant.service';
 
 @Module({
+  imports: [DocumentMerchantModule],
   controllers: [MerchantController],
-  providers: [MerchantService, PrismaService, AuditService],
+  providers: [MerchantService, PrismaService, AuditService, DocumentMerchantService],
 })
 export class MerchantModule {}

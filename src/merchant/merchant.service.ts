@@ -3,6 +3,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { UpdateMerchantDto } from './dto/update-merchant.dto';
@@ -21,44 +22,48 @@ import { Prisma } from '@prisma/client';
 export class MerchantService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createMerchantDto: CreateMerchantDto): Promise<any> {
-    try {
-      return await this.prisma.merchant.create({
-        data: {
-          region_id: createMerchantDto.region_id,
-          mid: createMerchantDto.mid,
-          name: createMerchantDto.name,
-          category: createMerchantDto.category,
-          customer_name: createMerchantDto.customer_name,
-          telephone: createMerchantDto.telephone,
-          pic: createMerchantDto.pic,
-          phone1: createMerchantDto.phone1,
-          phone2: createMerchantDto.phone2,
-          address1: createMerchantDto.address1,
-          address2: createMerchantDto.address2,
-          address3: createMerchantDto.address3,
-          address4: createMerchantDto.address4,
-          district: createMerchantDto.district,
-          subdistrict: createMerchantDto.subdistrict,
-          city: createMerchantDto.city,
-          province: createMerchantDto.province,
-          postal_code: createMerchantDto.postal_code,
-          created_by: createMerchantDto.created_by,
-          updated_by: createMerchantDto.updated_by,
-        },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        // The .code property can be accessed in a type-safe manner
-        if (error.code === 'P2002') {
-          throw new HttpException(
-            'There is a unique constraint violation',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-      }
-      throw new HttpException(error, HttpStatus.BAD_REQUEST);
-    }
+  async create(createMerchantDto: CreateMerchantDto): Promise<any> {  
+    try {  
+      return await this.prisma.merchant.create({  
+        data: {  
+          region_id: createMerchantDto.region_id,  
+          mid: createMerchantDto.mid,  
+          name: createMerchantDto.name,  
+          category: createMerchantDto.category,  
+          customer_name: createMerchantDto.customer_name,  
+          telephone: createMerchantDto.telephone,  
+          pic: createMerchantDto.pic,  
+          phone1: createMerchantDto.phone1,  
+          phone2: createMerchantDto.phone2,  
+          address1: createMerchantDto.address1,  
+          address2: createMerchantDto.address2,  
+          address3: createMerchantDto.address3,  
+          address4: createMerchantDto.address4,  
+          district: createMerchantDto.district,  
+          subdistrict: createMerchantDto.subdistrict,  
+          city: createMerchantDto.city,  
+          province: createMerchantDto.province,  
+          postal_code: createMerchantDto.postal_code,  
+          created_by: createMerchantDto.created_by,  
+          updated_by: createMerchantDto.updated_by,  
+        },  
+      });  
+    } catch (error) {  
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {  
+        if (error.code === 'P2002') {  
+          throw new HttpException(  
+            'There is a unique constraint violation',  
+            HttpStatus.BAD_REQUEST,  
+          );  
+        } else if (error.code === 'P2003') {  
+          throw new HttpException(  
+            'Foreign key constraint violation',  
+            HttpStatus.BAD_REQUEST,  
+          );  
+        }  
+      }  
+      throw new HttpException(error, HttpStatus.BAD_REQUEST);  
+    }  
   }
 
   async createBulk(fileName: string): Promise<any> {
@@ -327,19 +332,24 @@ export class MerchantService {
     }
   }
 
-  async findOne(id: number): Promise<any> {
-    try {
-      const response = await this.prisma.merchant.findUnique({
-        where: { id },
-        include: {
-          region: true,
-        },
-      });
-      return response;
-    } catch (error) {
-      console.log('error?', error);
-      throw new Error(error);
-    }
+  async findOne(id: number): Promise<any> {  
+    try {  
+      const response = await this.prisma.merchant.findUnique({  
+        where: { id },  
+        include: {  
+          region: true,  
+        },  
+      });  
+  
+      if (!response) {  
+        throw new NotFoundException(`Merchant with ID ${id} not found.`);  
+      }  
+  
+      return response;  
+    } catch (error) {  
+      console.log('error?', error);  
+      throw new Error(error);  
+    }  
   }
 
   async update(id: number, updateMerchantDto: UpdateMerchantDto): Promise<any> {

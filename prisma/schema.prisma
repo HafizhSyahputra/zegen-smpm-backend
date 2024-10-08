@@ -37,9 +37,8 @@ model User {
 }
 
 model Notification {
-  id     Int @id @default(autoincrement())
-  iduser Int
-
+  id        Int      @id @default(autoincrement())
+  iduser    Int
   title     String
   detail    String   @db.NVarChar(max)
   createdAt DateTime @default(now()) @map("created_at")
@@ -173,6 +172,10 @@ model Vendor {
   Approved Approved[]
 
   ReceivedIn ReceivedIn[]
+
+  ReceivedOut ReceivedOut[]
+
+  EDCTerpasang EDCTerpasang[]
 }
 
 model Region {
@@ -192,6 +195,8 @@ model Region {
   Approved Approved[]
 
   ReceivedIn ReceivedIn[]
+
+  ReceivedOut ReceivedOut[]
 }
 
 model Merchant {
@@ -227,13 +232,18 @@ model Merchant {
   ReceivedIn ReceivedIn[]
 
   ElectronicDataCaptureMachine ElectronicDataCaptureMachine[]
+
+  ReceivedOut ReceivedOut[]
+
+  EDCTerpasang EDCTerpasang[]
 }
 
 model DocumentMerchant {
   id          Int       @id @default(autoincrement())
   merchant_id Int
-  file1       String    @db.Text
-  file2       String    @db.Text
+  file1       String?   @db.Text
+  file2       String?   @db.Text
+  location    String    @db.Text
   created_by  Int?
   updated_by  Int?
   created_at  DateTime  @default(now())
@@ -270,6 +280,8 @@ model ElectronicDataCaptureMachine {
   owner      Vendor?      @relation(fields: [owner_id], references: [id])
   merchant   Merchant?    @relation(fields: [merchant_id], references: [id])
   ReceivedIn ReceivedIn[]
+
+  ReceivedOut ReceivedOut[]
 }
 
 model JobOrder {
@@ -354,6 +366,8 @@ model JobOrder {
   Approved Approved[]
 
   ReceivedIn ReceivedIn[]
+
+  ReceivedOut ReceivedOut[]
 }
 
 model Approved {
@@ -652,4 +666,55 @@ model ReceivedIn {
   serial_number String?                       @db.VarChar(100)
   tid           String?                       @db.VarChar(100)
   deleted_at    DateTime?
+}
+
+model ReceivedOut {
+  id            Int                           @id @default(autoincrement())
+  id_joborder   Int?
+  joborder      JobOrder?                     @relation(fields: [id_joborder], references: [id])
+  id_edc        Int?
+  edc           ElectronicDataCaptureMachine? @relation(fields: [id_edc], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id_region     Int?
+  region        Region?                       @relation(fields: [id_region], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id_vendor     Int?
+  vendor        Vendor?                       @relation(fields: [id_vendor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id_merchant   Int?
+  merchant      Merchant?                     @relation(fields: [id_merchant], references: [id])
+  status        String                        @default("waiting") @db.VarChar(255)
+  approved_by   Int?
+  created_by    Int?
+  updated_by    Int?
+  created_at    DateTime                      @default(now()) @db.Date
+  updated_at    DateTime                      @updatedAt @db.Date
+  serial_number String?                       @db.VarChar(100)
+  tid           String?                       @db.VarChar(100)
+  deleted_at    DateTime?
+}
+
+model EDCTerpasang {
+  id                  Int       @id @default(autoincrement())
+  owner_id            Int?
+  merchant_id         Int?
+  mid                 String
+  tid                 String    @unique
+  brand               String
+  brand_type          String
+  serial_number       String
+  status_owner        String
+  status_owner_desc   String?
+  status_machine      String
+  status_machine_desc String?
+  status_active       Boolean
+  simcard_provider    String?
+  simcard_number      String?
+  info                String?
+  region              String?
+  created_by          Int?
+  updated_by          Int?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  deleted_at          DateTime?
+
+  owner    Vendor?   @relation(fields: [owner_id], references: [id])
+  merchant Merchant? @relation(fields: [merchant_id], references: [id])
 }

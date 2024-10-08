@@ -18,6 +18,7 @@ import { AuditModule } from './audit/audit.module';
 import { LookUpModule } from './lookup/lookup.module';
 import { ApproveModule } from './approve/approve.module';
 import { JobOrderReportModule } from './job-order-report/job-order-report.module';
+import { DocumentMerchantModule } from './document-merchant/document-merchant.module';
  
 @Module({
   imports: [

@@ -21,6 +21,7 @@ import { Request } from 'express';
 import { AuditService } from '@smpm/audit/audit.service';
 import { PageOptionApproveDto } from './dto/page-option.dto';
 import { CreateApproveDto } from './dto/create-approve.dto';
+import { UpdateApprovedDto } from './dto/update-approve.dto';
 
 @UseGuards(AccessTokenGuard)
 @Controller('approve')
@@ -81,7 +82,7 @@ export class ApproveController {
   @Patch(':id')
   async update(
     @Param() param: ParamIdDto,
-    @Body() updateApproveDto: CreateApproveDto,
+    @Body() updateApproveDto: UpdateApprovedDto,
     @User() user: any,
     @Req() req: Request,
   ): Promise<ApproveEntity> {

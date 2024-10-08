@@ -23,6 +23,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { MaxFileSize } from '@smpm/utils/FileValidator';
 import { defaultConfig } from '@smpm/utils/FileConfig';
 import { AuditService } from '@smpm/audit/audit.service';
+ import { DocumentMerchantService } from '@smpm/document-merchant/document-merchant.service';
+import { ValidationException } from '@smpm/common/validator/validationExeption';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
 
 @Controller('merchant')
@@ -30,38 +32,63 @@ export class MerchantController {
   constructor(
     private readonly merchantService: MerchantService,
     private readonly auditService: AuditService,
+    private readonly docmerchantService: DocumentMerchantService,
   ) {}
 
-  @Post()
-  async create(
-    @Body() createMerchantDto: CreateMerchantDto,
-    @User() user: any,
-    @Req() req: Request,
-  ) {
-    const create = await this.merchantService.create(createMerchantDto);
+  @Post()  
+async create(  
+  @Body() createMerchantDto: CreateMerchantDto,  
+  @User() user: any,  
+  @Req() req: Request,  
+) {  
+  try {  
+    const create = await this.merchantService.create(createMerchantDto);  
 
-    await this.auditService.create({
-      Url: req.url,
-      ActionName: 'Create Merchant',
-      MenuName: 'Merchant',
-      DataBefore: '',
-      DataAfter: JSON.stringify(create),
-      UserName: user.name,
-      IpAddress: req.ip,
-      ActivityDate: new Date(),
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
-      AppSource: 'Desktop',
-      created_by: user.sub,
-      updated_by: user.id,
-    });
+    const auditData = {  
+      Url: req.url,  
+      ActionName: 'Create Merchant',  
+      MenuName: 'Merchant',  
+      DataBefore: '',  
+      DataAfter: JSON.stringify(create),  
+      UserName: user?.name || 'Unknown',  
+      IpAddress: req.ip,  
+      ActivityDate: new Date(),  
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+      AppSource: 'Desktop',  
+      created_by: user?.sub || 7,  
+      updated_by: user?.id || 7,  
+    };  
 
-    return {
-      status: 'Ok!',
-      message: 'Success Create Merchant',
-      ...create,
-    };
-  }
+    await this.auditService.create(auditData);  
+
+    const location = create.address1 + ', ' + create.address2 + ', ' + create.address3 + ', ' + create.address4 + create.postal_code;
+
+    await this.docmerchantService.create({  
+      merchant_id: create.id,  
+      location : location,
+      created_by: user?.sub,  
+    });  
+
+    return {  
+      status: 'Ok!',  
+      message: 'Success Create Merchant',  
+      ...create,  
+    };  
+  } catch (error) {  
+    if (error instanceof ValidationException) {  
+      return {  
+        status: 'Error',  
+        message: 'Validation error',  
+        errors: error.validationErrors,  
+      };  
+    }  
+
+    console.error('Error creating merchant and document merchant:', error);  
+    throw error;  
+  }  
+}
+
 
   @UseInterceptors(FileInterceptor('file', { storage: defaultConfig }))
   @Post('/create-bulk-excel')
@@ -106,15 +133,15 @@ export class MerchantController {
       ActionName: 'Update Merchant',
       MenuName: 'Merchant',
       DataBefore: JSON.stringify(oldData),
-      DataAfter: JSON.stringify(update),
-      UserName: user.name,
-      IpAddress: req.ip,
-      ActivityDate: new Date(),
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
-      AppSource: 'Desktop',
-      created_by: user.sub,
-      updated_by: user.id,
+      DataAfter: JSON.stringify(update),  
+      UserName: user?.name || 'Unknown',  
+      IpAddress: req.ip,  
+      ActivityDate: new Date(),  
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+      AppSource: 'Desktop',  
+      created_by: user?.sub || 7,  
+      updated_by: user?.id || 7,  
     });
 
     return {
@@ -134,14 +161,14 @@ export class MerchantController {
       MenuName: 'Merchant',
       DataBefore: JSON.stringify(oldData),
       DataAfter: '',
-      UserName: user.name,
-      IpAddress: req.ip,
-      ActivityDate: new Date(),
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
-      AppSource: 'Desktop',
-      created_by: user.sub,
-      updated_by: user.id,
+      UserName: user?.name || 'Unknown',  
+      IpAddress: req.ip,  
+      ActivityDate: new Date(),  
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+      AppSource: 'Desktop',  
+      created_by: user?.sub || 7,  
+      updated_by: user?.sub || 7,  
     });
 
     return this.merchantService.remove(+id);

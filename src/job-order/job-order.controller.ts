@@ -35,6 +35,7 @@ import { FileFieldsUploadInterceptor } from '@smpm/common/interceptors/file-fiel
 import { MediaService } from '@smpm/media/media.service';
 import { ApproveService } from '@smpm/approve/approve.service';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
+import { AuditService } from '@smpm/audit/audit.service';
 
 @UseGuards(AccessTokenGuard)
 @Controller('job-order')
@@ -46,6 +47,7 @@ export class JobOrderController {
     private readonly userService: UserService,
     private readonly mediaService: MediaService,
     private readonly approveService: ApproveService,
+    private readonly auditService: AuditService,
   ) {}
 
   @Get('open')
@@ -103,6 +105,7 @@ export class JobOrderController {
   @Post('bulk/upload')
   async uploadBulk(
     @Req() req: Request,
+    @User() user: any,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     if (!files || files.length == 0) {
@@ -447,6 +450,23 @@ export class JobOrderController {
         errors,
       });
 
+      
+    await this.auditService.create({
+      Url: req.url,
+      ActionName: 'Bulk Create Job Order',
+      MenuName: 'Job Order',
+      DataBefore: '',
+      DataAfter: JSON.stringify(data),
+      UserName: user.name,  
+      IpAddress: req.ip,  
+      ActivityDate: new Date(),  
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+      AppSource: 'Desktop',  
+      created_by: user.sub,  
+      updated_by: user.sub,  
+    });
+
     await this.jobOrderService.createMany(data);
 
     return {
@@ -465,6 +485,7 @@ export class JobOrderController {
   @Post('bulk/acknowledge')
   async acknowledge(
     @Req() req: Request,
+    @User() user: any,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     if (!files || files.length == 0) {
@@ -559,6 +580,22 @@ export class JobOrderController {
       throw new BadRequestException({
         message: 'Terdapat data yang tidak valid pada file yang diupload',
         errors,
+      });
+
+      await this.auditService.create({
+        Url: req.url,
+        ActionName: 'Bulk Create Job Order Acknowledge',
+        MenuName: 'Job Order',
+        DataBefore: '',
+        DataAfter: JSON.stringify(data),
+        UserName: user.name,  
+        IpAddress: req.ip,  
+        ActivityDate: new Date(),  
+        Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+        OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+        AppSource: 'Desktop',  
+        created_by: user.sub,  
+        updated_by: user.sub,  
       });
 
     await this.jobOrderService.acknowlege(data);
@@ -713,6 +750,7 @@ export class JobOrderController {
     @Body() createActivityJobOrderDto: CreateActivityJobOrderDto,
     @UploadedFiles() files: Record<string, Express.Multer.File[]>,
     @User() user: any,
+    @Req() req: Request,
   ) {
     console.log(files);
     if (!files['evidence'] || files['evidence'].length == 0) {
@@ -721,7 +759,7 @@ export class JobOrderController {
 
     let mediaEvidence: { media_id: number }[] = [];
     mediaEvidence = await this.mediaService.insertMediaData(files['evidence']);
-
+    
     let mediaOptional: { media_id: number }[] = [];
     if (files['optional'] && files['optional'].length > 0) {
       mediaOptional = await this.mediaService.insertMediaData(
@@ -913,6 +951,22 @@ export class JobOrderController {
         ),
     });
 
+    await this.auditService.create({
+      Url: req.url,
+      ActionName: 'Update Activity Job Order',
+      MenuName: 'Job Order',
+      DataBefore: '',
+      DataAfter: JSON.stringify(jobOrderReport),
+      UserName: user.name,  
+      IpAddress: req.ip,  
+      ActivityDate: new Date(),  
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+      AppSource: 'Desktop',  
+      created_by: user.sub,  
+      updated_by: user.sub,  
+    });
+
     await this.approveService.create({
       id_jobOrder: jobOrder.id,
       vendor_id: jobOrder.vendor_id,
@@ -922,5 +976,23 @@ export class JobOrderController {
       updated_by: user.sub,
     });
     return jobOrderReport;
+  }
+
+  private getBrowserFromUserAgent(userAgent: string): string {
+    if (userAgent.includes('Chrome')) return 'Chrome';
+    if (userAgent.includes('Firefox')) return 'Firefox';
+    if (userAgent.includes('Safari')) return 'Safari';
+    return 'Unknown';
+  }
+
+  private getOSFromUserAgent(userAgent: string, request: Request): string {
+    const testOS = request.headers['x-test-os'];
+    if (/PostmanRuntime/i.test(userAgent))
+      return 'Postman (Testing Environment)';
+    if (testOS) return testOS as string;
+    if (userAgent.includes('Win')) return 'Windows';
+    if (userAgent.includes('Mac')) return 'MacOS';
+    if (userAgent.includes('Linux')) return 'Linux';
+    return 'Unknown';
   }
 }
