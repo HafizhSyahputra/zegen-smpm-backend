@@ -142,6 +142,37 @@ export class ApproveController {
 
     return new ApproveEntity(approved);
   }
+  
+  @Patch(':id/reject')  
+async rejectItem(  
+  @Param() param: ParamIdDto,  
+  @Body() rejectDto: { reason: string; info_remark: string },  
+  @User() user: any,  
+  @Req() req: Request,  
+): Promise<ApproveEntity> {  
+  const find = await this.approveService.findOne(param.id);  
+  if (!find) throw new BadRequestException('Data not found.');  
+
+  const rejected = await this.approveService.rejectItem(param.id, rejectDto.reason, rejectDto.info_remark);  
+
+  await this.auditService.create({  
+    Url: req.url,  
+    ActionName: 'Reject Item',  
+    MenuName: 'Approve',  
+    DataBefore: JSON.stringify(find),  
+    DataAfter: JSON.stringify(rejected),  
+    UserName: user.name,  
+    IpAddress: req.ip,  
+    ActivityDate: new Date(),  
+    Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+    OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+    AppSource: 'Desktop',  
+    created_by: user.sub,  
+    updated_by: user.sub,  
+  });  
+
+  return new ApproveEntity(rejected);  
+}
 
   @Post('bulk-approve')
   async bulkApprove(

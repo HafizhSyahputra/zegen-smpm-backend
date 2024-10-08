@@ -8,6 +8,7 @@ import { ParamIdDto } from '@smpm/common/decorator/param-id.dto';
 import { CreateDocMerchantDto } from './dto/create-docMerchant.dto';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
 import { Request } from 'express';
+import { UpdateDocMerchantDto } from './dto/update-docMerchant.dto';
 
 @Controller('document-merchant')
 export class DocumentMerchantController {
@@ -41,7 +42,7 @@ export class DocumentMerchantController {
   @Patch(':id')
   async update(
     @Param() param: ParamIdDto,
-    @Body() updateDocMerchantDto: CreateDocMerchantDto,
+    @Body() updateDocMerchantDto: UpdateDocMerchantDto,
     @User() user: any,
     @Req() req: Request,
   ): Promise<DocMerchantEntity> {
@@ -55,7 +56,7 @@ export class DocumentMerchantController {
 
     await this.auditService.create({
       Url: req.url,
-      ActionName: 'Add Document Merchant',
+      ActionName: 'Update Document Merchant',
       MenuName: 'Document Merchant',
       DataBefore: JSON.stringify(oldData),
       DataAfter: JSON.stringify(update),

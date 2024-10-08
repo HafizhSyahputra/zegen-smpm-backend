@@ -93,6 +93,16 @@ export class ApproveService {
       data: { status: 'Approved' },  
     });  
   }  
+  async rejectItem(id: number, reason: string, info_remark: string): Promise<Approved> {  
+    return this.prisma.approved.update({  
+      where: { id },  
+      data: {  
+        status: 'Rejected',  
+        reason,  
+        info_remark,  
+      },  
+    });  
+  }
 
   async bulkApprove(ids: number[]): Promise<Prisma.BatchPayload> {  
     return this.prisma.approved.updateMany({  

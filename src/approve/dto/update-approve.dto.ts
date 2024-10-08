@@ -1,7 +1,6 @@
 
 import { IsExist } from '@smpm/common/validator/is-exists.validator';
-import { Type } from 'class-transformer';
-import {
+ import {
   IsNotEmpty,
   IsNumber,
   IsString,
@@ -55,4 +54,14 @@ export class UpdateApprovedDto {
   @IsOptional()
   @IsDateString()
   updated_at?: Date;
+}
+
+export class RejectDto{
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @IsOptional()
+  @IsString()
+  info_remark?: string;
 }

@@ -46,7 +46,8 @@ export class DocumentMerchantService {
         take,
         orderBy,
         include: {
-          merchant: true
+          merchant: true,
+          region: true,
         },
       }),
       this.prisma.documentMerchant.count({ where: filter }),
@@ -64,7 +65,8 @@ export class DocumentMerchantService {
     return this.prisma.documentMerchant.findUnique({
       where: { id, deleted_at: null },
       include: {
-        merchant: true
+        merchant: true,
+        region: true,
       },
     });
   }

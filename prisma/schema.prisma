@@ -286,93 +286,93 @@ model ElectronicDataCaptureMachine {
   ReceivedIn ReceivedIn[]
 
   ReceivedOut ReceivedOut[]
-}
+  }
 
-model JobOrder {
-  id                                                         Int       @id @default(autoincrement())
-  vendor_id                                                  Int
-  region_id                                                  Int
-  no                                                         String    @unique
-  type                                                       String
-  date                                                       DateTime  @db.Date
-  mid                                                        String
-  tid                                                        String
-  officer_name                                               String?
-  status                                                     String
-  merchant_name                                              String
-  address1                                                   String
-  address2                                                   String
-  address3                                                   String
-  address4                                                   String
-  subdistrict                                                String?
-  village                                                    String?
-  city                                                       String?
-  postal_code                                                String?
-  pic                                                        String
-  phone_number1                                              String
-  phone_number2                                              String?
-  provider                                                   String?
-  trx_type_mini_atm                                          String?
-  trx_type_visa                                              String?
-  trx_type_master                                            String?
-  trx_type_jcb                                               String?
-  trx_type_maestro                                           String?
-  trx_type_gpn                                               String?
-  trx_type_tapcash_topup                                     String?
-  trx_type_tapcash_purchase                                  String?
-  trx_type_qrcode_qris                                       String?
-  trx_type_qrcode_linkaja                                    String?
-  trx_type_contactless_master                                String?
-  trx_type_contractless_visa                                 String?
-  edc_facility_cepp_plan1                                    String?
-  edc_facility_cepp_plan2                                    String?
-  edc_facility_cepp_plan3                                    String?
-  edc_facility_reedem_point                                  String?
-  edc_facility_activation_keyinsales                         String?
-  edc_facility_activation_keyinsales_keyinpreauth_completion String?
-  edc_facility_activation_keyinpreauth_completion            String?
-  edc_facility_activation_preauth_completion                 String?
-  edc_facility_activation_keyinsales_preauth_completion      String?
-  edc_facility_offline                                       String?
-  edc_facility_card_ver                                      String?
-  edc_facility_refund                                        String?
-  edc_facility_adjust_tip                                    String?
-  trx_test_credit                                            String?
-  trx_test_debit                                             String?
-  trx_test_inquiry                                           String?
-  trx_test_transfer                                          String?
-  trx_test_jcb                                               String?
-  trx_test_gpn                                               String?
-  trx_test_tapcash                                           String?
-  trx_test_qris                                              String?
-  trx_test_linkaja                                           String?
-  trx_test_visa_contactless                                  String?
-  trx_test_master_contactless                                String?
-  trx_test_instalment                                        String?
-  trx_test_reedemption                                       String?
-  thermal_paper                                              Int
-  sticker_bni                                                String?
-  acrylic                                                    String?
-  description1                                               String?
-  description2                                               String?
-  merchant_category                                          String?
-  ownership                                                  String
-  created_by                                                 Int?
-  updated_by                                                 Int?
-  created_at                                                 DateTime  @default(now())
-  updated_at                                                 DateTime  @updatedAt
-  deleted_at                                                 DateTime?
+  model JobOrder {
+    id                                                         Int       @id @default(autoincrement())
+    vendor_id                                                  Int
+    region_id                                                  Int
+    no                                                         String    @unique
+    type                                                       String
+    date                                                       DateTime  @db.Date
+    mid                                                        String
+    tid                                                        String
+    officer_name                                               String?
+    status                                                     String
+    merchant_name                                              String
+    address1                                                   String
+    address2                                                   String
+    address3                                                   String
+    address4                                                   String
+    subdistrict                                                String?
+    village                                                    String?
+    city                                                       String?
+    postal_code                                                String?
+    pic                                                        String
+    phone_number1                                              String
+    phone_number2                                              String?
+    provider                                                   String?
+    trx_type_mini_atm                                          String?
+    trx_type_visa                                              String?
+    trx_type_master                                            String?
+    trx_type_jcb                                               String?
+    trx_type_maestro                                           String?
+    trx_type_gpn                                               String?
+    trx_type_tapcash_topup                                     String?
+    trx_type_tapcash_purchase                                  String?
+    trx_type_qrcode_qris                                       String?
+    trx_type_qrcode_linkaja                                    String?
+    trx_type_contactless_master                                String?
+    trx_type_contractless_visa                                 String?
+    edc_facility_cepp_plan1                                    String?
+    edc_facility_cepp_plan2                                    String?
+    edc_facility_cepp_plan3                                    String?
+    edc_facility_reedem_point                                  String?
+    edc_facility_activation_keyinsales                         String?
+    edc_facility_activation_keyinsales_keyinpreauth_completion String?
+    edc_facility_activation_keyinpreauth_completion            String?
+    edc_facility_activation_preauth_completion                 String?
+    edc_facility_activation_keyinsales_preauth_completion      String?
+    edc_facility_offline                                       String?
+    edc_facility_card_ver                                      String?
+    edc_facility_refund                                        String?
+    edc_facility_adjust_tip                                    String?
+    trx_test_credit                                            String?
+    trx_test_debit                                             String?
+    trx_test_inquiry                                           String?
+    trx_test_transfer                                          String?
+    trx_test_jcb                                               String?
+    trx_test_gpn                                               String?
+    trx_test_tapcash                                           String?
+    trx_test_qris                                              String?
+    trx_test_linkaja                                           String?
+    trx_test_visa_contactless                                  String?
+    trx_test_master_contactless                                String?
+    trx_test_instalment                                        String?
+    trx_test_reedemption                                       String?
+    thermal_paper                                              Int
+    sticker_bni                                                String?
+    acrylic                                                    String?
+    description1                                               String?
+    description2                                               String?
+    merchant_category                                          String?
+    ownership                                                  String
+    created_by                                                 Int?
+    updated_by                                                 Int?
+    created_at                                                 DateTime  @default(now())
+    updated_at                                                 DateTime  @updatedAt
+    deleted_at                                                 DateTime?
 
-  vendor         Vendor           @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  region         Region           @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  JobOrderReport JobOrderReport[]
+    vendor         Vendor           @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    region         Region           @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    JobOrderReport JobOrderReport[]
 
-  Approved Approved[]
+    Approved Approved[]
 
-  ReceivedIn ReceivedIn[]
+    ReceivedIn ReceivedIn[]
 
-  ReceivedOut ReceivedOut[]
-}
+    ReceivedOut ReceivedOut[]
+  }
 
 model Approved {
   id          Int       @id @default(autoincrement())
@@ -473,7 +473,6 @@ model JobOrderReport {
   deleted_at            DateTime?
 
   job_order JobOrder @relation(fields: [job_order_no], references: [no])
-
   MediaJobOrderReportProofOfVisit  MediaJobOrderReportProofOfVisit[]
   MediaJobOrderReportOptionalPhoto MediaJobOrderReportOptionalPhoto[]
   JobOrderReportMaterialTraining   JobOrderReportMaterialTraining[]
