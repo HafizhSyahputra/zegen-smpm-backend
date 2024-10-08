@@ -197,6 +197,8 @@ model Region {
   ReceivedIn ReceivedIn[]
 
   ReceivedOut ReceivedOut[]
+
+  DocumentMerchant DocumentMerchant[]
 }
 
 model Merchant {
@@ -241,6 +243,7 @@ model Merchant {
 model DocumentMerchant {
   id          Int       @id @default(autoincrement())
   merchant_id Int
+  region_id   Int
   file1       String?   @db.Text
   file2       String?   @db.Text
   location    String    @db.Text
@@ -251,6 +254,7 @@ model DocumentMerchant {
   deleted_at  DateTime?
 
   merchant Merchant @relation(fields: [merchant_id], references: [id])
+  region Region @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model ElectronicDataCaptureMachine {

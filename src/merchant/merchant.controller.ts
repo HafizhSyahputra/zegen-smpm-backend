@@ -62,10 +62,11 @@ async create(
 
     await this.auditService.create(auditData);  
 
-    const location = create.address1 + ', ' + create.address2 + ', ' + create.address3 + ', ' + create.address4 + create.postal_code;
+    const location = create.address1 + ', ' + create.address2 + ', ' + create.address3 + ', ' + create.address4 + ' ' + create.postal_code;
 
     await this.docmerchantService.create({  
       merchant_id: create.id,  
+      region_id: create.region_id,
       location : location,
       created_by: user?.sub,  
     });  

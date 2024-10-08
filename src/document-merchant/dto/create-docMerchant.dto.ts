@@ -7,6 +7,11 @@ export class CreateDocMerchantDto {
     @Validate(IsExist, ['Merchant', 'id'])
     merchant_id: number;
   
+    @IsNotEmpty()
+    @IsNumber()
+    @Validate(IsExist, ['Region', 'id'])
+    region_id: number;
+  
     @IsOptional()
     @IsString()
     file1?: string;
