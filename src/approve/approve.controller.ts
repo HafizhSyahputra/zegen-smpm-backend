@@ -22,6 +22,7 @@ import { AuditService } from '@smpm/audit/audit.service';
 import { PageOptionApproveDto } from './dto/page-option.dto';
 import { CreateApproveDto } from './dto/create-approve.dto';
 import { UpdateApprovedDto } from './dto/update-approve.dto';
+import { PrismaService } from '@smpm/prisma/prisma.service';
 
 @UseGuards(AccessTokenGuard)
 @Controller('approve')
@@ -29,6 +30,7 @@ export class ApproveController {
   constructor(
     private readonly approveService: ApproveService,
     private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post()
@@ -119,16 +121,33 @@ export class ApproveController {
     @User() user: any,
     @Req() req: Request,
   ): Promise<ApproveEntity> {
-    const find = await this.approveService.findOne(param.id);
-    if (!find) throw new BadRequestException('Data not found.');
+    const approveRecord = await this.approveService.findOne(param.id);
+    if (!approveRecord) throw new BadRequestException('Data not found.');
 
-    const approved = await this.approveService.approveItem(param.id);
+    const approved = await this.approveService.approveItem(param.id, user.sub);
+
+    const jobOrderReport = await this.prisma.jobOrderReport.findUnique({
+      where: { id: approveRecord.jo_report_id },
+    });
+
+    if (!jobOrderReport) {
+      throw new BadRequestException('Job Order Report not found.');
+    }
+
+    await this.prisma.jobOrderReport.update({
+      where: {
+        id: jobOrderReport.id,
+      },
+      data: {
+        status_approve: 'Approved',
+      },
+    });
 
     await this.auditService.create({
       Url: req.url,
       ActionName: 'Approve Item',
       MenuName: 'Approve',
-      DataBefore: JSON.stringify(find),
+      DataBefore: JSON.stringify(approveRecord),
       DataAfter: JSON.stringify(approved),
       UserName: user.name,
       IpAddress: req.ip,
@@ -142,53 +161,47 @@ export class ApproveController {
 
     return new ApproveEntity(approved);
   }
-  
-  @Patch(':id/reject')  
-async rejectItem(  
-  @Param() param: ParamIdDto,  
-  @Body() rejectDto: { reason: string; info_remark: string },  
-  @User() user: any,  
-  @Req() req: Request,  
-): Promise<ApproveEntity> {  
-  const find = await this.approveService.findOne(param.id);  
-  if (!find) throw new BadRequestException('Data not found.');  
 
-  const rejected = await this.approveService.rejectItem(param.id, rejectDto.reason, rejectDto.info_remark);  
-
-  await this.auditService.create({  
-    Url: req.url,  
-    ActionName: 'Reject Item',  
-    MenuName: 'Approve',  
-    DataBefore: JSON.stringify(find),  
-    DataAfter: JSON.stringify(rejected),  
-    UserName: user.name,  
-    IpAddress: req.ip,  
-    ActivityDate: new Date(),  
-    Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
-    OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
-    AppSource: 'Desktop',  
-    created_by: user.sub,  
-    updated_by: user.sub,  
-  });  
-
-  return new ApproveEntity(rejected);  
-}
-
-  @Post('bulk-approve')
-  async bulkApprove(
-    @Body('ids') ids: number[],
+  @Patch(':id/reject')
+  async rejectItem(
+    @Param() param: ParamIdDto,
+    @Body() rejectDto: { reason: string; info_remark: string },
     @User() user: any,
     @Req() req: Request,
-  ): Promise<{ count: number }> {
-    console.log('Received IDs:', ids); 
-    const result = await this.approveService.bulkApprove(ids); 
+  ): Promise<ApproveEntity> {
+    const approveRecord = await this.approveService.findOne(param.id);
+    if (!approveRecord) throw new BadRequestException('Data not found.');
+
+    const rejected = await this.approveService.rejectItem(
+      param.id,
+      rejectDto.reason,
+      rejectDto.info_remark,
+      user.sub,
+    );
+
+    const jobOrderReport = await this.prisma.jobOrderReport.findUnique({
+      where: { id: approveRecord.jo_report_id },
+    });
+
+    if (!jobOrderReport) {
+      throw new BadRequestException('Job Order Report not found.');
+    }
+
+    await this.prisma.jobOrderReport.update({
+      where: {
+        id: jobOrderReport.id,
+      },
+      data: {
+        status_approve: 'Rejected',
+      },
+    });
 
     await this.auditService.create({
       Url: req.url,
-      ActionName: 'Bulk Approve',
+      ActionName: 'Reject Item',
       MenuName: 'Approve',
-      DataBefore: JSON.stringify(ids),
-      DataAfter: JSON.stringify(result),
+      DataBefore: JSON.stringify(approveRecord),
+      DataAfter: JSON.stringify(rejected),
       UserName: user.name,
       IpAddress: req.ip,
       ActivityDate: new Date(),
@@ -199,7 +212,62 @@ async rejectItem(
       updated_by: user.sub,
     });
 
-    return { count: result.count };
+    return new ApproveEntity(rejected);
+  }
+
+  @Post('bulk-approve')
+  async bulkApprove(
+    @Body('ids') ids: number[],
+    @User() user: any,
+    @Req() req: Request,
+  ): Promise<{ count: number }> {
+    const updateApprovedResult = await this.approveService.bulkApprove(
+      ids,
+      user.sub,
+    );
+
+    const approveRecords = await this.approveService.findManyByIds(ids);
+
+    if (!approveRecords.length) {
+      throw new BadRequestException(
+        'No approve records found for the provided IDs.',
+      );
+    }
+
+    const updatePromises = approveRecords.map(async (approveRecord) => {
+      await this.prisma.jobOrderReport.update({
+        where: {
+          id: approveRecord.jo_report_id,
+        },
+        data: {
+          status_approve: 'Approved',
+        },
+      });
+    });
+
+    await Promise.all(updatePromises);
+
+    await this.auditService.create({
+      Url: req.url,
+      ActionName: 'Bulk Approve',
+      MenuName: 'Approve',
+      DataBefore: JSON.stringify(ids),
+      DataAfter: JSON.stringify({
+        count: updateApprovedResult.count,
+        approved_by: user.sub,
+        updated_by: user.sub,
+      }),
+      UserName: user.name,
+      IpAddress: req.ip,
+      ActivityDate: new Date(),
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
+      AppSource: 'Desktop',
+      created_by: user.sub,
+      updated_by: user.sub,
+    });
+
+    return { count: updateApprovedResult.count };
   }
 
   @Get('statistics')

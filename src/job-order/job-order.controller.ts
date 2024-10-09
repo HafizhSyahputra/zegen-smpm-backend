@@ -780,6 +780,7 @@ export class JobOrderController {
       {
         job_order_no: createActivityJobOrderDto.no_jo,
         status: createActivityJobOrderDto.status,
+        status_approve: 'Waiting',
         edc_brand: createActivityJobOrderDto.edc_brand,
         edc_brand_type: createActivityJobOrderDto.edc_brand_type,
         edc_serial_number: createActivityJobOrderDto.edc_serial_number,
@@ -969,6 +970,7 @@ export class JobOrderController {
 
     await this.approveService.create({
       id_jobOrder: jobOrder.id,
+      jo_report_id: jobOrderReport.id,
       vendor_id: jobOrder.vendor_id,
       region_id: jobOrder.region_id,
       status: 'Waiting',

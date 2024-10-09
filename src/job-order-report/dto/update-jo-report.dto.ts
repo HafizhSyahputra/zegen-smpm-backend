@@ -11,6 +11,10 @@ export class UpdateJobOrderReportDto {
 
     @IsOptional()  
     @IsString()  
+    status_approve?: string;  
+
+    @IsOptional()  
+    @IsString()  
     edc_brand?: string;  
 
     @IsOptional()  

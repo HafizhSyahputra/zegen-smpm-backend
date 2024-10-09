@@ -9,6 +9,11 @@ export class CreateApproveDto {
   
     @IsNotEmpty()
     @IsNumber()
+    @Validate(IsExist, ['JobOrderReport', 'id'])
+    jo_report_id: number;
+  
+    @IsNotEmpty()
+    @IsNumber()
     @Validate(IsExist, ['Vendor', 'id'])
     vendor_id: number;
   

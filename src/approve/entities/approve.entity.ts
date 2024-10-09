@@ -1,7 +1,3 @@
-import { transformEntity } from '@smpm/common/transformer/entity.transformer';
-import { JobOrderEntity } from '@smpm/job-order/entities/job-order.entity';
-import { RegionEntity } from '@smpm/region/entities/region.entity';
-import { VendorEntity } from '@smpm/vendor/entities/vendor.entity';
 import { Exclude, Expose, Transform } from 'class-transformer';
 
 export class ApproveEntity {
@@ -13,6 +9,8 @@ export class ApproveEntity {
   id: number;
   @Expose()
   id_jobOrder: number;
+  @Expose()
+  jo_report_id: number;
   @Expose()
   vendor_id: number;
   @Expose()

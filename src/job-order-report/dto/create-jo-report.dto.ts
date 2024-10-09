@@ -8,6 +8,10 @@ export class CreateJobOrderReportDto {
     @IsNotEmpty()  
     @IsString()  
     status: string;  
+    
+    @IsNotEmpty()  
+    @IsString()  
+    status_approve: string;  
 
     @IsNotEmpty()  
     @IsString()  

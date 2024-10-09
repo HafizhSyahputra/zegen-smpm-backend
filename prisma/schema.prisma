@@ -376,6 +376,7 @@ model ElectronicDataCaptureMachine {
 
 model Approved {
   id          Int       @id @default(autoincrement())
+  jo_report_id Int      @default(2)
   id_jobOrder Int
   vendor_id   Int
   region_id   Int
@@ -390,6 +391,7 @@ model Approved {
   updated_at  DateTime  @updatedAt
   deleted_at  DateTime?
 
+  jobOrderReport JobOrderReport @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   jobOrder JobOrder @relation(fields: [id_jobOrder], references: [id], onDelete: NoAction, onUpdate: NoAction)
   vendor   Vendor   @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   region   Region   @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -450,6 +452,7 @@ model JobOrderReport {
   id                    Int       @id @default(autoincrement())
   job_order_no          String
   status                String
+  status_approve        String    @default("Pending")
   edc_brand             String
   edc_brand_type        String
   edc_serial_number     String
@@ -479,6 +482,8 @@ model JobOrderReport {
   JobOrderReportMaterialPromo      JobOrderReportMaterialPromo[]
   JobOrderReportProduct            JobOrderReportProduct[]
   JobOrderReportEdcEquipmentDongle JobOrderReportEdcEquipmentDongle[]
+
+  Approved Approved[]
 }
 
 model JobOrderReportProduct {
