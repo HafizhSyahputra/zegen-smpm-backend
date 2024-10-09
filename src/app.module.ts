@@ -19,6 +19,8 @@ import { LookUpModule } from './lookup/lookup.module';
 import { ApproveModule } from './approve/approve.module';
 import { JobOrderReportModule } from './job-order-report/job-order-report.module';
 import { DocumentMerchantModule } from './document-merchant/document-merchant.module';
+import { ReceivedInModule } from './received-in/received-in.module';
+import { DocumentVendorModule } from './document-vendor/document-vendor.module';
  
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { DocumentMerchantModule } from './document-merchant/document-merchant.mo
     AuditModule,
     LookUpModule,
     ApproveModule,
+    ReceivedInModule,
+    DocumentVendorModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,20 +1,28 @@
 import { Exclude, Expose } from 'class-transformer';
 
-export class DocMerchantEntity {
-  constructor(partial: Partial<DocMerchantEntity>) {
+export class DocVendorEntity {
+  constructor(partial: Partial<DocVendorEntity>) {
     Object.assign(this, partial);
   }
 
   @Expose()
   id: number;
   @Expose()
-  merchant_id: number;
+  job_order_no: string;
+  @Expose()
+  vendor_id: number;
+  @Expose()
+  region_id: number;
+  @Expose()
+  mid: string;
+  @Expose()
+  tid: string;
   @Expose()
   file1?: string;
   @Expose()
   file2?: String;
   @Expose()
-  location: String;
+  location?: String;
   @Exclude()
   created_by?: number;
   @Exclude()

@@ -5,7 +5,7 @@ export class CreateMerchantDto {
   region_id: number;  
 
   @IsNumber()  
-  mid: number;  
+  mid: string;  
 
   @IsString()  
   name: string;  

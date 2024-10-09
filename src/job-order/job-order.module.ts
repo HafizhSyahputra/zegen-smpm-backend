@@ -9,10 +9,11 @@ import { MediaService } from '@smpm/media/media.service';
 import { AuditService } from '@smpm/audit/audit.service';
 import { ApproveService } from '@smpm/approve/approve.service';
 import { JobOrderReportModule } from '@smpm/job-order-report/job-order-report.module';
+import { DocumentVendorService } from '@smpm/document-vendor/document-vendor.service';
 
 @Module({
   imports: [PrismaModule, UserModule, JobOrderReportModule],
   controllers: [JobOrderController],
-  providers: [JobOrderService, RegionService, VendorService, MediaService, AuditService, ApproveService],
+  providers: [JobOrderService, RegionService, VendorService, MediaService, AuditService, ApproveService, DocumentVendorService],
 })
 export class JobOrderModule {}

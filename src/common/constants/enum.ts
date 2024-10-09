@@ -18,6 +18,45 @@ export enum Order {
   desc = 'desc',
 }
 
+export enum ColumnMenu {
+  ID_MENU = 'id_menu',
+  NAME = 'name',
+  ROUTE = 'route',
+  PATH = 'path',
+  API_PATH = 'api_path',
+  ICON = 'icon',
+  PARENT = 'parent',
+  PLATFORM = 'platform',
+  IS_ACTIVE = 'isActive',
+  ORDER = 'order',
+  CREATED_AT = 'created_at',
+  UPDATED_AT = 'updated_at',
+  DELETED_AT = 'deleted_at',
+  map = "map",
+}
+
+export enum ColumnMenuAction {
+  ID_MENU_ACTION = 'id_menu_action',
+  MENU_ID = 'menuId',
+  NAME = 'name',
+  ACTION = 'action',
+  IS_ACTIVE = 'isActive',
+  CREATED_AT = 'created_at',
+  UPDATED_AT = 'updated_at',
+  DELETED_AT = 'deleted_at',
+}
+
+export enum ColumnMenuRole {
+  ID_MENU_ROLE = 'id_menu_role',
+  MENU_ID = 'menuId',
+  ROLE_ID = 'roleId',
+}
+export enum ColumnRoleAction {
+  ID_ROLE_ACTION = 'id_role_action',
+  ROLE_ID = 'roleId',
+  MENU_ACTION_ID = 'menuActionId',
+}
+
 export enum ColumnRole {
   id = 'id',
   name = 'name',
@@ -107,7 +146,8 @@ export enum ColumnJobOrderReport{
 
 export enum ColumnApproved {
   id = 'id',  
-  id_jobOrder = 'id_jobOrder',  
+  id_jobOrder = 'id_jobOrder', 
+  jo_report_id = 'jo_report_id', 
   vendor_id = 'vendor_id',  
   region_id = 'region_id',  
   reason = 'reason',  
@@ -121,11 +161,25 @@ export enum ColumntDocMerchant {
   id = 'id',  
   merchant_id = 'merchant_id',  
   file1 = 'file1',  
-  file2 = 'file2',  
+  file2 = 'file2',
+  location = 'location',  
   created_by = 'created_by',
   updated_by = 'updated_by',
 }
 
+export enum ColumnDocVendor {
+  id = 'id',  
+  job_order_no = 'job_order_no',  
+  vendor_id = 'vendor_id',  
+  region_id = 'region_id',
+  mid = 'mid',
+  tid = 'tid',
+  file1 = 'file1',  
+  file2 = 'file2',  
+  location = 'location',  
+  created_by = 'created_by',
+  updated_by = 'updated_by',
+}
 
 export enum Ownersip {
   'Milik' = 'Milik',

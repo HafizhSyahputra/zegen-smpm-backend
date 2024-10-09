@@ -36,6 +36,7 @@ import { MediaService } from '@smpm/media/media.service';
 import { ApproveService } from '@smpm/approve/approve.service';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
 import { AuditService } from '@smpm/audit/audit.service';
+import { DocumentVendorService } from '@smpm/document-vendor/document-vendor.service';
 
 @UseGuards(AccessTokenGuard)
 @Controller('job-order')
@@ -48,6 +49,7 @@ export class JobOrderController {
     private readonly mediaService: MediaService,
     private readonly approveService: ApproveService,
     private readonly auditService: AuditService,
+    private readonly docVendorSerrvice: DocumentVendorService,
   ) {}
 
   @Get('open')
@@ -966,6 +968,19 @@ export class JobOrderController {
       AppSource: 'Desktop',  
       created_by: user.sub,  
       updated_by: user.sub,  
+    });
+
+    const location = jobOrder.address1 + ", " + jobOrder.address2 + ", " + jobOrder.address3 + ", " + jobOrder.address4 + " " + jobOrder.postal_code;
+
+    await this.docVendorSerrvice.create({
+      job_order_no: jobOrderReport.job_order_no,
+      vendor_id: jobOrder.vendor_id,
+      region_id: jobOrder.region_id,
+      mid:jobOrder.mid,
+      tid: jobOrder.tid,
+      location: location,
+      created_by: user.sub,
+      updated_by: user.sub,
     });
 
     await this.approveService.create({
