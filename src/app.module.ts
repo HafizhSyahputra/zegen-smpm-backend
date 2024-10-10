@@ -21,6 +21,8 @@ import { JobOrderReportModule } from './job-order-report/job-order-report.module
 import { DocumentMerchantModule } from './document-merchant/document-merchant.module';
 import { ReceivedInModule } from './received-in/received-in.module';
 import { DocumentVendorModule } from './document-vendor/document-vendor.module';
+import { ReceivedOutModule } from './received-out/received-out.module';
+import { NotificationsModule } from './notifications/notifications.module';
  
 @Module({
   imports: [
@@ -44,6 +46,8 @@ import { DocumentVendorModule } from './document-vendor/document-vendor.module';
     ApproveModule,
     ReceivedInModule,
     DocumentVendorModule,
+    ReceivedOutModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

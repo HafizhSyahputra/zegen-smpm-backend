@@ -180,114 +180,151 @@ async approveItem(
 
   return new ApproveEntity(approved);  
 }
+@Patch(':id/reject')  
+async rejectItem(  
+  @Param() param: ParamIdDto,  
+  @Body() rejectDto: { reason: string; info_remark: string },  
+  @User() user: any,  
+  @Req() req: Request,  
+): Promise<ApproveEntity> {  
+  const approveRecord = await this.approveService.findOne(param.id);  
+  if (!approveRecord) throw new BadRequestException('Data not found.');  
 
-  @Patch(':id/reject')
-  async rejectItem(
-    @Param() param: ParamIdDto,
-    @Body() rejectDto: { reason: string; info_remark: string },
-    @User() user: any,
-    @Req() req: Request,
-  ): Promise<ApproveEntity> {
-    const approveRecord = await this.approveService.findOne(param.id);
-    if (!approveRecord) throw new BadRequestException('Data not found.');
+  const rejected = await this.approveService.rejectItem(  
+    param.id,  
+    rejectDto.reason,  
+    rejectDto.info_remark,  
+    user.sub,  
+  );  
 
-    const rejected = await this.approveService.rejectItem(
-      param.id,
-      rejectDto.reason,
-      rejectDto.info_remark,
-      user.sub,
-    );
+  // Check if jo_report_id is not null before querying JobOrderReport  
+  if (approveRecord.jo_report_id) {  
+    const jobOrderReport = await this.prisma.jobOrderReport.findUnique({  
+      where: { id: approveRecord.jo_report_id },  
+    });  
 
-    const jobOrderReport = await this.prisma.jobOrderReport.findUnique({
-      where: { id: approveRecord.jo_report_id },
-    });
+    if (!jobOrderReport) {  
+      throw new BadRequestException('Job Order Report not found.');  
+    }  
 
-    if (!jobOrderReport) {
-      throw new BadRequestException('Job Order Report not found.');
-    }
+    await this.prisma.jobOrderReport.update({  
+      where: {  
+        id: jobOrderReport.id,  
+      },  
+      data: {  
+        status_approve: 'Rejected',  
+      },  
+    });  
+  }  
 
-    await this.prisma.jobOrderReport.update({
-      where: {
-        id: jobOrderReport.id,
-      },
-      data: {
-        status_approve: 'Rejected',
-      },
-    });
+  // Check if the Job Order type is Preventive Maintenance  
+  const jobOrder = await this.prisma.jobOrder.findUnique({  
+    where: { id: approveRecord.id_jobOrder },  
+  });  
 
-    await this.auditService.create({
-      Url: req.url,
-      ActionName: 'Reject Item',
-      MenuName: 'Approve',
-      DataBefore: JSON.stringify(approveRecord),
-      DataAfter: JSON.stringify(rejected),
-      UserName: user.name,
-      IpAddress: req.ip,
-      ActivityDate: new Date(),
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
-      AppSource: 'Desktop',
-      created_by: user.sub,
-      updated_by: user.sub,
-    });
+  if (jobOrder && jobOrder.type === 'Preventive Maintenance') {  
+    await this.prisma.preventiveMaintenanceReport.update({  
+      where: { id: approveRecord.pm_report_id },  
+      data: {  
+        status_approve: 'Rejected',  
+        updated_by: user.sub,  
+        updated_at: new Date(),  
+      },  
+    });  
+  }  
 
-    return new ApproveEntity(rejected);
-  }
+  await this.auditService.create({  
+    Url: req.url,  
+    ActionName: 'Reject Item',  
+    MenuName: 'Approve',  
+    DataBefore: JSON.stringify(approveRecord),  
+    DataAfter: JSON.stringify(rejected),  
+    UserName: user.name,  
+    IpAddress: req.ip,  
+    ActivityDate: new Date(),  
+    Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+    OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+    AppSource: 'Desktop',  
+    created_by: user.sub,  
+    updated_by: user.sub,  
+  });  
 
-  @Post('bulk-approve')
-  async bulkApprove(
-    @Body('ids') ids: number[],
-    @User() user: any,
-    @Req() req: Request,
-  ): Promise<{ count: number }> {
-    const updateApprovedResult = await this.approveService.bulkApprove(
-      ids,
-      user.sub,
-    );
+  return new ApproveEntity(rejected);  
+}
 
-    const approveRecords = await this.approveService.findManyByIds(ids);
+@Post('bulk-approve')  
+async bulkApprove(  
+  @Body('ids') ids: number[],  
+  @User() user: any,  
+  @Req() req: Request,  
+): Promise<{ count: number }> {  
+  const updateApprovedResult = await this.approveService.bulkApprove(  
+    ids,  
+    user.sub,  
+  );  
 
-    if (!approveRecords.length) {
-      throw new BadRequestException(
-        'No approve records found for the provided IDs.',
-      );
-    }
+  const approveRecords = await this.approveService.findManyByIds(ids);  
 
-    const updatePromises = approveRecords.map(async (approveRecord) => {
-      await this.prisma.jobOrderReport.update({
-        where: {
-          id: approveRecord.jo_report_id,
-        },
-        data: {
-          status_approve: 'Approved',
-        },
-      });
-    });
+  if (!approveRecords.length) {  
+    throw new BadRequestException(  
+      'No approve records found for the provided IDs.',  
+    );  
+  }  
 
-    await Promise.all(updatePromises);
+  const updatePromises = approveRecords.map(async (approveRecord) => {  
+    // Check if jo_report_id is not null before querying JobOrderReport  
+    if (approveRecord.jo_report_id) {  
+      await this.prisma.jobOrderReport.update({  
+        where: {  
+          id: approveRecord.jo_report_id,  
+        },  
+        data: {  
+          status_approve: 'Approved',  
+        },  
+      });  
+    }  
 
-    await this.auditService.create({
-      Url: req.url,
-      ActionName: 'Bulk Approve',
-      MenuName: 'Approve',
-      DataBefore: JSON.stringify(ids),
-      DataAfter: JSON.stringify({
-        count: updateApprovedResult.count,
-        approved_by: user.sub,
-        updated_by: user.sub,
-      }),
-      UserName: user.name,
-      IpAddress: req.ip,
-      ActivityDate: new Date(),
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
-      AppSource: 'Desktop',
-      created_by: user.sub,
-      updated_by: user.sub,
-    });
+    // Check if the Job Order type is Preventive Maintenance  
+    const jobOrder = await this.prisma.jobOrder.findUnique({  
+      where: { id: approveRecord.id_jobOrder },  
+    });  
 
-    return { count: updateApprovedResult.count };
-  }
+    if (jobOrder && jobOrder.type === 'Preventive Maintenance') {  
+      await this.prisma.preventiveMaintenanceReport.update({  
+        where: { id: approveRecord.pm_report_id },  
+        data: {  
+          status_approve: 'Approved',  
+          updated_by: user.sub,  
+          updated_at: new Date(),  
+        },  
+      });  
+    }  
+  });  
+
+  await Promise.all(updatePromises);  
+
+  await this.auditService.create({  
+    Url: req.url,  
+    ActionName: 'Bulk Approve',  
+    MenuName: 'Approve',  
+    DataBefore: JSON.stringify(ids),  
+    DataAfter: JSON.stringify({  
+      count: updateApprovedResult.count,  
+      approved_by: user.sub,  
+      updated_by: user.sub,  
+    }),  
+    UserName: user.name,  
+    IpAddress: req.ip,  
+    ActivityDate: new Date(),  
+    Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+    OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+    AppSource: 'Desktop',  
+    created_by: user.sub,  
+    updated_by: user.sub,  
+  });  
+
+  return { count: updateApprovedResult.count };  
+}
 
   @Get('statistics')
   async getApprovalStatistics(): Promise<{

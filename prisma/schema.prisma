@@ -250,6 +250,21 @@ model Merchant {
   JobOrder JobOrder[]
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
+
+  ApproveMerchant ApproveMerchant[]
+}
+
+model ApproveMerchant {
+  id          Int       @id @default(autoincrement())
+  merchant_id Int       
+  type        String    @db.VarChar(255)
+  status      String    @db.VarChar(255)
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime
+  deleted_at  DateTime?
+  merchant Merchant @relation(fields: [merchant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model DocumentMerchant {

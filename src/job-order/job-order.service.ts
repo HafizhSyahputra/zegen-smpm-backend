@@ -96,6 +96,7 @@ export class JobOrderService {
         include: {
           region: true,
           vendor: true,
+          merchant: true,
         },
       }),
       this.prismaService.jobOrder.count({
@@ -198,6 +199,7 @@ export class JobOrderService {
         include: {
           region: true,
           vendor: true,
+          merchant: true,
           JobOrderReport: {
             include: {
               MediaJobOrderReportProofOfVisit: true,
@@ -217,8 +219,7 @@ export class JobOrderService {
               JobOrderReportProduct: true,
               JobOrderReportMaterialTraining: true,
             },
-          }
-
+          },
         },
       }),
       this.prismaService.jobOrder.count({
@@ -245,6 +246,7 @@ export class JobOrderService {
       include: {
         region: true,
         vendor: true,
+        merchant: true,
         JobOrderReport: {
           include: {
             MediaJobOrderReportProofOfVisit: true,
@@ -308,6 +310,7 @@ export class JobOrderService {
       include: {
         region: true,
         vendor: true,
+        merchant: true,
         JobOrderReport: {
           include: {
             MediaJobOrderReportProofOfVisit: true,

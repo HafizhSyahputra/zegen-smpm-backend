@@ -1,4 +1,6 @@
 import { transformEntity } from '@smpm/common/transformer/entity.transformer';
+import { JobOrderReportEntity, PreventiveMaintenanceReportEntity } from '@smpm/job-order-report/entities/joReport.entity';
+import { MerchantEntity } from '@smpm/merchant/entities/merchant.entity';
 import { RegionEntity } from '@smpm/region/entities/region.entity';
 import { VendorEntity } from '@smpm/vendor/entities/vendor.entity';
 import { Exclude, Expose, Transform } from 'class-transformer';
@@ -77,4 +79,16 @@ export class JobOrderEntity {
   @Expose()
   @Transform(({ value }) => transformEntity(VendorEntity, value))
   vendor: VendorEntity;
+
+  @Expose()
+  @Transform(({ value }) => transformEntity(MerchantEntity, value))
+  merchant: MerchantEntity;
+
+  @Expose()
+  @Transform(({ value }) => transformEntity(JobOrderReportEntity, value))
+  JobOrderReport: JobOrderReportEntity;
+  
+  @Expose()
+  @Transform(({ value }) => transformEntity(PreventiveMaintenanceReportEntity, value))
+  PreventiveMaintenanceReport: PreventiveMaintenanceReportEntity;
 }

@@ -80,6 +80,43 @@ export enum ColumnAudit  {
   AppSource = 'AppSource',
 }  
 
+export enum ColumnReceivedIn {
+  id = 'id',
+  id_joborder = 'id_joborder',
+  id_edc = 'id_edc',
+  id_region = 'id_region',
+  id_vendor = 'id_vendor',
+  id_merchant = 'id_merchant',
+  status = 'status',
+  approved_by = 'approved_by',
+  created_by = 'created_by',
+  updated_by = 'updated_by',
+  serial_number = 'serial_number',
+  tid = 'tid',
+}
+
+export enum ColumnReceivedOut {
+  id = 'id',
+  id_joborder = 'id_joborder',
+  id_edc = 'id_edc',
+  id_region = 'id_region',
+  id_vendor = 'id_vendor',
+  id_merchant = 'id_merchant',
+  status = 'status',
+  approved_by = 'approved_by',
+  created_by = 'created_by',
+  updated_by = 'updated_by',
+  serial_number = 'serial_number',
+  tid = 'tid',
+}
+
+
+export enum StatusReceivedOut {
+  WAITING = 'waiting',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 
 export enum ColumnUser {
   id = 'id',
