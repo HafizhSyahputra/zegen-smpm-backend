@@ -3,6 +3,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
+  HttpStatus,
   NotFoundException,
   Param,
   Post,
@@ -37,6 +39,8 @@ import { ApproveService } from '@smpm/approve/approve.service';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
 import { AuditService } from '@smpm/audit/audit.service';
 import { DocumentVendorService } from '@smpm/document-vendor/document-vendor.service';
+import { MerchantService } from '@smpm/merchant/merchant.service';
+import { ElectronicDataCaptureService } from '@smpm/electronic-data-capture/electronic-data-capture.service';
 
 @UseGuards(AccessTokenGuard)
 @Controller('job-order')
@@ -45,6 +49,8 @@ export class JobOrderController {
     private readonly jobOrderService: JobOrderService,
     private readonly regionService: RegionService,
     private readonly vendorService: VendorService,
+    private readonly merchantService: MerchantService,
+    private readonly edcService: ElectronicDataCaptureService,
     private readonly userService: UserService,
     private readonly mediaService: MediaService,
     private readonly approveService: ApproveService,
@@ -125,9 +131,11 @@ export class JobOrderController {
 
     const worksheet = workbook.getWorksheet(1);
 
-    const [allRegion, allVendor] = await Promise.all([
+    const [allRegion, allVendor, allMid, allTid] = await Promise.all([
       this.regionService.getAll(),
       this.vendorService.getAll(),
+      this.merchantService.getAll(),
+      this.edcService.getAll(),
     ]);
 
     const data: Prisma.JobOrderUncheckedCreateInput[] = [];
@@ -141,6 +149,7 @@ export class JobOrderController {
       'New Installation': 'IS',
       'CM Replace': 'CM',
       'CM Re-init': 'CM',
+      'Preventive Maintenance' : 'PM',
       Withdrawal: 'WD',
       'Cancel Installation': 'IS',
       'Cancel Withdrawal': 'IS',
@@ -243,10 +252,38 @@ export class JobOrderController {
             message: `KODE VENDOR tidak ditemukan`,
           });
 
+        const selectedMid = allMid.find(
+          (x) => x.mid == row.getCell('G').value?.toString(),
+        );
+        if (row.getCell('G').value && !selectedMid)
+          errors.push({
+            row: rowNumber,
+            column: 'MID',
+            value: row.getCell('G').value
+              ? row.getCell('G').value.toString()
+              : null,
+            message: `data mid tidak ditemukan`,
+          });
+
+        const selectedTid = allTid.find(
+          (x) => x.tid == row.getCell('H').value?.toString(),
+        );
+        if (row.getCell('H').value && !selectedTid)
+          errors.push({
+            row: rowNumber,
+            column: 'TID',
+            value: row.getCell('H').value
+              ? row.getCell('H').value.toString()
+              : null,
+            message: `data tid tidak ditemukan`,
+          });
+
         if (errors.length == 0) {
           data.push({
             vendor_id: selectedVendor.id,
             region_id: selectedRegion.id,
+            mid:selectedMid.mid,
+            tid: selectedTid.tid,
             no: `${req.user['role']['code']}${selectedRegion.code}-${
               selectedVendor.code
             }-${dayjs().format('DDMMYYYY')}-${
@@ -256,12 +293,12 @@ export class JobOrderController {
               ? row.getCell('E').value.toString()
               : null,
             date: new Date(),
-            mid: row.getCell('G').value
-              ? row.getCell('G').value.toString()
-              : null,
-            tid: row.getCell('H').value
-              ? row.getCell('H').value.toString()
-              : null,
+            // mid: row.getCell('G').value
+            //   ? row.getCell('G').value.toString()
+            //   : null,
+            // tid: row.getCell('H').value
+            //   ? row.getCell('H').value.toString()
+            //   : null,
             status: 'Open',
             merchant_name: row.getCell('I').value
               ? row.getCell('I').value.toString()
@@ -747,253 +784,459 @@ export class JobOrderController {
     }),
   )
   
-  @Post('activity')
-  async createActivity(
-    @Body() createActivityJobOrderDto: CreateActivityJobOrderDto,
-    @UploadedFiles() files: Record<string, Express.Multer.File[]>,
-    @User() user: any,
-    @Req() req: Request,
-  ) {
-    console.log(files);
-    if (!files['evidence'] || files['evidence'].length == 0) {
-      throw new BadRequestException('Bukti tidak kunjungan boleh kosong');
-    }
+  // @Post('activity')
+  // async createActivity(
+  //   @Body() createActivityJobOrderDto: CreateActivityJobOrderDto,
+  //   @UploadedFiles() files: Record<string, Express.Multer.File[]>,
+  //   @User() user: any,
+  //   @Req() req: Request,
+  // ) {
+  //   console.log(files);
+  //   if (!files['evidence'] || files['evidence'].length == 0) {
+  //     throw new BadRequestException('Bukti tidak kunjungan boleh kosong');
+  //   }
 
-    let mediaEvidence: { media_id: number }[] = [];
-    mediaEvidence = await this.mediaService.insertMediaData(files['evidence']);
+  //   let mediaEvidence: { media_id: number }[] = [];
+  //   mediaEvidence = await this.mediaService.insertMediaData(files['evidence']);
     
-    let mediaOptional: { media_id: number }[] = [];
-    if (files['optional'] && files['optional'].length > 0) {
-      mediaOptional = await this.mediaService.insertMediaData(
-        files['optional'],
-      );
-    }
+  //   let mediaOptional: { media_id: number }[] = [];
+  //   if (files['optional'] && files['optional'].length > 0) {
+  //     mediaOptional = await this.mediaService.insertMediaData(
+  //       files['optional'],
+  //     );
+  //   }
 
-    const jobOrder = await this.jobOrderService.findOne(
-      createActivityJobOrderDto.no_jo,
-    );
-    if (!jobOrder) throw new BadRequestException('NO. JO tidak ditemukan');
+  //   const jobOrder = await this.jobOrderService.findOne(
+  //     createActivityJobOrderDto.no_jo,
+  //   );
+  //   if (!jobOrder) throw new BadRequestException('NO. JO tidak ditemukan');
 
-    await this.jobOrderService.updateByNoJo(createActivityJobOrderDto.no_jo, {
-      status: createActivityJobOrderDto.status,
-    });
+  //   await this.jobOrderService.updateByNoJo(createActivityJobOrderDto.no_jo, {
+  //     status: createActivityJobOrderDto.status,
+  //   });
 
-    const jobOrderReport = await this.jobOrderService.createActivityReport(
-      {
-        job_order_no: createActivityJobOrderDto.no_jo,
-        status: createActivityJobOrderDto.status,
-        status_approve: 'Waiting',
-        edc_brand: createActivityJobOrderDto.edc_brand,
-        edc_brand_type: createActivityJobOrderDto.edc_brand_type,
-        edc_serial_number: createActivityJobOrderDto.edc_serial_number,
-        edc_note: createActivityJobOrderDto.edc_note,
-        edc_action: createActivityJobOrderDto.edc_action,
-        information: createActivityJobOrderDto.information,
-        arrival_time: new Date(createActivityJobOrderDto.arrival_time),
-        start_time: new Date(createActivityJobOrderDto.start_time),
-        end_time: new Date(createActivityJobOrderDto.end_time),
-        communication_line: createActivityJobOrderDto.communication_line,
-        direct_line_number: createActivityJobOrderDto.direct_line_number,
-        simcard_provider: createActivityJobOrderDto.simcard_provider,
-        paper_supply: createActivityJobOrderDto.paper_supply,
-        merchant_pic: createActivityJobOrderDto.merchant_pic,
-        merchant_pic_phone: createActivityJobOrderDto.merchant_pic_phone,
-        swipe_cash_indication: createActivityJobOrderDto.swipe_cash_indication,
-      },
-      mediaEvidence,
-      mediaOptional,
-    );
+  //   const jobOrderReport = await this.jobOrderService.createActivityReport(
+  //     {
+  //       job_order_no: createActivityJobOrderDto.no_jo,
+  //       status: createActivityJobOrderDto.status,
+  //       status_approve: 'Waiting',
+  //       edc_brand: createActivityJobOrderDto.edc_brand,
+  //       edc_brand_type: createActivityJobOrderDto.edc_brand_type,
+  //       edc_serial_number: createActivityJobOrderDto.edc_serial_number,
+  //       edc_note: createActivityJobOrderDto.edc_note,
+  //       edc_action: createActivityJobOrderDto.edc_action,
+  //       information: createActivityJobOrderDto.information,
+  //       arrival_time: new Date(createActivityJobOrderDto.arrival_time),
+  //       start_time: new Date(createActivityJobOrderDto.start_time),
+  //       end_time: new Date(createActivityJobOrderDto.end_time),
+  //       communication_line: createActivityJobOrderDto.communication_line,
+  //       direct_line_number: createActivityJobOrderDto.direct_line_number,
+  //       simcard_provider: createActivityJobOrderDto.simcard_provider,
+  //       paper_supply: createActivityJobOrderDto.paper_supply,
+  //       merchant_pic: createActivityJobOrderDto.merchant_pic,
+  //       merchant_pic_phone: createActivityJobOrderDto.merchant_pic_phone,
+  //       swipe_cash_indication: createActivityJobOrderDto.swipe_cash_indication,
+  //     },
+  //     mediaEvidence,
+  //     mediaOptional,
+  //   );
 
-    if (createActivityJobOrderDto.products?.length > 0)
-      await this.jobOrderService.createManyActivityReportProduct(
-        createActivityJobOrderDto.products.map((item) => ({
-          job_order_report_id: jobOrderReport.id,
-          ...item,
-        })),
-      );
-    try {
-      await this.jobOrderService.createActivityReportEdcEquipmentDongle({
-        job_order_report: {  
-          connect: { id: jobOrderReport.id }, 
+  //   if (createActivityJobOrderDto.products?.length > 0)
+  //     await this.jobOrderService.createManyActivityReportProduct(
+  //       createActivityJobOrderDto.products.map((item) => ({
+  //         job_order_report_id: jobOrderReport.id,
+  //         ...item,
+  //       })),
+  //     );
+  //   try {
+  //     await this.jobOrderService.createActivityReportEdcEquipmentDongle({
+  //       job_order_report: {  
+  //         connect: { id: jobOrderReport.id }, 
+  //       },  
+  //       battery_cover:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'battery_cover',
+  //         ),
+  //       battery:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes('battery'),
+  //       edc_adapter:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'edc_adapter',
+  //         ),
+  //       edc_bracket:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'edc_bracket',
+  //         ),
+  //       edc_holder:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'edc_holder',
+  //         ),
+  //       dongle_holder:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'dongle_holder',
+  //         ),
+  //       dongle_adapter:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'dongle_adapter',
+  //         ),
+  //       cable_ecr:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_ecr'),
+  //       cable_lan:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_lan'),
+  //       cable_telephone_line:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'cable_telephone_line',
+  //         ),
+  //       mid_tid:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes('mid_tid'),
+  //       magic_box:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes('magic_box'),
+  //       transaction_guide:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'transaction_guide',
+  //         ),
+  //       pin_cover:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes('pin_cover'),
+  //       telephone_line_splitter:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'telephone_line_splitter',
+  //         ),
+  //       sticker_bank:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'sticker_bank',
+  //         ),
+  //       sticer_dongle:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'sticer_dongle',
+  //         ),
+  //       sticer_gpn:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'sticer_gpn',
+  //         ),
+  //       sticker_qrcode:
+  //         createActivityJobOrderDto.edc_dongle_equipment?.includes(
+  //           'sticker_qrcode',
+  //         ),
+  //     });
+  //   } catch (error) {
+  //     console.error(
+  //       'Error inserting into JobOrderReportEdcEquipmentDongle:',
+  //       error,
+  //     );
+  //   }
+  //   console.log(createActivityJobOrderDto.edc_dongle_equipment);
+
+  //   await this.jobOrderService.createActivityReportMaterialPromo({
+  //     job_order_report_id: jobOrderReport.id,
+  //     flyer: createActivityJobOrderDto.material_promo?.includes('flyer'),
+  //     tent_card:
+  //       createActivityJobOrderDto.material_promo?.includes('tent_card'),
+  //     holder_card:
+  //       createActivityJobOrderDto.material_promo?.includes('holder_card'),
+  //     holder_pen:
+  //       createActivityJobOrderDto.material_promo?.includes('holder_pen'),
+  //     holder_bill:
+  //       createActivityJobOrderDto.material_promo?.includes('holder_bill'),
+  //     sign_pad: createActivityJobOrderDto.material_promo?.includes('sign_pad'),
+  //     pen: createActivityJobOrderDto.material_promo?.includes('pen'),
+  //     acrylic_open_close:
+  //       createActivityJobOrderDto.material_promo?.includes(
+  //         'acrylic_open_close',
+  //       ),
+  //     logo_sticker:
+  //       createActivityJobOrderDto.material_promo?.includes('logo_sticker'),
+  //     banner: createActivityJobOrderDto.material_promo?.includes('banner'),
+  //   });
+
+  //   await this.jobOrderService.createActivityReportMaterialTraining({
+  //     job_order_report_id: jobOrderReport.id,
+  //     fraud_awareness:
+  //       createActivityJobOrderDto.material_training?.includes(
+  //         'fraud_awareness',
+  //       ),
+  //     sale_void_settlement_logon:
+  //       createActivityJobOrderDto.material_training?.includes(
+  //         'sale_void_settlement_logon',
+  //       ),
+  //     installment:
+  //       createActivityJobOrderDto.material_training?.includes('installment'),
+  //     audit_report:
+  //       createActivityJobOrderDto.material_training?.includes('audit_report'),
+  //     top_up: createActivityJobOrderDto.material_training?.includes('top_up'),
+  //     redeem_point:
+  //       createActivityJobOrderDto.material_training?.includes('redeem_point'),
+  //     cardverif_preauth_offline:
+  //       createActivityJobOrderDto.material_training?.includes(
+  //         'cardverif_preauth_offline',
+  //       ),
+  //     manual_key_in:
+  //       createActivityJobOrderDto.material_training?.includes('manual_key_in'),
+  //     tips_adjust:
+  //       createActivityJobOrderDto.material_training?.includes('tips_adjust'),
+  //     mini_atm:
+  //       createActivityJobOrderDto.material_training?.includes('mini_atm'),
+  //     fare_non_fare:
+  //       createActivityJobOrderDto.material_training?.includes('fare_non_fare'),
+  //     dcc_download_bin:
+  //       createActivityJobOrderDto.material_training?.includes(
+  //         'dcc_download_bin',
+  //       ),
+  //     first_level_maintenance:
+  //       createActivityJobOrderDto.material_training?.includes(
+  //         'first_level_maintenance',
+  //       ),
+  //     transaction_receipt_storage:
+  //       createActivityJobOrderDto.material_training?.includes(
+  //         'transaction_receipt_storage',
+  //       ),
+  //   });
+
+  //   await this.auditService.create({
+  //     Url: req.url,
+  //     ActionName: 'Update Activity Job Order',
+  //     MenuName: 'Job Order',
+  //     DataBefore: '',
+  //     DataAfter: JSON.stringify(jobOrderReport),
+  //     UserName: user.name,  
+  //     IpAddress: req.ip,  
+  //     ActivityDate: new Date(),  
+  //     Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+  //     OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+  //     AppSource: 'Desktop',  
+  //     created_by: user.sub,  
+  //     updated_by: user.sub,  
+  //   });
+
+  //   // const location = jobOrder.address1 + ", " + jobOrder.address2 + ", " + jobOrder.address3 + ", " + jobOrder.address4 + " " + jobOrder.postal_code;
+
+  //   // await this.docVendorSerrvice.create({
+  //   //   job_order_no: jobOrderReport.job_order_no,
+  //   //   vendor_id: jobOrder.vendor_id,
+  //   //   region_id: jobOrder.region_id,
+  //   //   mid:jobOrder.mid,
+  //   //   tid: jobOrder.tid,
+  //   //   location: location,
+  //   //   created_by: user.sub,
+  //   //   updated_by: user.sub,
+  //   // });
+
+  //   await this.approveService.create({
+  //     id_jobOrder: jobOrder.id,
+  //     jo_report_id: jobOrderReport.id,
+  //     vendor_id: jobOrder.vendor_id,
+  //     region_id: jobOrder.region_id,
+  //     status: 'Waiting',
+  //     created_by: user.sub,
+  //     updated_by: user.sub,
+  //   });
+  //   return jobOrderReport;
+  // }
+
+
+  @Post('activity')  
+  async createActivity(  
+    @Body() createActivityJobOrderDto: CreateActivityJobOrderDto,  
+    @UploadedFiles() files: Record<string, Express.Multer.File[]>,  
+    @User() user: any,  
+    @Req() req: Request,  
+  ) {  
+    try {  
+      console.log(files);  
+      if (!files['evidence'] || files['evidence'].length === 0) {  
+        throw new BadRequestException('Bukti tidak kunjungan boleh kosong');  
+      }  
+
+      let mediaEvidence: { media_id: number }[] = [];  
+      mediaEvidence = await this.mediaService.insertMediaData(files['evidence']);  
+
+      let mediaOptional: { media_id: number }[] = [];  
+      if (files['optional'] && files['optional'].length > 0) {  
+        mediaOptional = await this.mediaService.insertMediaData(files['optional']);  
+      }  
+
+      const jobOrder = await this.jobOrderService.findOne(createActivityJobOrderDto.no_jo);  
+      if (!jobOrder) throw new BadRequestException('NO. JO tidak ditemukan');  
+
+      await this.jobOrderService.updateByNoJo(createActivityJobOrderDto.no_jo, {  
+        status: createActivityJobOrderDto.status,  
+      });  
+
+      let report;  
+      if (jobOrder.type === 'Preventive Maintenance') {  
+        report = await this.jobOrderService.createPreventiveMaintenanceReport(  
+          {  
+            job_order_no: createActivityJobOrderDto.no_jo,  
+            status: createActivityJobOrderDto.status,  
+            status_approve: 'Waiting',  
+            vendor_id: jobOrder.vendor_id,  
+            mid: jobOrder.mid,  
+            edc_brand: createActivityJobOrderDto.edc_brand,  
+            edc_brand_type: createActivityJobOrderDto.edc_brand_type,  
+            edc_serial_number: createActivityJobOrderDto.edc_serial_number,  
+            edc_note: createActivityJobOrderDto.edc_note,  
+            edc_action: createActivityJobOrderDto.edc_action,  
+            information: createActivityJobOrderDto.information,  
+            arrival_time: new Date(createActivityJobOrderDto.arrival_time),  
+            start_time: new Date(createActivityJobOrderDto.start_time),  
+            end_time: new Date(createActivityJobOrderDto.end_time),  
+            communication_line: createActivityJobOrderDto.communication_line,  
+            direct_line_number: createActivityJobOrderDto.direct_line_number,  
+            simcard_provider: createActivityJobOrderDto.simcard_provider,  
+            paper_supply: createActivityJobOrderDto.paper_supply,  
+            merchant_pic: createActivityJobOrderDto.merchant_pic,  
+            merchant_pic_phone: createActivityJobOrderDto.merchant_pic_phone,  
+            swipe_cash_indication: createActivityJobOrderDto.swipe_cash_indication,  
+          },  
+          mediaEvidence,  
+          mediaOptional,  
+        );  
+      } else {  
+        report = await this.jobOrderService.createActivityReport(  
+          {  
+            job_order_no: createActivityJobOrderDto.no_jo,  
+            status: createActivityJobOrderDto.status,  
+            status_approve: 'Waiting',  
+            edc_brand: createActivityJobOrderDto.edc_brand,  
+            edc_brand_type: createActivityJobOrderDto.edc_brand_type,  
+            edc_serial_number: createActivityJobOrderDto.edc_serial_number,  
+            edc_note: createActivityJobOrderDto.edc_note,  
+            edc_action: createActivityJobOrderDto.edc_action,  
+            information: createActivityJobOrderDto.information,  
+            arrival_time: new Date(createActivityJobOrderDto.arrival_time),  
+            start_time: new Date(createActivityJobOrderDto.start_time),  
+            end_time: new Date(createActivityJobOrderDto.end_time),  
+            communication_line: createActivityJobOrderDto.communication_line,  
+            direct_line_number: createActivityJobOrderDto.direct_line_number,  
+            simcard_provider: createActivityJobOrderDto.simcard_provider,  
+            paper_supply: createActivityJobOrderDto.paper_supply,  
+            merchant_pic: createActivityJobOrderDto.merchant_pic,  
+            merchant_pic_phone: createActivityJobOrderDto.merchant_pic_phone,  
+            swipe_cash_indication: createActivityJobOrderDto.swipe_cash_indication,  
+          },  
+          mediaEvidence,  
+          mediaOptional,  
+        );  
+      }  
+
+      if (createActivityJobOrderDto.products?.length > 0) {  
+        await this.jobOrderService.createManyActivityReportProduct(  
+          createActivityJobOrderDto.products.map((item) => ({  
+            job_order_report_id: report.id,  
+            pm_report_id: jobOrder.type === 'Preventive Maintenance' ? report.id : null,  
+            ...item,
+          })),  
+        );  
+        
+      }  
+
+      await this.jobOrderService.createActivityReportEdcEquipmentDongle({  
+        job_order_report: jobOrder.type === 'Preventive Maintenance' ? undefined : {  
+          connect: { id: report.id }, 
         },  
-        battery_cover:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'battery_cover',
-          ),
-        battery:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes('battery'),
-        edc_adapter:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'edc_adapter',
-          ),
-        edc_bracket:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'edc_bracket',
-          ),
-        edc_holder:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'edc_holder',
-          ),
-        dongle_holder:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'dongle_holder',
-          ),
-        dongle_adapter:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'dongle_adapter',
-          ),
-        cable_ecr:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_ecr'),
-        cable_lan:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_lan'),
-        cable_telephone_line:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'cable_telephone_line',
-          ),
-        mid_tid:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes('mid_tid'),
-        magic_box:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes('magic_box'),
-        transaction_guide:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'transaction_guide',
-          ),
-        pin_cover:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes('pin_cover'),
-        telephone_line_splitter:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'telephone_line_splitter',
-          ),
-        sticker_bank:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'sticker_bank',
-          ),
-        sticer_dongle:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'sticer_dongle',
-          ),
-        sticer_gpn:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'sticer_gpn',
-          ),
-        sticker_qrcode:
-          createActivityJobOrderDto.edc_dongle_equipment?.includes(
-            'sticker_qrcode',
-          ),
+        pm_report: jobOrder.type === 'Preventive Maintenance' ? { connect: { id: report.id } } : undefined,  
+        battery_cover: createActivityJobOrderDto.edc_dongle_equipment?.includes('battery_cover'),  
+        battery: createActivityJobOrderDto.edc_dongle_equipment?.includes('battery'),  
+        edc_adapter: createActivityJobOrderDto.edc_dongle_equipment?.includes('edc_adapter'),  
+        edc_bracket: createActivityJobOrderDto.edc_dongle_equipment?.includes('edc_bracket'),  
+        edc_holder: createActivityJobOrderDto.edc_dongle_equipment?.includes('edc_holder'),  
+        dongle_holder: createActivityJobOrderDto.edc_dongle_equipment?.includes('dongle_holder'),  
+        dongle_adapter: createActivityJobOrderDto.edc_dongle_equipment?.includes('dongle_adapter'),  
+        cable_ecr: createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_ecr'),  
+        cable_lan: createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_lan'),  
+        cable_telephone_line: createActivityJobOrderDto.edc_dongle_equipment?.includes('cable_telephone_line'),  
+        mid_tid: createActivityJobOrderDto.edc_dongle_equipment?.includes('mid_tid'),  
+        magic_box: createActivityJobOrderDto.edc_dongle_equipment?.includes('magic_box'),  
+        transaction_guide: createActivityJobOrderDto.edc_dongle_equipment?.includes('transaction_guide'),  
+        pin_cover: createActivityJobOrderDto.edc_dongle_equipment?.includes('pin_cover'),  
+        telephone_line_splitter: createActivityJobOrderDto.edc_dongle_equipment?.includes('telephone_line_splitter'),  
+        sticker_bank: createActivityJobOrderDto.edc_dongle_equipment?.includes('sticker_bank'),  
+        sticer_dongle: createActivityJobOrderDto.edc_dongle_equipment?.includes('sticer_dongle'),  
+        sticer_gpn: createActivityJobOrderDto.edc_dongle_equipment?.includes('sticer_gpn'),  
+        sticker_qrcode: createActivityJobOrderDto.edc_dongle_equipment?.includes('sticker_qrcode'),  
       });
-    } catch (error) {
-      console.error(
-        'Error inserting into JobOrderReportEdcEquipmentDongle:',
-        error,
-      );
-    }
-    console.log(createActivityJobOrderDto.edc_dongle_equipment);
 
-    await this.jobOrderService.createActivityReportMaterialPromo({
-      job_order_report_id: jobOrderReport.id,
-      flyer: createActivityJobOrderDto.material_promo?.includes('flyer'),
-      tent_card:
-        createActivityJobOrderDto.material_promo?.includes('tent_card'),
-      holder_card:
-        createActivityJobOrderDto.material_promo?.includes('holder_card'),
-      holder_pen:
-        createActivityJobOrderDto.material_promo?.includes('holder_pen'),
-      holder_bill:
-        createActivityJobOrderDto.material_promo?.includes('holder_bill'),
-      sign_pad: createActivityJobOrderDto.material_promo?.includes('sign_pad'),
-      pen: createActivityJobOrderDto.material_promo?.includes('pen'),
-      acrylic_open_close:
-        createActivityJobOrderDto.material_promo?.includes(
-          'acrylic_open_close',
-        ),
-      logo_sticker:
-        createActivityJobOrderDto.material_promo?.includes('logo_sticker'),
-      banner: createActivityJobOrderDto.material_promo?.includes('banner'),
-    });
+      await this.jobOrderService.createActivityReportMaterialPromo({  
+        job_order_report_id: jobOrder.type === 'Preventive Maintenance' ? null : report.id,  
+        pm_report_id: jobOrder.type === 'Preventive Maintenance' ? report.id : null,  
+        flyer: createActivityJobOrderDto.material_promo?.includes('flyer'),  
+        tent_card: createActivityJobOrderDto.material_promo?.includes('tent_card'),  
+        holder_card: createActivityJobOrderDto.material_promo?.includes('holder_card'),  
+        holder_pen: createActivityJobOrderDto.material_promo?.includes('holder_pen'),  
+        holder_bill: createActivityJobOrderDto.material_promo?.includes('holder_bill'),  
+        sign_pad: createActivityJobOrderDto.material_promo?.includes('sign_pad'),  
+        pen: createActivityJobOrderDto.material_promo?.includes('pen'),  
+        acrylic_open_close: createActivityJobOrderDto.material_promo?.includes('acrylic_open_close'),  
+        logo_sticker: createActivityJobOrderDto.material_promo?.includes('logo_sticker'),  
+        banner: createActivityJobOrderDto.material_promo?.includes('banner'),  
+      });  
 
-    await this.jobOrderService.createActivityReportMaterialTraining({
-      job_order_report_id: jobOrderReport.id,
-      fraud_awareness:
-        createActivityJobOrderDto.material_training?.includes(
-          'fraud_awareness',
-        ),
-      sale_void_settlement_logon:
-        createActivityJobOrderDto.material_training?.includes(
-          'sale_void_settlement_logon',
-        ),
-      installment:
-        createActivityJobOrderDto.material_training?.includes('installment'),
-      audit_report:
-        createActivityJobOrderDto.material_training?.includes('audit_report'),
-      top_up: createActivityJobOrderDto.material_training?.includes('top_up'),
-      redeem_point:
-        createActivityJobOrderDto.material_training?.includes('redeem_point'),
-      cardverif_preauth_offline:
-        createActivityJobOrderDto.material_training?.includes(
-          'cardverif_preauth_offline',
-        ),
-      manual_key_in:
-        createActivityJobOrderDto.material_training?.includes('manual_key_in'),
-      tips_adjust:
-        createActivityJobOrderDto.material_training?.includes('tips_adjust'),
-      mini_atm:
-        createActivityJobOrderDto.material_training?.includes('mini_atm'),
-      fare_non_fare:
-        createActivityJobOrderDto.material_training?.includes('fare_non_fare'),
-      dcc_download_bin:
-        createActivityJobOrderDto.material_training?.includes(
-          'dcc_download_bin',
-        ),
-      first_level_maintenance:
-        createActivityJobOrderDto.material_training?.includes(
-          'first_level_maintenance',
-        ),
-      transaction_receipt_storage:
-        createActivityJobOrderDto.material_training?.includes(
-          'transaction_receipt_storage',
-        ),
-    });
+      await this.jobOrderService.createActivityReportMaterialTraining({  
+        job_order_report_id: jobOrder.type === 'Preventive Maintenance' ? null : report.id,  
+        pm_report_id: jobOrder.type === 'Preventive Maintenance' ? report.id : null,  
+        fraud_awareness: createActivityJobOrderDto.material_training?.includes('fraud_awareness'),  
+        sale_void_settlement_logon: createActivityJobOrderDto.material_training?.includes('sale_void_settlement_logon'),  
+        installment: createActivityJobOrderDto.material_training?.includes('installment'),  
+        audit_report: createActivityJobOrderDto.material_training?.includes('audit_report'),  
+        top_up: createActivityJobOrderDto.material_training?.includes('top_up'),  
+        redeem_point: createActivityJobOrderDto.material_training?.includes('redeem_point'),  
+        cardverif_preauth_offline: createActivityJobOrderDto.material_training?.includes('cardverif_preauth_offline'),  
+        manual_key_in: createActivityJobOrderDto.material_training?.includes('manual_key_in'),  
+        tips_adjust: createActivityJobOrderDto.material_training?.includes('tips_adjust'),  
+        mini_atm: createActivityJobOrderDto.material_training?.includes('mini_atm'),  
+        fare_non_fare: createActivityJobOrderDto.material_training?.includes('fare_non_fare'),  
+        dcc_download_bin: createActivityJobOrderDto.material_training?.includes('dcc_download_bin'),  
+        first_level_maintenance: createActivityJobOrderDto.material_training?.includes('first_level_maintenance'),  
+        transaction_receipt_storage: createActivityJobOrderDto.material_training?.includes('transaction_receipt_storage'),  
+      });  
 
-    await this.auditService.create({
-      Url: req.url,
-      ActionName: 'Update Activity Job Order',
-      MenuName: 'Job Order',
-      DataBefore: '',
-      DataAfter: JSON.stringify(jobOrderReport),
-      UserName: user.name,  
-      IpAddress: req.ip,  
-      ActivityDate: new Date(),  
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
-      AppSource: 'Desktop',  
-      created_by: user.sub,  
-      updated_by: user.sub,  
-    });
+      await this.auditService.create({  
+        Url: req.url,  
+        ActionName: 'Update Activity Job Order',  
+        MenuName: 'Job Order',  
+        DataBefore: '',  
+        DataAfter: JSON.stringify(report),  
+        UserName: user.name,  
+        IpAddress: req.ip,  
+        ActivityDate: new Date(),  
+        Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+        OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+        AppSource: 'Desktop',  
+        created_by: user.sub,  
+        updated_by: user.sub,  
+      });  
 
-    const location = jobOrder.address1 + ", " + jobOrder.address2 + ", " + jobOrder.address3 + ", " + jobOrder.address4 + " " + jobOrder.postal_code;
+      await this.approveService.create({  
+        id_jobOrder: jobOrder.id,  
+        jo_report_id: report.id,  
+        vendor_id: jobOrder.vendor_id,  
+        region_id: jobOrder.region_id,  
+        status: 'Waiting',  
+        created_by: user.sub,  
+        updated_by: user.sub,  
+      });  
 
-    await this.docVendorSerrvice.create({
-      job_order_no: jobOrderReport.job_order_no,
-      vendor_id: jobOrder.vendor_id,
-      region_id: jobOrder.region_id,
-      mid:jobOrder.mid,
-      tid: jobOrder.tid,
-      location: location,
-      created_by: user.sub,
-      updated_by: user.sub,
-    });
-
-    await this.approveService.create({
-      id_jobOrder: jobOrder.id,
-      jo_report_id: jobOrderReport.id,
-      vendor_id: jobOrder.vendor_id,
-      region_id: jobOrder.region_id,
-      status: 'Waiting',
-      created_by: user.sub,
-      updated_by: user.sub,
-    });
-    return jobOrderReport;
+      return report;  
+    } catch (error) {  
+      if (error instanceof BadRequestException) {  
+        throw error;  
+      } else {  
+        console.error('Error creating activity:', error);  
+        throw new HttpException(  
+          {  
+            status: {  
+              code: HttpStatus.UNPROCESSABLE_ENTITY,  
+              description: 'Validation error',  
+            },  
+            result: {  
+              errors: error.response?.message || error.message,  
+            },  
+          },  
+          HttpStatus.UNPROCESSABLE_ENTITY,  
+        );  
+      }  
+    }  
   }
+  
 
   private getBrowserFromUserAgent(userAgent: string): string {
     if (userAgent.includes('Chrome')) return 'Chrome';

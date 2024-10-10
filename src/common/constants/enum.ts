@@ -8,6 +8,7 @@ export enum JobOrderType {
   'New Installation' = 'New Installation',
   'CM Replace' = 'CM Replace',
   'CM Re-init' = 'CM Re-init',
+  'Preventive Maintenance' = 'Preventive Maintenance',
   'Withdrawal' = 'Withdrawal',
   'Cancel Installation' = 'Cancel Installation',
   'Cancel Withdrawal' = 'Cancel Withdrawal',

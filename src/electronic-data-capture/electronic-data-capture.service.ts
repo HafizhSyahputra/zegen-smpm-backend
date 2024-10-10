@@ -13,6 +13,11 @@ import { GetEdcBrandTypeDto } from './dto/get-edc-brand-type.dto';
 export class ElectronicDataCaptureService {
   constructor(private prisma: PrismaService) {}
 
+  async getAll(): Promise<ElectronicDataCapture[]> {
+    return this.prisma.electronicDataCaptureMachine.findMany({});
+  }
+
+
   async create(
     createElectronicDataCaptureDto: CreateElectronicDataCaptureDto,
   ): Promise<ElectronicDataCapture> {

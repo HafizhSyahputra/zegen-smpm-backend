@@ -16,11 +16,15 @@ import { PageDto } from '@smpm/common/decorator/page.dto';
 import * as path from 'path';
 import XLSX, { readFile, utils } from 'xlsx';
 import { deleteFile } from '@smpm/utils/FileDelete';
-import { Prisma } from '@prisma/client';
+import { Merchant, Prisma } from '@prisma/client';
 
 @Injectable()
 export class MerchantService {
   constructor(private prisma: PrismaService) {}
+
+  async getAll(): Promise<Merchant[]> {
+    return this.prisma.merchant.findMany({});
+  }
 
   async create(createMerchantDto: CreateMerchantDto): Promise<any> {  
     try {  

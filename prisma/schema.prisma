@@ -178,6 +178,8 @@ model Vendor {
   EDCTerpasang EDCTerpasang[]
 
   DocumentVendor DocumentVendor[]
+
+  PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 }
 
 model Region {
@@ -208,7 +210,7 @@ model Region {
 model Merchant {
   id            Int       @id @default(autoincrement())
   region_id     Int
-  mid           String       @unique
+  mid           String    @unique
   name          String
   category      String
   customer_name String
@@ -244,6 +246,10 @@ model Merchant {
   EDCTerpasang EDCTerpasang[]
 
   DocumentVendor DocumentVendor[]
+
+  JobOrder JobOrder[]
+
+  PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 }
 
 model DocumentMerchant {
@@ -294,7 +300,7 @@ model ElectronicDataCaptureMachine {
   tid                 String    @unique
   brand               String
   brand_type          String
-  serial_number       String
+  serial_number       String    @unique
   status_owner        String
   status_owner_desc   String?
   status_machine      String
@@ -317,6 +323,8 @@ model ElectronicDataCaptureMachine {
   ReceivedOut ReceivedOut[]
 
   DocumentVendor DocumentVendor[]
+
+  // JobOrder JobOrder[]
 }
 
 model JobOrder {
@@ -394,8 +402,11 @@ model JobOrder {
   updated_at                                                 DateTime  @updatedAt
   deleted_at                                                 DateTime?
 
-  vendor         Vendor           @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  region         Region           @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendor   Vendor   @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  region   Region   @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  merchant Merchant @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
+  // edc ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
+
   JobOrderReport JobOrderReport[]
 
   Approved Approved[]
@@ -405,6 +416,8 @@ model JobOrder {
   ReceivedOut ReceivedOut[]
 
   DocumentVendor DocumentVendor[]
+
+  PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 }
 
 model Approved {
@@ -428,6 +441,8 @@ model Approved {
   jobOrder       JobOrder       @relation(fields: [id_jobOrder], references: [id], onDelete: NoAction, onUpdate: NoAction)
   vendor         Vendor         @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   region         Region         @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 }
 
 model Media {
@@ -482,8 +497,53 @@ model Media {
 // }
 
 model JobOrderReport {
+  id                       Int       @id @default(autoincrement())
+  job_order_no             String
+  status                   String
+  status_approve           String    @default("Waiting")
+  edc_brand                String
+  edc_brand_type           String
+  edc_serial_number        String
+  edc_note                 String
+  edc_action               String?
+  edc_second_brand         String?
+  edc_second_brand_type    String?
+  edc_second_serial_number String?
+  edc_second_note          String?
+  edc_second_action        String?
+  information              String
+  arrival_time             DateTime?
+  start_time               DateTime?
+  end_time                 DateTime?
+  communication_line       String?
+  direct_line_number       String?
+  simcard_provider         String?
+  paper_supply             String?
+  merchant_pic             String?
+  merchant_pic_phone       String?
+  swipe_cash_indication    String?
+  created_by               Int?
+  updated_by               Int?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+  deleted_at               DateTime?
+
+  job_order                        JobOrder                           @relation(fields: [job_order_no], references: [no])
+  MediaJobOrderReportProofOfVisit  MediaJobOrderReportProofOfVisit[]
+  MediaJobOrderReportOptionalPhoto MediaJobOrderReportOptionalPhoto[]
+  JobOrderReportMaterialTraining   JobOrderReportMaterialTraining[]
+  JobOrderReportMaterialPromo      JobOrderReportMaterialPromo[]
+  JobOrderReportProduct            JobOrderReportProduct[]
+  JobOrderReportEdcEquipmentDongle JobOrderReportEdcEquipmentDongle[]
+
+  Approved Approved[]
+}
+
+model PreventiveMaintenanceReport {
   id                    Int       @id @default(autoincrement())
   job_order_no          String
+  vendor_id             Int
+  mid                   String
   status                String
   status_approve        String    @default("Pending")
   edc_brand             String
@@ -508,7 +568,9 @@ model JobOrderReport {
   updated_at            DateTime  @updatedAt
   deleted_at            DateTime?
 
-  job_order                        JobOrder                           @relation(fields: [job_order_no], references: [no])
+  merchant                         Merchant                           @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
+  vendor                           Vendor                             @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  job_order                        JobOrder                           @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
   MediaJobOrderReportProofOfVisit  MediaJobOrderReportProofOfVisit[]
   MediaJobOrderReportOptionalPhoto MediaJobOrderReportOptionalPhoto[]
   JobOrderReportMaterialTraining   JobOrderReportMaterialTraining[]
@@ -521,7 +583,8 @@ model JobOrderReport {
 
 model JobOrderReportProduct {
   id                  Int       @id @default(autoincrement())
-  job_order_report_id Int
+  job_order_report_id Int?
+  pm_report_id        Int?
   product             String
   serial_number       String
   note                String?
@@ -532,42 +595,47 @@ model JobOrderReportProduct {
   updated_at          DateTime  @updatedAt
   deleted_at          DateTime?
 
-  job_order_report JobOrderReport @relation(fields: [job_order_report_id], references: [id])
+  job_order_report JobOrderReport? @relation(fields: [job_order_report_id], references: [id])
+  pm_report PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 }
 
 model JobOrderReportEdcEquipmentDongle {
-  id                      Int            @id @default(autoincrement())
-  job_order_report        JobOrderReport @relation(fields: [job_order_report_id], references: [id])
-  job_order_report_id     Int
-  battery_cover           Boolean        @default(false)
-  battery                 Boolean        @default(false)
-  edc_adapter             Boolean        @default(false)
-  edc_bracket             Boolean        @default(false)
-  edc_holder              Boolean        @default(false)
-  dongle_holder           Boolean        @default(false)
-  dongle_adapter          Boolean        @default(false)
-  cable_ecr               Boolean        @default(false)
-  cable_lan               Boolean        @default(false)
-  cable_telephone_line    Boolean        @default(false)
-  mid_tid                 Boolean        @default(false)
-  magic_box               Boolean        @default(false)
-  transaction_guide       Boolean        @default(false)
-  pin_cover               Boolean        @default(false)
-  telephone_line_splitter Boolean        @default(false)
-  sticker_bank            Boolean        @default(false)
-  sticer_dongle           Boolean        @default(false)
-  sticer_gpn              Boolean        @default(false)
-  sticker_qrcode          Boolean        @default(false)
+  id                      Int             @id @default(autoincrement())
+  job_order_report        JobOrderReport? @relation(fields: [job_order_report_id], references: [id])
+  job_order_report_id     Int?
+  pm_report_id            Int?
+  battery_cover           Boolean         @default(false)
+  battery                 Boolean         @default(false)
+  edc_adapter             Boolean         @default(false)
+  edc_bracket             Boolean         @default(false)
+  edc_holder              Boolean         @default(false)
+  dongle_holder           Boolean         @default(false)
+  dongle_adapter          Boolean         @default(false)
+  cable_ecr               Boolean         @default(false)
+  cable_lan               Boolean         @default(false)
+  cable_telephone_line    Boolean         @default(false)
+  mid_tid                 Boolean         @default(false)
+  magic_box               Boolean         @default(false)
+  transaction_guide       Boolean         @default(false)
+  pin_cover               Boolean         @default(false)
+  telephone_line_splitter Boolean         @default(false)
+  sticker_bank            Boolean         @default(false)
+  sticer_dongle           Boolean         @default(false)
+  sticer_gpn              Boolean         @default(false)
+  sticker_qrcode          Boolean         @default(false)
   created_by              Int?
   updated_by              Int?
-  created_at              DateTime       @default(now())
-  updated_at              DateTime       @updatedAt
+  created_at              DateTime        @default(now())
+  updated_at              DateTime        @updatedAt
   deleted_at              DateTime?
+
+  pm_report PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 }
 
 model JobOrderReportMaterialPromo {
   id                  Int       @id @default(autoincrement())
-  job_order_report_id Int
+  job_order_report_id Int?
+  pm_report_id        Int?
   flyer               Boolean   @default(false)
   tent_card           Boolean   @default(false)
   holder_card         Boolean   @default(false)
@@ -584,12 +652,15 @@ model JobOrderReportMaterialPromo {
   updated_at          DateTime  @updatedAt
   deleted_at          DateTime?
 
-  job_order_report JobOrderReport @relation(fields: [job_order_report_id], references: [id])
+  job_order_report JobOrderReport? @relation(fields: [job_order_report_id], references: [id])
+
+  pm_report PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 }
 
 model JobOrderReportMaterialTraining {
   id                          Int       @id @default(autoincrement())
-  job_order_report_id         Int
+  job_order_report_id         Int?
+  pm_report_id                Int?
   fraud_awareness             Boolean   @default(false)
   sale_void_settlement_logon  Boolean   @default(false)
   installment                 Boolean   @default(false)
@@ -610,35 +681,40 @@ model JobOrderReportMaterialTraining {
   updated_at                  DateTime  @updatedAt
   deleted_at                  DateTime?
 
-  job_order_report JobOrderReport @relation(fields: [job_order_report_id], references: [id])
+  job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
+  pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 }
 
 model MediaJobOrderReportProofOfVisit {
   id                  Int       @id @default(autoincrement())
   media_id            Int
-  job_order_report_id Int
+  job_order_report_id Int?
+  pm_report_id        Int?
   created_by          Int?
   updated_by          Int?
   created_at          DateTime  @default(now())
   updated_at          DateTime  @updatedAt
   deleted_at          DateTime?
 
-  media            Media          @relation(fields: [media_id], references: [id])
-  job_order_report JobOrderReport @relation(fields: [job_order_report_id], references: [id])
+  media            Media                        @relation(fields: [media_id], references: [id])
+  job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
+  pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 }
 
 model MediaJobOrderReportOptionalPhoto {
   id                  Int       @id @default(autoincrement())
   media_id            Int
-  job_order_report_id Int
+  job_order_report_id Int?
+  pm_report_id        Int?
   created_by          Int?
   updated_by          Int?
   created_at          DateTime  @default(now())
   updated_at          DateTime  @updatedAt
   deleted_at          DateTime?
 
-  media            Media          @relation(fields: [media_id], references: [id])
-  job_order_report JobOrderReport @relation(fields: [job_order_report_id], references: [id])
+  media            Media                        @relation(fields: [media_id], references: [id])
+  job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
+  pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 }
 
 model EdcBrandType {
