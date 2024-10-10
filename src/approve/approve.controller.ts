@@ -180,6 +180,7 @@ async approveItem(
 
   return new ApproveEntity(approved);  
 }
+
 @Patch(':id/reject')  
 async rejectItem(  
   @Param() param: ParamIdDto,  
@@ -197,8 +198,7 @@ async rejectItem(
     user.sub,  
   );  
 
-  // Check if jo_report_id is not null before querying JobOrderReport  
-  if (approveRecord.jo_report_id) {  
+   if (approveRecord.jo_report_id) {  
     const jobOrderReport = await this.prisma.jobOrderReport.findUnique({  
       where: { id: approveRecord.jo_report_id },  
     });  
@@ -213,9 +213,12 @@ async rejectItem(
       },  
       data: {  
         status_approve: 'Rejected',  
+        reason: rejectDto.reason,  // Ensure this is being set  
+        info_remark: rejectDto.info_remark,  // Ensure this is being set  
       },  
-    });  
+    });
   }  
+  console.log('Rejecting item with reason:', rejectDto.reason, 'and info remark:', rejectDto.info_remark);
 
   // Check if the Job Order type is Preventive Maintenance  
   const jobOrder = await this.prisma.jobOrder.findUnique({  
@@ -227,6 +230,8 @@ async rejectItem(
       where: { id: approveRecord.pm_report_id },  
       data: {  
         status_approve: 'Rejected',  
+        reason: rejectDto.reason,   
+        info_remark: rejectDto.info_remark,    
         updated_by: user.sub,  
         updated_at: new Date(),  
       },  

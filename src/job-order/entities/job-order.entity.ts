@@ -1,6 +1,7 @@
 import { transformEntity } from '@smpm/common/transformer/entity.transformer';
-import { JobOrderReportEntity, PreventiveMaintenanceReportEntity } from '@smpm/job-order-report/entities/joReport.entity';
+import { JobOrderReportEntity } from '@smpm/job-order-report/entities/joReport.entity';
 import { MerchantEntity } from '@smpm/merchant/entities/merchant.entity';
+import { PreventiveMaintenanceReportEntity } from '@smpm/preventive-maintenance-report/entities/pm-report.entity';
 import { RegionEntity } from '@smpm/region/entities/region.entity';
 import { VendorEntity } from '@smpm/vendor/entities/vendor.entity';
 import { Exclude, Expose, Transform } from 'class-transformer';

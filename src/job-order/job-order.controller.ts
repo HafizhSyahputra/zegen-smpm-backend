@@ -1007,18 +1007,18 @@ export class JobOrderController {
   //     updated_by: user.sub,  
   //   });
 
-  //   // const location = jobOrder.address1 + ", " + jobOrder.address2 + ", " + jobOrder.address3 + ", " + jobOrder.address4 + " " + jobOrder.postal_code;
+    // const location = jobOrder.address1 + ", " + jobOrder.address2 + ", " + jobOrder.address3 + ", " + jobOrder.address4 + " " + jobOrder.postal_code;
 
-  //   // await this.docVendorSerrvice.create({
-  //   //   job_order_no: jobOrderReport.job_order_no,
-  //   //   vendor_id: jobOrder.vendor_id,
-  //   //   region_id: jobOrder.region_id,
-  //   //   mid:jobOrder.mid,
-  //   //   tid: jobOrder.tid,
-  //   //   location: location,
-  //   //   created_by: user.sub,
-  //   //   updated_by: user.sub,
-  //   // });
+    // await this.docVendorSerrvice.create({
+    //   job_order_no: jobOrderReport.job_order_no,
+    //   vendor_id: jobOrder.vendor_id,
+    //   region_id: jobOrder.region_id,
+    //   mid:jobOrder.mid,
+    //   tid: jobOrder.tid,
+    //   location: location,
+    //   created_by: user.sub,
+    //   updated_by: user.sub,
+    // });
 
   //   await this.approveService.create({
   //     id_jobOrder: jobOrder.id,
@@ -1041,21 +1041,28 @@ export class JobOrderController {
     @Req() req: Request,  
   ) {  
     try {  
-      console.log(files);  
-      if (!files['evidence'] || files['evidence'].length === 0) {  
-        throw new BadRequestException('Bukti tidak kunjungan boleh kosong');  
-      }  
+       console.log(files);
+    if (!files['evidence'] || files['evidence'].length == 0) {
+      throw new BadRequestException('Bukti tidak kunjungan boleh kosong');
+    }
 
-      let mediaEvidence: { media_id: number }[] = [];  
-      mediaEvidence = await this.mediaService.insertMediaData(files['evidence']);  
+    let mediaEvidence: { media_id: number }[] = [];
+    mediaEvidence = await this.mediaService.insertMediaData(files['evidence']);
+    
+    let mediaOptional: { media_id: number }[] = [];
+    if (files['optional'] && files['optional'].length > 0) {
+      mediaOptional = await this.mediaService.insertMediaData(
+        files['optional'],
+      );
+    }
 
-      let mediaOptional: { media_id: number }[] = [];  
-      if (files['optional'] && files['optional'].length > 0) {  
-        mediaOptional = await this.mediaService.insertMediaData(files['optional']);  
-      }  
-
-      const jobOrder = await this.jobOrderService.findOne(createActivityJobOrderDto.no_jo);  
-      if (!jobOrder) throw new BadRequestException('NO. JO tidak ditemukan');  
+    const jobOrder = await this.jobOrderService.findOne(createActivityJobOrderDto.no_jo);  
+    if (!jobOrder) throw new BadRequestException('NO. JO tidak ditemukan');  
+    
+    if (!jobOrder.tid) {  
+      throw new BadRequestException('TID is not valid or does not exist.');  
+    }  
+    
 
       await this.jobOrderService.updateByNoJo(createActivityJobOrderDto.no_jo, {  
         status: createActivityJobOrderDto.status,  
@@ -1201,6 +1208,19 @@ export class JobOrderController {
         Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
         OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
         AppSource: 'Desktop',  
+        created_by: user.sub,  
+        updated_by: user.sub,  
+      });  
+
+      const location = jobOrder.address1 + ", " + jobOrder.address2 + ", " + jobOrder.address3 + ", " + jobOrder.address4 + " " + jobOrder.postal_code;
+
+      await this.docVendorSerrvice.create({  
+        job_order_no: jobOrder.no,  
+        vendor_id: jobOrder.vendor_id,  
+        region_id: jobOrder.region_id,  
+        mid: jobOrder.mid,  
+        tid: jobOrder.tid, 
+        location: location,  
         created_by: user.sub,  
         updated_by: user.sub,  
       });  

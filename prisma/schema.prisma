@@ -227,6 +227,7 @@ model Merchant {
   city          String?
   province      String?
   postal_code   String
+  status        String
   created_by    Int?
   updated_by    Int?
   created_at    DateTime  @default(now())
@@ -249,22 +250,29 @@ model Merchant {
 
   JobOrder JobOrder[]
 
-  PreventiveMaintenanceReport PreventiveMaintenanceReport[]
-
   ApproveMerchant ApproveMerchant[]
+
+  PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 }
 
 model ApproveMerchant {
   id          Int       @id @default(autoincrement())
-  merchant_id Int       
+  merchant_id Int?
   type        String    @db.VarChar(255)
   status      String    @db.VarChar(255)
+  reason      String?
+  info_remark String?
+  DataBefore  String    @db.Text
+  DataAfter   String    @db.Text
+  approved_by Int?
+  rejected_by Int?
   created_by  Int?
   updated_by  Int?
   created_at  DateTime  @default(now())
   updated_at  DateTime
   deleted_at  DateTime?
-  merchant Merchant @relation(fields: [merchant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  merchant Merchant? @relation(fields: [merchant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model DocumentMerchant {
@@ -516,6 +524,8 @@ model JobOrderReport {
   job_order_no             String
   status                   String
   status_approve           String    @default("Waiting")
+  reason                   String?
+  info_remark              String?
   edc_brand                String
   edc_brand_type           String
   edc_serial_number        String
@@ -560,7 +570,9 @@ model PreventiveMaintenanceReport {
   vendor_id             Int
   mid                   String
   status                String
-  status_approve        String    @default("Pending")
+  status_approve        String    @default("Waiting")
+  reason                String?
+  info_remark           String?
   edc_brand             String
   edc_brand_type        String
   edc_serial_number     String

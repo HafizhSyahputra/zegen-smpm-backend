@@ -23,6 +23,7 @@ import { ReceivedInModule } from './received-in/received-in.module';
 import { DocumentVendorModule } from './document-vendor/document-vendor.module';
 import { ReceivedOutModule } from './received-out/received-out.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PreventiveMaintenanceReportModule } from './preventive-maintenance-report/preventive-maintenance-report.module';
  
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     DocumentVendorModule,
     ReceivedOutModule,
     NotificationsModule,
+    PreventiveMaintenanceReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

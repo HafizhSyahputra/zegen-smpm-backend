@@ -58,6 +58,9 @@ export class CreateMerchantDto {
 
   @IsString()  
   postal_code: string;  
+  
+  @IsString()  
+  status: string;  
 
   @IsOptional()  
   @IsNumber()  

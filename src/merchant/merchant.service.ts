@@ -48,6 +48,7 @@ export class MerchantService {
           city: createMerchantDto.city,  
           province: createMerchantDto.province,  
           postal_code: createMerchantDto.postal_code,  
+          status: createMerchantDto.status,
           created_by: createMerchantDto.created_by,  
           updated_by: createMerchantDto.updated_by,  
         },  
@@ -290,6 +291,7 @@ export class MerchantService {
             city: val.city,
             province: val.province,
             postal_code: val.postal_code,
+            status: val.status,
             created_by: val.created_by,
             updated_by: val.updated_by,
           });
