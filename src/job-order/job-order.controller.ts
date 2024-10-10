@@ -1205,15 +1205,18 @@ export class JobOrderController {
         updated_by: user.sub,  
       });  
 
-      await this.approveService.create({  
+      const approveData = {  
         id_jobOrder: jobOrder.id,  
-        jo_report_id: report.id,  
+        jo_report_id: jobOrder.type === 'Preventive Maintenance' ? null : report.id,  
+        pm_report_id: jobOrder.type === 'Preventive Maintenance' ? report.id : null,  
         vendor_id: jobOrder.vendor_id,  
         region_id: jobOrder.region_id,  
         status: 'Waiting',  
         created_by: user.sub,  
         updated_by: user.sub,  
-      });  
+      };  
+  
+      await this.approveService.create(approveData);  
 
       return report;  
     } catch (error) {  

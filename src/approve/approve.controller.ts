@@ -115,52 +115,71 @@ export class ApproveController {
     return update;
   }
 
-  @Patch(':id/approve')
-  async approveItem(
-    @Param() param: ParamIdDto,
-    @User() user: any,
-    @Req() req: Request,
-  ): Promise<ApproveEntity> {
-    const approveRecord = await this.approveService.findOne(param.id);
-    if (!approveRecord) throw new BadRequestException('Data not found.');
+@Patch(':id/approve')  
+async approveItem(  
+  @Param() param: ParamIdDto,  
+  @User() user: any,  
+  @Req() req: Request,  
+): Promise<ApproveEntity> {  
+  const approveRecord = await this.approveService.findOne(param.id);  
+  if (!approveRecord) throw new BadRequestException('Data not found.');  
 
-    const approved = await this.approveService.approveItem(param.id, user.sub);
+  const approved = await this.approveService.approveItem(param.id, user.sub);  
 
-    const jobOrderReport = await this.prisma.jobOrderReport.findUnique({
-      where: { id: approveRecord.jo_report_id },
-    });
+   if (approveRecord.jo_report_id) {  
+    const jobOrderReport = await this.prisma.jobOrderReport.findUnique({  
+      where: { id: approveRecord.jo_report_id },  
+    });  
 
-    if (!jobOrderReport) {
-      throw new BadRequestException('Job Order Report not found.');
-    }
+    if (!jobOrderReport) {  
+      throw new BadRequestException('Job Order Report not found.');  
+    }  
 
-    await this.prisma.jobOrderReport.update({
-      where: {
-        id: jobOrderReport.id,
-      },
-      data: {
-        status_approve: 'Approved',
-      },
-    });
+    // Update Job Order Report status  
+    await this.prisma.jobOrderReport.update({  
+      where: {  
+        id: jobOrderReport.id,  
+      },  
+      data: {  
+        status_approve: 'Approved',  
+      },  
+    });  
+  }  
 
-    await this.auditService.create({
-      Url: req.url,
-      ActionName: 'Approve Item',
-      MenuName: 'Approve',
-      DataBefore: JSON.stringify(approveRecord),
-      DataAfter: JSON.stringify(approved),
-      UserName: user.name,
-      IpAddress: req.ip,
-      ActivityDate: new Date(),
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
-      AppSource: 'Desktop',
-      created_by: user.sub,
-      updated_by: user.sub,
-    });
+  // Check Job Order type is Preventive Maintenance  
+  const jobOrder = await this.prisma.jobOrder.findUnique({  
+    where: { id: approveRecord.id_jobOrder },  
+  });  
 
-    return new ApproveEntity(approved);
-  }
+  if (jobOrder && jobOrder.type === 'Preventive Maintenance') {  
+    await this.prisma.preventiveMaintenanceReport.update({  
+      where: { id: approveRecord.pm_report_id }, 
+      data: {  
+        status_approve: 'Approved',  
+        updated_by: user.sub,  
+        updated_at: new Date(),  
+      },  
+    });  
+  }  
+
+  await this.auditService.create({  
+    Url: req.url,  
+    ActionName: 'Approve Item',  
+    MenuName: 'Approve',  
+    DataBefore: JSON.stringify(approveRecord),  
+    DataAfter: JSON.stringify(approved),  
+    UserName: user.name,  
+    IpAddress: req.ip,  
+    ActivityDate: new Date(),  
+    Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+    OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+    AppSource: 'Desktop',  
+    created_by: user.sub,  
+    updated_by: user.sub,  
+  });  
+
+  return new ApproveEntity(approved);  
+}
 
   @Patch(':id/reject')
   async rejectItem(

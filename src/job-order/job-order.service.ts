@@ -245,6 +245,26 @@ export class JobOrderService {
       include: {
         region: true,
         vendor: true,
+        JobOrderReport: {
+          include: {
+            MediaJobOrderReportProofOfVisit: true,
+            MediaJobOrderReportOptionalPhoto: true,
+            JobOrderReportEdcEquipmentDongle: true,
+            JobOrderReportMaterialPromo: true,
+            JobOrderReportProduct: true,
+            JobOrderReportMaterialTraining: true,
+          },
+        },
+        PreventiveMaintenanceReport: {
+          include: {
+            MediaJobOrderReportProofOfVisit: true,
+            MediaJobOrderReportOptionalPhoto: true,
+            JobOrderReportEdcEquipmentDongle: true,
+            JobOrderReportMaterialPromo: true,
+            JobOrderReportProduct: true,
+            JobOrderReportMaterialTraining: true,
+          },
+        }
       },
     });
 
@@ -288,6 +308,26 @@ export class JobOrderService {
       include: {
         region: true,
         vendor: true,
+        JobOrderReport: {
+          include: {
+            MediaJobOrderReportProofOfVisit: true,
+            MediaJobOrderReportOptionalPhoto: true,
+            JobOrderReportEdcEquipmentDongle: true,
+            JobOrderReportMaterialPromo: true,
+            JobOrderReportProduct: true,
+            JobOrderReportMaterialTraining: true,
+          },
+        },
+        PreventiveMaintenanceReport: {
+          include: {
+            MediaJobOrderReportProofOfVisit: true,
+            MediaJobOrderReportOptionalPhoto: true,
+            JobOrderReportEdcEquipmentDongle: true,
+            JobOrderReportMaterialPromo: true,
+            JobOrderReportProduct: true,
+            JobOrderReportMaterialTraining: true,
+          },
+        }
       },
     });
   }

@@ -422,7 +422,8 @@ model JobOrder {
 
 model Approved {
   id           Int       @id @default(autoincrement())
-  jo_report_id Int
+  jo_report_id Int?
+  pm_report_id Int?
   id_jobOrder  Int
   vendor_id    Int
   region_id    Int
@@ -437,12 +438,11 @@ model Approved {
   updated_at   DateTime  @updatedAt
   deleted_at   DateTime?
 
-  jobOrderReport JobOrderReport @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  jobOrder       JobOrder       @relation(fields: [id_jobOrder], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  vendor         Vendor         @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  region         Region         @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  PreventiveMaintenanceReport PreventiveMaintenanceReport[]
+  jobOrderReport              JobOrderReport?              @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  preventiveMaintenanceReport PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  jobOrder                    JobOrder                     @relation(fields: [id_jobOrder], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendor                      Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  region                      Region                       @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model Media {
@@ -595,8 +595,8 @@ model JobOrderReportProduct {
   updated_at          DateTime  @updatedAt
   deleted_at          DateTime?
 
-  job_order_report JobOrderReport? @relation(fields: [job_order_report_id], references: [id])
-  pm_report PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
+  job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
+  pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 }
 
 model JobOrderReportEdcEquipmentDongle {
