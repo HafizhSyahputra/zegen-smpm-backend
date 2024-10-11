@@ -55,7 +55,7 @@ export class JobOrderController {
     private readonly mediaService: MediaService,
     private readonly approveService: ApproveService,
     private readonly auditService: AuditService,
-    private readonly docVendorSerrvice: DocumentVendorService,
+    private readonly docVendorService: DocumentVendorService,
   ) {}
 
   @Get('open')
@@ -1108,6 +1108,11 @@ export class JobOrderController {
             edc_serial_number: createActivityJobOrderDto.edc_serial_number,  
             edc_note: createActivityJobOrderDto.edc_note,  
             edc_action: createActivityJobOrderDto.edc_action,  
+            edc_second_brand: createActivityJobOrderDto.edc_second_brand,  
+            edc_second_brand_type: createActivityJobOrderDto.edc_second_brand_type,  
+            edc_second_serial_number: createActivityJobOrderDto.edc_second_serial_number,  
+            edc_second_note: createActivityJobOrderDto.edc_second_note,  
+            edc_second_action: createActivityJobOrderDto.edc_second_action,  
             information: createActivityJobOrderDto.information,  
             arrival_time: new Date(createActivityJobOrderDto.arrival_time),  
             start_time: new Date(createActivityJobOrderDto.start_time),  
@@ -1212,18 +1217,25 @@ export class JobOrderController {
         updated_by: user.sub,  
       });  
 
-      const location = jobOrder.address1 + ", " + jobOrder.address2 + ", " + jobOrder.address3 + ", " + jobOrder.address4 + " " + jobOrder.postal_code;
+      const location = jobOrder.address1 + ", " + jobOrder.address2 + ", " + jobOrder.address3 + ", " + jobOrder.address4 + " " + jobOrder.postal_code;  
 
-      await this.docVendorSerrvice.create({  
+      // Buat payload untuk create DocumentVendor  
+      const documentVendorPayload = {  
         job_order_no: jobOrder.no,  
         vendor_id: jobOrder.vendor_id,  
         region_id: jobOrder.region_id,  
         mid: jobOrder.mid,  
-        tid: jobOrder.tid, 
+        tid: jobOrder.tid,   
         location: location,  
         created_by: user.sub,  
         updated_by: user.sub,  
-      });  
+      };  
+
+      // Log payload ke konsol  
+      console.log('Payload untuk create DocumentVendor:', JSON.stringify(documentVendorPayload, null, 2));  
+
+      // Panggil metode create pada docVendorService  
+      await this.docVendorService.create(documentVendorPayload);  
 
       const approveData = {  
         id_jobOrder: jobOrder.id,  

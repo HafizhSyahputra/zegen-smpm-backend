@@ -21,6 +21,7 @@ export class CreateDocVendorDto {
     @IsNumber()
     @Validate(IsExist, ['Merchant', 'mid'])
     mid: string;
+    
     @IsNotEmpty()
     @IsNumber()
     @Validate(IsExist, ['ElectronicDataCaptureMachine', 'tid'])

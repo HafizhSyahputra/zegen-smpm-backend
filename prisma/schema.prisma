@@ -345,9 +345,10 @@ model ElectronicDataCaptureMachine {
 
   ReceivedOut ReceivedOut[]
 
-  DocumentVendor DocumentVendor[]
 
   // JobOrder JobOrder[]
+
+  DocumentVendor DocumentVendor[]
 }
 
 model JobOrder {
@@ -529,7 +530,7 @@ model JobOrderReport {
   edc_brand                String
   edc_brand_type           String
   edc_serial_number        String
-  edc_note                 String
+  edc_note                 String?
   edc_action               String?
   edc_second_brand         String?
   edc_second_brand_type    String?

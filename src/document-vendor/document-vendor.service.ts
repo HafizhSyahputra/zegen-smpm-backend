@@ -1,29 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@smpm/prisma/prisma.service';
-   import { PageDto } from '@smpm/common/decorator/page.dto';
- import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
+import { PageDto } from '@smpm/common/decorator/page.dto';
+import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
 import { DocumentVendor, Prisma } from '@prisma/client';
 import { DocVendorEntity } from './entities/docVendor.entity';
 import { UpdateDocVendorDto } from './dto/update-docVendor.dto';
 import { ColumnDocVendor } from '@smpm/common/constants/enum';
 import { PageOptionDocVendorDto } from './dto/page-option.dto';
 import { CreateDocVendorDto } from './dto/create-docVendor.dto';
-  
+
 @Injectable()
 export class DocumentVendorService {
-    constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-    async create(create: CreateDocVendorDto): Promise<DocumentVendor> {
-        return this.prisma.documentVendor.create({
-          data: create,
-        });
-      }
+  async create(create: CreateDocVendorDto): Promise<DocumentVendor> {
+    return this.prisma.documentVendor.create({
+      data: create,
+    });
+  }
 
- async findAll(pageOptionDocVendorDto: PageOptionDocVendorDto): Promise<PageDto<DocumentVendor>> {
-    const { skip, take, order, order_by, search, search_by } = pageOptionDocVendorDto;
+  async findAll(
+    pageOptionDocVendorDto: PageOptionDocVendorDto,
+  ): Promise<PageDto<DocumentVendor>> {
+    const { skip, take, order, order_by, search, search_by } =
+      pageOptionDocVendorDto;
 
     const filter: Prisma.DocumentVendorWhereInput = {
-      deleted_at: null, 
+      deleted_at: null,
     };
     const orderBy: Prisma.DocumentVendorOrderByWithRelationInput = {};
 
@@ -84,12 +87,13 @@ export class DocumentVendorService {
     });
   }
 
-  async update(id: number, updateApproveDto: UpdateDocVendorDto): Promise<DocVendorEntity> {
+  async update(
+    id: number,
+    updateApproveDto: UpdateDocVendorDto,
+  ): Promise<DocVendorEntity> {
     return this.prisma.documentVendor.update({
       where: { id },
       data: updateApproveDto,
     });
   }
-
-  
 }

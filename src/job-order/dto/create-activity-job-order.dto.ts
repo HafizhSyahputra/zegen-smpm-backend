@@ -43,6 +43,27 @@ export class CreateActivityJobOrderDto {
   @IsOptional()
   edc_action: string;
 
+  @IsNotEmpty()
+  @IsString()
+  @ValidateIf((obj) => obj.status == 'Done')
+  edc_second_brand: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ValidateIf((obj) => obj.status == 'Done')
+  edc_second_brand_type: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ValidateIf((obj) => obj.status == 'Done')
+  edc_second_serial_number: string;
+
+  @IsOptional()
+  edc_second_note: string;
+
+  @IsOptional()
+  edc_second_action: string;
+
   @IsOptional()
   @IsDateString()
   arrival_time: Date;
