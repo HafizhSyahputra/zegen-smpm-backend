@@ -1058,12 +1058,13 @@ export class JobOrderController {
 
     const jobOrder = await this.jobOrderService.findOne(createActivityJobOrderDto.no_jo);  
     if (!jobOrder) throw new BadRequestException('NO. JO tidak ditemukan');  
+
+    const isCMJobOrder = jobOrder.type === 'CM Replace';  
     
     if (!jobOrder.tid) {  
       throw new BadRequestException('TID is not valid or does not exist.');  
     }  
     
-
       await this.jobOrderService.updateByNoJo(createActivityJobOrderDto.no_jo, {  
         status: createActivityJobOrderDto.status,  
       });  
@@ -1108,11 +1109,11 @@ export class JobOrderController {
             edc_serial_number: createActivityJobOrderDto.edc_serial_number,  
             edc_note: createActivityJobOrderDto.edc_note,  
             edc_action: createActivityJobOrderDto.edc_action,  
-            edc_second_brand: createActivityJobOrderDto.edc_second_brand,  
-            edc_second_brand_type: createActivityJobOrderDto.edc_second_brand_type,  
-            edc_second_serial_number: createActivityJobOrderDto.edc_second_serial_number,  
-            edc_second_note: createActivityJobOrderDto.edc_second_note,  
-            edc_second_action: createActivityJobOrderDto.edc_second_action,  
+            edc_second_brand: isCMJobOrder ? createActivityJobOrderDto.edc_second_brand : undefined,  
+            edc_second_brand_type: isCMJobOrder ? createActivityJobOrderDto.edc_second_brand_type : undefined,  
+            edc_second_serial_number: isCMJobOrder ? createActivityJobOrderDto.edc_second_serial_number : undefined,  
+            edc_second_note: isCMJobOrder ? createActivityJobOrderDto.edc_second_note : undefined,  
+            edc_second_action: isCMJobOrder ? createActivityJobOrderDto.edc_second_action : undefined, 
             information: createActivityJobOrderDto.information,  
             arrival_time: new Date(createActivityJobOrderDto.arrival_time),  
             start_time: new Date(createActivityJobOrderDto.start_time),  
