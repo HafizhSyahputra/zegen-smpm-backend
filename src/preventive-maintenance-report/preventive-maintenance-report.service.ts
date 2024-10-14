@@ -39,7 +39,12 @@ export class PreventiveMaintenanceReportService {
         take,
         orderBy,
         include: {
-          job_order: true,
+          job_order: {
+            include: {
+              merchant: true,
+              vendor: true,
+            }
+          },
           MediaJobOrderReportProofOfVisit: true,
           MediaJobOrderReportOptionalPhoto: true,
           JobOrderReportEdcEquipmentDongle: true,
@@ -63,7 +68,12 @@ export class PreventiveMaintenanceReportService {
     return this.prisma.preventiveMaintenanceReport.findUnique({
       where: { id, deleted_at: null },
       include: {
-        job_order: true,
+        job_order: {
+          include: {
+            merchant: true,
+            vendor: true,
+          }
+        },
         MediaJobOrderReportProofOfVisit: true,
         MediaJobOrderReportOptionalPhoto: true,
         JobOrderReportEdcEquipmentDongle: true,

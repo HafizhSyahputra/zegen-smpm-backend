@@ -340,7 +340,6 @@ export class JobOrderService {
       where,
     });
   }
-
   createActivityReport(
     data: Prisma.JobOrderReportUncheckedCreateInput,
     mediaEvidence?: { media_id: number }[],

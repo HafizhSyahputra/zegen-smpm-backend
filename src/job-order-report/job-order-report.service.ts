@@ -39,13 +39,27 @@ export class JobOrderReportService {
         take,
         orderBy,
         include: {
-          job_order: true,
-          MediaJobOrderReportProofOfVisit: true,
-          MediaJobOrderReportOptionalPhoto: true,
+          job_order: {
+            include: {
+              merchant: true,
+              vendor: true,
+            }
+          },
+          MediaJobOrderReportProofOfVisit: {
+            include: {
+              media: true
+            }
+          },
+          MediaJobOrderReportOptionalPhoto: {
+            include: {
+              media: true
+            }
+          },
           JobOrderReportEdcEquipmentDongle: true,
           JobOrderReportMaterialPromo: true,
           JobOrderReportProduct: true,
           JobOrderReportMaterialTraining: true,
+         
         },
       }),
       this.prisma.jobOrderReport.count({ where: filter }),
@@ -63,9 +77,22 @@ export class JobOrderReportService {
     return this.prisma.jobOrderReport.findUnique({
       where: { id, deleted_at: null },
       include: {
-        job_order: true,
-        MediaJobOrderReportProofOfVisit: true,
-        MediaJobOrderReportOptionalPhoto: true,
+        job_order: {
+          include: {
+            merchant: true,
+            vendor: true,
+          }
+        },
+        MediaJobOrderReportProofOfVisit: {
+          include: {
+            media: true
+          }
+        },
+        MediaJobOrderReportOptionalPhoto: {
+          include: {
+            media: true
+          }
+        },
         JobOrderReportEdcEquipmentDongle: true,
         JobOrderReportMaterialPromo: true,
         JobOrderReportProduct: true,
