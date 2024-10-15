@@ -1,12 +1,11 @@
-
 // src/notifications/notifications.module.ts
 
 import { Module } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
- import { NotificationsController } from './notifications.controller';
+import { NotificationsGateway } from './notifications.gateway';
+import { NotificationsController } from './notifications.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
-import { NotificationsGateway } from './notifications.gateway';
 
 @Module({
   imports: [

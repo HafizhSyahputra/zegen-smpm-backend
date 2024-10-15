@@ -45,11 +45,13 @@ import { ElectronicDataCaptureService as EDCService } from '@smpm/electronic-dat
 import { EDCTerpasangService } from '@smpm/edc-terpasang/edc-terpasang.service';
 import { ReceivedInService } from '@smpm/received-in/received-in.service';
 import { ReceivedOutService } from '@smpm/received-out/received-out.service';
+import { PrismaService } from '@smpm/prisma/prisma.service';
 
 @UseGuards(AccessTokenGuard)
 @Controller('job-order')
 export class JobOrderController {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly jobOrderService: JobOrderService,
     private readonly regionService: RegionService,
     private readonly vendorService: VendorService,
@@ -497,7 +499,6 @@ export class JobOrderController {
         errors,
       });
 
-      
     await this.auditService.create({
       Url: req.url,
       ActionName: 'Bulk Create Job Order',
@@ -513,6 +514,8 @@ export class JobOrderController {
       created_by: user.sub,  
       updated_by: user.sub,  
     });
+
+    
 
     await this.jobOrderService.createMany(data);
 
@@ -1000,7 +1003,7 @@ export class JobOrderController {
         created_by: user.sub,  
         updated_by: user.sub,  
       };  
-      
+
       await this.approveService.create(approveData);  
 
       const jobOrderType = jobOrder.type;

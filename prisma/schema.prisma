@@ -33,12 +33,11 @@ model User {
   vendor      Vendor?       @relation(fields: [vendor_id], references: [id])
   UserSession UserSession[]
 
-  Notification Notification[]
+  UserNotification UserNotification[]
 }
 
 model Notification {
   id         Int       @id @default(autoincrement())
-  iduser     Int
   title      String
   detail     String    @db.Text
   category   String
@@ -48,7 +47,34 @@ model Notification {
   created_by Int?
   updated_by Int?
   link       String?
-  user       User      @relation(fields: [iduser], references: [id])
+
+  RoleNotification RoleNotification[]
+  UserNotification UserNotification[]
+}
+
+model RoleNotification {
+  roleId         Int
+  notificationId Int
+
+  role         Role         @relation(fields: [roleId], references: [id])
+  notification Notification @relation(fields: [notificationId], references: [id])
+
+  @@id([roleId, notificationId])
+  @@unique([roleId, notificationId])
+}
+
+model UserNotification {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  notificationId Int
+  read           Boolean   @default(false)
+  readAt         DateTime?
+  created_at     DateTime  @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  notification Notification @relation(fields: [notificationId], references: [id])
+
+  @@unique([userId, notificationId])
 }
 
 model UserSession {
@@ -86,6 +112,8 @@ model Role {
   Menu_Role       Menu_Role[]
 
   Role_Action Role_Action[]
+
+  RoleNotification RoleNotification[]
 }
 
 model Permission {
@@ -448,6 +476,26 @@ model JobOrder {
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 }
 
+model StagingJobOrder {
+  id             Int       @id @default(autoincrement())
+  jo_report_id   Int?
+  pm_report_id   Int?
+  staging        String
+  text           String?
+  reason         String?
+  photo_evidence String?
+  photo_optional String?
+  info_remark    String?  
+  created_by     Int?
+  updated_by     Int?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  deleted_at     DateTime?
+
+  jobOrderReport   JobOrderReport?              @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  preventiveReport PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
 model Approved {
   id           Int       @id @default(autoincrement())
   jo_report_id Int?
@@ -567,6 +615,8 @@ model JobOrderReport {
   JobOrderReportEdcEquipmentDongle JobOrderReportEdcEquipmentDongle[]
 
   Approved Approved[]
+
+  StagingJobOrder StagingJobOrder[]
 }
 
 model PreventiveMaintenanceReport {
@@ -611,6 +661,8 @@ model PreventiveMaintenanceReport {
   JobOrderReportEdcEquipmentDongle JobOrderReportEdcEquipmentDongle[]
 
   Approved Approved[]
+
+  StagingJobOrder StagingJobOrder[]
 }
 
 model JobOrderReportProduct {

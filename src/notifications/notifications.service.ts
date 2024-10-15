@@ -12,8 +12,17 @@ export class NotificationsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  /**
+   * Membuat notifikasi dan menghubungkannya ke satu atau lebih role.
+   * @param roleIds Array ID role yang akan menerima notifikasi
+   * @param title Judul notifikasi
+   * @param detail Detail notifikasi
+   * @param category Kategori notifikasi
+   * @param createdBy ID pengguna yang membuat notifikasi (opsional)
+   * @param link Link terkait notifikasi (opsional)
+   */
   async createNotification(
-    iduser: number,
+    roleIds: number[],
     title: string,
     detail: string,
     category: NotificationCategory,
@@ -22,13 +31,23 @@ export class NotificationsService {
   ) {
     const notification = await this.prisma.notification.create({
       data: {
-        user: { connect: { id: iduser } },
         title,
         detail,
         category,
-        read: false, // Default value for read
-        link,        // Link value
-        created_by: createdBy, // Set created_by if provided
+        link,
+        created_by: createdBy,
+        RoleNotification: {
+          create: roleIds.map((roleId) => ({
+            role: { connect: { id: roleId } },
+          })),
+        },
+      },
+      include: {
+        RoleNotification: {
+          include: {
+            role: true,
+          },
+        },
       },
     });
 
@@ -37,21 +56,90 @@ export class NotificationsService {
     return notification;
   }
 
-  async getNotificationsByUser(iduser: number) {
-    return this.prisma.notification.findMany({
-      where: { iduser },
+  /**
+   * Mengambil notifikasi berdasarkan ID pengguna.
+   * Notifikasi diambil berdasarkan role pengguna.
+   * @param userId ID pengguna
+   */
+  async getNotificationsByUser(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+
+    if (!user || !user.role) {
+      throw new Error('User atau Role tidak ditemukan.');
+    }
+
+    const roleId = user.role.id;
+
+    const notifications = await this.prisma.notification.findMany({
+      where: {
+        RoleNotification: {
+          some: { roleId },
+        },
+      },
       orderBy: { createdAt: 'desc' },
+      include: {
+        RoleNotification: {
+          include: {
+            role: true,
+          },
+        },
+        UserNotification: {
+          where: { userId },
+        },
+      },
+    });
+
+    // Tambahkan logika untuk menyertakan status read per user
+    return notifications.map((notification) => {
+      const userNotification = notification.UserNotification[0];
+      return {
+        ...notification,
+        read: userNotification ? userNotification.read : false,
+        readAt: userNotification ? userNotification.readAt : null,
+      };
     });
   }
 
+  /**
+   * Menandai notifikasi sebagai telah dibaca oleh pengguna tertentu.
+   * @param notificationId ID notifikasi
+   * @param userId ID pengguna
+   */
   async markAsRead(notificationId: number, userId: number) {
-    return this.prisma.notification.update({
-      where: { id: notificationId },
-      data: {
-        read: true,
-        readat: new Date(),
-        updated_by: userId,
+    const existing = await this.prisma.userNotification.findUnique({
+      where: {
+        userId_notificationId: {
+          userId,
+          notificationId,
+        },
       },
     });
+
+    if (existing) {
+      return this.prisma.userNotification.update({
+        where: {
+          userId_notificationId: {
+            userId,
+            notificationId,
+          },
+        },
+        data: {
+          read: true,
+          readAt: new Date(),
+        },
+      });
+    } else {
+      return this.prisma.userNotification.create({
+        data: {
+          user: { connect: { id: userId } },
+          notification: { connect: { id: notificationId } },
+          read: true,
+          readAt: new Date(),
+        },
+      });
+    }
   }
 }
