@@ -1,3 +1,4 @@
+
 import {
   BadRequestException,
   HttpException,
@@ -25,7 +26,6 @@ export class MerchantService {
   async getAll(): Promise<Merchant[]> {
     return this.prisma.merchant.findMany({});
   }
-
   async create(createMerchantDto: CreateMerchantDto): Promise<any> {  
     try {  
       return await this.prisma.merchant.create({  
@@ -47,8 +47,8 @@ export class MerchantService {
           subdistrict: createMerchantDto.subdistrict,  
           city: createMerchantDto.city,  
           province: createMerchantDto.province,  
-          postal_code: createMerchantDto.postal_code,  
-          status: createMerchantDto.status,
+          postal_code: createMerchantDto.postal_code,
+          status: createMerchantDto.status,  
           created_by: createMerchantDto.created_by,  
           updated_by: createMerchantDto.updated_by,  
         },  
@@ -291,12 +291,11 @@ export class MerchantService {
             city: val.city,
             province: val.province,
             postal_code: val.postal_code,
-            status: val.status,
+            status: val.status || "Waiting",
             created_by: val.created_by,
             updated_by: val.updated_by,
           });
-        });
-      }
+        });      }
     } catch (error) {
       console.log('error?', error);
       return 'error';
@@ -364,7 +363,6 @@ export class MerchantService {
         where: { id: +id },
         data: {
           region_id: updateMerchantDto.region_id,
-          mid: updateMerchantDto.mid,
           name: updateMerchantDto.name,
           category: updateMerchantDto.category,
           customer_name: updateMerchantDto.customer_name,

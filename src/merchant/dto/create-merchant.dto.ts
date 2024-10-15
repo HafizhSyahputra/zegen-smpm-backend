@@ -1,10 +1,13 @@
+// src/merchant/dto/create-merchant.dto.ts
+
 import { IsString, IsNumber, IsOptional } from 'class-validator';  
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateMerchantDto {  
   @IsNumber()  
   region_id: number;  
 
-  @IsNumber()  
+  @IsString()  
   mid: string;  
 
   @IsString()  
@@ -17,7 +20,8 @@ export class CreateMerchantDto {
   customer_name: string;  
 
   @IsString()  
-  telephone: string;  
+  @IsOptional()
+  telephone?: string;  
 
   @IsString()  
   pic: string;  
@@ -26,7 +30,8 @@ export class CreateMerchantDto {
   phone1: string;  
 
   @IsString()  
-  phone2: string;  
+  @IsOptional()
+  phone2?: string;  
 
   @IsString()  
   address1: string;  
@@ -58,9 +63,11 @@ export class CreateMerchantDto {
 
   @IsString()  
   postal_code: string;  
-  
-  @IsString()  
-  status: string;  
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ default: 'waiting' })
+  status: string = 'waiting';
 
   @IsOptional()  
   @IsNumber()  

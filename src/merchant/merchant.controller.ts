@@ -1,3 +1,5 @@
+// src/merchant/merchant.controller.ts
+
 import {
   Controller,
   Get,
@@ -12,7 +14,7 @@ import {
   UploadedFile,
   ParseFilePipe,
   Req,
-  UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { MerchantService } from './merchant.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
@@ -24,75 +26,63 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { MaxFileSize } from '@smpm/utils/FileValidator';
 import { defaultConfig } from '@smpm/utils/FileConfig';
 import { AuditService } from '@smpm/audit/audit.service';
- import { DocumentMerchantService } from '@smpm/document-merchant/document-merchant.service';
+import { DocumentMerchantService } from '@smpm/document-merchant/document-merchant.service';
 import { ValidationException } from '@smpm/common/validator/validationExeption';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
-import { AccessTokenGuard } from '@smpm/common/guards/access-token.guard';
+import { ApproveMerchantService } from '@smpm/approve-merchant/approve-merchant.service';
+import { CreateApproveMerchantDto } from '@smpm/approve-merchant/dto/create-approve-merchant.dto';
 
-@UseGuards(AccessTokenGuard)
 @Controller('merchant')
 export class MerchantController {
   constructor(
     private readonly merchantService: MerchantService,
     private readonly auditService: AuditService,
     private readonly docmerchantService: DocumentMerchantService,
+    private readonly approveMerchantService: ApproveMerchantService, // Inject ApproveMerchantService
   ) {}
 
   @Post()  
-async create(  
-  @Body() createMerchantDto: CreateMerchantDto,  
-  @User() user: any,  
-  @Req() req: Request,  
-) {  
-  try {  
-    const create = await this.merchantService.create(createMerchantDto);  
+  async create(  
+    @Body() createMerchantDto: CreateMerchantDto,  
+    @User() user: any,  
+    @Req() req: Request,  
+  ) {  
+    try {  
+      // Persiapkan DataAfter sebagai JSON string dari CreateMerchantDto
+      const dataAfter = JSON.stringify(createMerchantDto);
 
-    const auditData = {  
-      Url: req.url,  
-      ActionName: 'Create Merchant',  
-      MenuName: 'Merchant',  
-      DataBefore: '',  
-      DataAfter: JSON.stringify(create),  
-      UserName: user?.name || 'Unknown',  
-      IpAddress: req.ip,  
-      ActivityDate: new Date(),  
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
-      AppSource: 'Desktop',  
-      created_by: user?.sub || 7,  
-      updated_by: user?.id || 7,  
-    };  
+      // Buat record ApproveMerchant dengan type 'Add' dan status 'Waiting'
+      const createApproveMerchantDto: CreateApproveMerchantDto = {
+        type: 'Add',
+        status: 'Waiting',
+        DataBefore: '', // Karena ini adalah penambahan baru
+        DataAfter: dataAfter,
+        created_by: user?.sub,
+      };
 
-    await this.auditService.create(auditData);  
+      const approvedMerchant = await this.approveMerchantService.create(createApproveMerchantDto, user, req);
 
-    const location = create.address1 + ', ' + create.address2 + ', ' + create.address3 + ', ' + create.address4 + ' ' + create.postal_code;
+      // Audit logging telah dilakukan di ApproveMerchantService
 
-    await this.docmerchantService.create({  
-      merchant_id: create.id,  
-      region_id: create.region_id,
-      location : location,
-      created_by: user?.sub,  
-    });  
-
-    return {  
-      status: 'Ok!',  
-      message: 'Success Create Merchant',  
-      ...create,  
-    };  
-  } catch (error) {  
-    if (error instanceof ValidationException) {  
+      // Return response
       return {  
-        status: 'Error',  
-        message: 'Validation error',  
-        errors: error.validationErrors,  
+        status: 'Pending Approval',  
+        message: 'Request to add Merchant has been submitted for approval.',  
+        approveMerchantId: approvedMerchant.id,  
       };  
+    } catch (error) {  
+      if (error instanceof ValidationException) {  
+        return {  
+          status: 'Error',  
+          message: 'Validation error',  
+          errors: error.validationErrors,  
+        };  
+      }  
+
+      console.error('Error creating approve merchant:', error);  
+      throw error;  
     }  
-
-    console.error('Error creating merchant and document merchant:', error);  
-    throw error;  
-  }  
-}
-
+  }
 
   @UseInterceptors(FileInterceptor('file', { storage: defaultConfig }))
   @Post('/create-bulk-excel')
@@ -108,6 +98,7 @@ async create(
       }),
     )
     file: Express.Multer.File,
+    @Req() req: Request, // Tambahkan parameter Request jika diperlukan
   ) {
     return await this.merchantService.createBulk(file.filename);
   }
@@ -129,53 +120,74 @@ async create(
     @User() user: any,
     @Req() req: Request,
   ) {
-    const oldData = await this.merchantService.findOne(Number(id));
-    const update = this.merchantService.update(+id, updateMerchantDto);
-
-    await this.auditService.create({
-      Url: req.url,
-      ActionName: 'Update Merchant',
-      MenuName: 'Merchant',
-      DataBefore: JSON.stringify(oldData),
-      DataAfter: JSON.stringify(update),  
-      UserName: user?.name || 'Unknown',  
-      IpAddress: req.ip,  
-      ActivityDate: new Date(),  
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
-      AppSource: 'Desktop',  
-      created_by: user?.sub || 7,  
-      updated_by: user?.id || 7,  
-    });
-
-    return {
-      status: 'Ok!',
-      message: 'Success Update Merchant',
-      ...update,
+    const merchantId = +id;
+  
+    // Ambil data Merchant yang ada
+    const existingMerchant = await this.merchantService.findOne(merchantId);
+    if (!existingMerchant) {
+      throw new BadRequestException('Merchant not found.');
+    }
+  
+    // Persiapkan DataBefore dan DataAfter
+    const dataBefore = JSON.stringify(existingMerchant);
+    const updatedData: Partial<CreateMerchantDto> = { ...existingMerchant, ...updateMerchantDto };
+    const { id: _, ...dataWithoutId } = updatedData as { id?: number };
+    const dataAfter = JSON.stringify(dataWithoutId);
+  
+    // Buat record ApproveMerchant dengan type 'Edit' dan status 'Waiting'
+    const createApproveMerchantDto: CreateApproveMerchantDto = {
+      merchant_id: merchantId,
+      type: 'Edit',
+      status: 'Waiting',
+      DataBefore: dataBefore,
+      DataAfter: dataAfter,
+      updated_by: user?.sub,
+    };
+  
+    const approvedMerchant = await this.approveMerchantService.create(createApproveMerchantDto, user, req);
+  
+    // Audit logging telah dilakukan di ApproveMerchantService
+  
+    return {  
+      status: 'Pending Approval',  
+      message: 'Request to edit Merchant has been submitted for approval.',  
+      approveMerchantId: approvedMerchant.id,  
     };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @User() user: any, @Req() req: Request) {
-    const oldData = await this.merchantService.findOne(Number(id));
+    const merchantId = +id;
 
-    await this.auditService.create({
-      Url: req.url,
-      ActionName: 'Delete Merchant',
-      MenuName: 'Merchant',
-      DataBefore: JSON.stringify(oldData),
-      DataAfter: '',
-      UserName: user?.name || 'Unknown',  
-      IpAddress: req.ip,  
-      ActivityDate: new Date(),  
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
-      AppSource: 'Desktop',  
-      created_by: user?.sub || 7,  
-      updated_by: user?.sub || 7,  
-    });
+    // Ambil data Merchant yang ada
+    const existingMerchant = await this.merchantService.findOne(merchantId);
+    if (!existingMerchant) {
+      throw new BadRequestException('Merchant not found.');
+    }
 
-    return this.merchantService.remove(+id);
+    // Persiapkan DataBefore dan DataAfter
+    const dataBefore = JSON.stringify(existingMerchant);
+    const dataAfter = ''; // Karena ini adalah penghapusan
+
+    // Buat record ApproveMerchant dengan type 'Delete' dan status 'Waiting'
+    const createApproveMerchantDto: CreateApproveMerchantDto = {
+      merchant_id: merchantId,
+      type: 'Delete',
+      status: 'Waiting',
+      DataBefore: dataBefore,
+      DataAfter: dataAfter,
+      deleted_by: user?.sub,
+    };
+
+    const approvedMerchant = await this.approveMerchantService.create(createApproveMerchantDto, user, req);
+
+    // Audit logging telah dilakukan di ApproveMerchantService
+
+    return {  
+      status: 'Pending Approval',  
+      message: 'Request to delete Merchant has been submitted for approval.',  
+      approveMerchantId: approvedMerchant.id,  
+    };
   }
 
   private getBrowserFromUserAgent(userAgent: string): string {

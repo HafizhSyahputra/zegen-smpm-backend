@@ -23,6 +23,7 @@ import { ReceivedOutModule } from './received-out/received-out.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PreventiveMaintenanceReportModule } from './preventive-maintenance-report/preventive-maintenance-report.module';
 import { EDCTerpasangModule } from './edc-terpasang/edc-terpasang.module';
+import { ApproveMerchantModule } from './approve-merchant/approve-merchant.module';
  
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { EDCTerpasangModule } from './edc-terpasang/edc-terpasang.module';
     NotificationsModule,
     PreventiveMaintenanceReportModule,
     EDCTerpasangModule,
+    ApproveMerchantModule,
   ],
   controllers: [AppController],
   providers: [AppService],

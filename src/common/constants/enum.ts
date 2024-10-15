@@ -90,6 +90,18 @@ export enum NotificationCategory {
   BULK_REJECT = 'bulk-reject',
 }
 
+export enum ColumnApprovedMerchant {
+  id = 'id',
+  merchant_id = 'merchant_id',
+  type = 'type',
+  status = 'status',
+  reason = 'reason',
+  info_remark = 'info_remark',
+  approved_by = 'approved_by',
+  rejected_by = 'rejected_by',
+}
+
+
 export enum ColumnEDCTerpasang {
   id = 'id',
   owner_id = 'owner_id',
