@@ -6,7 +6,7 @@ import { PrismaService } from '@smpm/prisma/prisma.service';
 import { CreateElectronicDataCaptureDto } from './dto/create-electronic-data-capture.dto';
 import { UpdateElectronicDataCaptureDto } from './dto/update-electronic-data-capture.dto';
 import { ElectronicDataCapture } from './entities/electronic-data-capture.entity';
-import { EdcBrandType } from '@prisma/client';
+import { EdcBrandType, ElectronicDataCaptureMachine } from '@prisma/client';
 import { GetEdcBrandTypeDto } from './dto/get-edc-brand-type.dto';
 
 @Injectable()
@@ -72,6 +72,15 @@ export class ElectronicDataCaptureService {
 
   findOne(id: number) {
     return `This action returns a #${id} electronicDataCapture`;
+  }
+
+  async findEDCMachineBySerialNumber(serial_number: string): Promise<ElectronicDataCaptureMachine | null> {
+    return this.prisma.electronicDataCaptureMachine.findFirst({
+      where: {
+        serial_number: serial_number.toUpperCase(),
+        deleted_at: null,
+      },
+    });
   }
 
   update(

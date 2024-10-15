@@ -41,6 +41,10 @@ import { AuditService } from '@smpm/audit/audit.service';
 import { DocumentVendorService } from '@smpm/document-vendor/document-vendor.service';
 import { MerchantService } from '@smpm/merchant/merchant.service';
 import { ElectronicDataCaptureService } from '@smpm/electronic-data-capture/electronic-data-capture.service';
+import { ElectronicDataCaptureService as EDCService } from '@smpm/electronic-data-capture/electronic-data-capture.service';
+import { EDCTerpasangService } from '@smpm/edc-terpasang/edc-terpasang.service';
+import { ReceivedInService } from '@smpm/received-in/received-in.service';
+import { ReceivedOutService } from '@smpm/received-out/received-out.service';
 
 @UseGuards(AccessTokenGuard)
 @Controller('job-order')
@@ -56,6 +60,10 @@ export class JobOrderController {
     private readonly approveService: ApproveService,
     private readonly auditService: AuditService,
     private readonly docVendorService: DocumentVendorService,
+    private readonly receivedInService: ReceivedInService, 
+    private readonly receivedOutService: ReceivedOutService, 
+    private readonly eDCTerpasangService: EDCTerpasangService,  
+    private readonly eDCService: EDCService, 
   ) {}
 
   @Get('open')
@@ -783,39 +791,38 @@ export class JobOrderController {
       prefixName: 'job-order-activity',
     }),
   )
-  
-  @Post('activity')  
-  async createActivity(  
-    @Body() createActivityJobOrderDto: CreateActivityJobOrderDto,  
-    @UploadedFiles() files: Record<string, Express.Multer.File[]>,  
-    @User() user: any,  
-    @Req() req: Request,  
-  ) {  
-    try {  
-       console.log(files);
-    if (!files['evidence'] || files['evidence'].length == 0) {
-      throw new BadRequestException('Bukti tidak kunjungan boleh kosong');
-    }
+  @Post('activity')
+  async createActivity(
+    @Body() createActivityJobOrderDto: CreateActivityJobOrderDto,
+    @UploadedFiles() files: Record<string, Express.Multer.File[]>,
+    @User() user: any,
+    @Req() req: Request,
+  ) {
+    try {
+      console.log(files);
+      if (!files['evidence'] || files['evidence'].length == 0) {
+        throw new BadRequestException('Bukti kunjungan tidak boleh kosong');
+      }
 
-    let mediaEvidence: { media_id: number }[] = [];
-    mediaEvidence = await this.mediaService.insertMediaData(files['evidence']);
-    
-    let mediaOptional: { media_id: number }[] = [];
-    if (files['optional'] && files['optional'].length > 0) {
-      mediaOptional = await this.mediaService.insertMediaData(
-        files['optional'],
-      );
-    }
+      let mediaEvidence: { media_id: number }[] = [];
+      mediaEvidence = await this.mediaService.insertMediaData(files['evidence']);
+      
+      let mediaOptional: { media_id: number }[] = [];
+      if (files['optional'] && files['optional'].length > 0) {
+        mediaOptional = await this.mediaService.insertMediaData(
+          files['optional'],
+        );
+      }
 
-    const jobOrder = await this.jobOrderService.findOne(createActivityJobOrderDto.no_jo);  
-    if (!jobOrder) throw new BadRequestException('NO. JO tidak ditemukan');  
+      const jobOrder = await this.jobOrderService.findOne(createActivityJobOrderDto.no_jo);
+      if (!jobOrder) throw new BadRequestException('NO. JO tidak ditemukan');  
 
-    const isCMJobOrder = jobOrder.type === 'CM Replace';  
-    
-    if (!jobOrder.tid) {  
-      throw new BadRequestException('TID is not valid or does not exist.');  
-    }  
-    
+      const isCMJobOrder = jobOrder.type === 'CM Replace';  
+      
+      if (!jobOrder.tid) {  
+        throw new BadRequestException('TID is not valid or does not exist.');  
+      }  
+      
       await this.jobOrderService.updateByNoJo(createActivityJobOrderDto.no_jo, {  
         status: createActivityJobOrderDto.status,  
       });  
@@ -890,7 +897,6 @@ export class JobOrderController {
             ...item,
           })),  
         );  
-        
       }  
 
       await this.jobOrderService.createActivityReportEdcEquipmentDongle({  
@@ -969,10 +975,9 @@ export class JobOrderController {
         updated_by: user.sub,  
       });  
 
-      const location = jobOrder.address1 + ", " + jobOrder.address2 + ", " + jobOrder.address3 + ", " + jobOrder.address4 + " " + jobOrder.postal_code;  
+      const location = `${jobOrder.address1}, ${jobOrder.address2}, ${jobOrder.address3}, ${jobOrder.address4} ${jobOrder.postal_code}`;  
 
-      // Buat payload untuk create DocumentVendor  
-      const documentVendorPayload = {  
+       const documentVendorPayload = {  
         job_order_no: jobOrder.no,  
         vendor_id: jobOrder.vendor_id,  
         region_id: jobOrder.region_id,  
@@ -983,11 +988,7 @@ export class JobOrderController {
         updated_by: user.sub,  
       };  
 
-      // Log payload ke konsol  
-      console.log('Payload untuk create DocumentVendor:', JSON.stringify(documentVendorPayload, null, 2));  
-
-      // Panggil metode create pada docVendorService  
-      await this.docVendorService.create(documentVendorPayload);  
+       await this.docVendorService.create(documentVendorPayload);  
 
       const approveData = {  
         id_jobOrder: jobOrder.id,  
@@ -999,8 +1000,68 @@ export class JobOrderController {
         created_by: user.sub,  
         updated_by: user.sub,  
       };  
-  
+      
       await this.approveService.create(approveData);  
+
+      const jobOrderType = jobOrder.type;
+
+      const serialNumber = jobOrder.type === 'Preventive Maintenance' 
+        ? createActivityJobOrderDto.edc_serial_number 
+        : createActivityJobOrderDto.edc_serial_number;
+
+      if (!serialNumber) {
+        throw new BadRequestException('Serial Number tidak tersedia untuk membuat Received In/Out.');
+      }
+
+      // Fungsi untuk Membuat Received In
+      const createReceivedIn = async () => {
+        // Cari EDCTerpasang berdasarkan serial_number
+        const edcTerpasang = await this.eDCTerpasangService.findEDCTerpasangBySerialNumber(serialNumber);
+        if (!edcTerpasang) {
+          throw new BadRequestException(`EDCTerpasang dengan Serial Number ${serialNumber} tidak ditemukan.`);
+        }
+
+        const receivedInDto = {
+          id_joborder: jobOrder.id,
+          id_edc: edcTerpasang.id,
+          id_region: jobOrder.region_id,
+          id_vendor: jobOrder.vendor_id,
+          id_merchant: edcTerpasang.merchant_id,
+          serial_number: serialNumber,
+          tid: jobOrder.tid,
+        };
+
+        await this.receivedInService.create(receivedInDto);
+      };
+
+      const createReceivedOut = async () => {
+        const edcMachine = await this.edcService.findEDCMachineBySerialNumber(serialNumber);
+        if (!edcMachine) {
+          throw new BadRequestException(`ElectronicDataCaptureMachine dengan Serial Number ${serialNumber} tidak ditemukan.`);
+        }
+
+        const receivedOutDto = {
+          id_joborder: jobOrder.id,
+          id_edc: edcMachine.id,
+          id_region: jobOrder.region_id,
+          id_vendor: jobOrder.vendor_id,
+          id_merchant: edcMachine.merchant_id,
+          serial_number: serialNumber,
+          tid: jobOrder.tid,
+          status: 'waiting', 
+        };
+
+        await this.receivedOutService.create(receivedOutDto);
+      };
+
+      if (jobOrderType === 'New Installation') {
+        await createReceivedOut();
+      } else if (jobOrderType === 'Withdrawal') {
+        await createReceivedIn();
+      } else if (jobOrderType === 'CM Replace') {
+        await createReceivedIn();
+        await createReceivedOut();
+      }
 
       return report;  
     } catch (error) {  

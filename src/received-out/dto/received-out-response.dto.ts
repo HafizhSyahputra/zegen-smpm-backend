@@ -1,6 +1,4 @@
-// src/received-out/entities/received-out.entity.ts
-
-export class ReceivedOutEntity {
+export class ReceivedOutResponseDto {
   id: number;
   id_joborder?: number;
   id_edc?: number;
@@ -16,8 +14,4 @@ export class ReceivedOutEntity {
   serial_number?: string;
   tid?: string;
   deleted_at: Date | null;
-
-  constructor(partial: Partial<ReceivedOutEntity>) {
-    Object.assign(this, partial);
-  }
 }

@@ -80,6 +80,36 @@ export enum ColumnAudit  {
   AppSource = 'AppSource',
 }  
 
+
+export enum NotificationCategory {
+  CREATE = 'create',
+  UPDATE = 'update',
+  APPROVE = 'approve',
+  DELETE = 'delete',
+  BULK_APPROVE = 'bulk-approve',
+  BULK_REJECT = 'bulk-reject',
+}
+
+export enum ColumnEDCTerpasang {
+  id = 'id',
+  owner_id = 'owner_id',
+  merchant_id = 'merchant_id',
+  mid = 'mid',
+  tid = 'tid',
+  brand = 'brand',
+  brand_type = 'brand_type',
+  serial_number = 'serial_number',
+  status_owner = 'status_owner',
+  status_owner_desc = 'status_owner_desc',
+  status_machine = 'status_machine',
+  status_machine_desc = 'status_machine_desc',
+  status_active = 'status_active',
+  simcard_provider = 'simcard_provider',
+  simcard_number = 'simcard_number',
+  info = 'info',
+  region = 'region',
+}
+
 export enum ColumnReceivedIn {
   id = 'id',
   id_joborder = 'id_joborder',

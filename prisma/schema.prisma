@@ -37,13 +37,18 @@ model User {
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
-  iduser    Int
-  title     String
-  detail    String   @db.NVarChar(max)
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [iduser], references: [id])
+  id         Int       @id @default(autoincrement())
+  iduser     Int
+  title      String
+  detail     String    @db.Text
+  category   String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  read       Boolean   @default(false)
+  readat     DateTime? @map("read_at")
+  created_by Int?
+  updated_by Int?
+  link       String?
+  user       User      @relation(fields: [iduser], references: [id])
 }
 
 model UserSession {
@@ -344,7 +349,6 @@ model ElectronicDataCaptureMachine {
   ReceivedIn ReceivedIn[]
 
   ReceivedOut ReceivedOut[]
-
 
   // JobOrder JobOrder[]
 
@@ -834,6 +838,34 @@ model ReceivedOut {
   serial_number String?                       @db.VarChar(100)
   tid           String?                       @db.VarChar(100)
   deleted_at    DateTime?
+}
+
+model Group_Wilayah {
+  id_group   Int       @id @default(autoincrement())
+  name_group String
+  created_by Int?
+  updated_by Int?
+  created_at DateTime  @default(now()) @db.Date
+  updated_at DateTime  @updatedAt @db.Date
+  deleted_at DateTime?
+
+  SLA_Region SLA_Region[]
+}
+
+model SLA_Region {
+  id_sla       Int       @id @default(autoincrement())
+  group_region Int
+  action       String    @db.VarChar(255)
+  scope        String    @db.VarChar(255)
+  hour         Int?
+  target       Int?
+  created_by   Int?
+  updated_by   Int?
+  created_at   DateTime  @default(now()) @db.Date
+  updated_at   DateTime  @updatedAt @db.Date
+  deleted_at   DateTime?
+
+  regionGroup Group_Wilayah? @relation(fields: [group_region], references: [id_group])
 }
 
 model EDCTerpasang {

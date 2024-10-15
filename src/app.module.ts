@@ -17,13 +17,12 @@ import { MediaModule } from './media/media.module';
 import { AuditModule } from './audit/audit.module';
 import { LookUpModule } from './lookup/lookup.module';
 import { ApproveModule } from './approve/approve.module';
-import { JobOrderReportModule } from './job-order-report/job-order-report.module';
-import { DocumentMerchantModule } from './document-merchant/document-merchant.module';
 import { ReceivedInModule } from './received-in/received-in.module';
 import { DocumentVendorModule } from './document-vendor/document-vendor.module';
 import { ReceivedOutModule } from './received-out/received-out.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PreventiveMaintenanceReportModule } from './preventive-maintenance-report/preventive-maintenance-report.module';
+import { EDCTerpasangModule } from './edc-terpasang/edc-terpasang.module';
  
 @Module({
   imports: [
@@ -50,6 +49,7 @@ import { PreventiveMaintenanceReportModule } from './preventive-maintenance-repo
     ReceivedOutModule,
     NotificationsModule,
     PreventiveMaintenanceReportModule,
+    EDCTerpasangModule,
   ],
   controllers: [AppController],
   providers: [AppService],

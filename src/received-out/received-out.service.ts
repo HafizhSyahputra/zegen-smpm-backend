@@ -1,4 +1,3 @@
-
 // src/received-out/received-out.service.ts
 
 import { Injectable } from '@nestjs/common';
@@ -7,20 +6,32 @@ import { ReceivedOut, Prisma } from '@prisma/client';
 import { CreateReceivedOutDto } from './dto/create-received-out.dto';
 import { PageOptionReceivedOutDto } from './dto/page-option.dto';
 import { PageDto } from '@smpm/common/decorator/page.dto';
-import { ColumnReceivedOut } from '../common/constants/enum';
+import { ColumnReceivedOut, StatusReceivedOut } from '../common/constants/enum';
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
-import { StatusReceivedOut } from '../common/constants/enum';
 
 @Injectable()
 export class ReceivedOutService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Create a new ReceivedOut
+   */
   async create(createReceivedOutDto: CreateReceivedOutDto): Promise<ReceivedOut> {
     return this.prisma.receivedOut.create({
       data: createReceivedOutDto,
+      include: {
+        joborder: true,
+        edc: true,
+        region: true,
+        vendor: true,
+        merchant: true,
+      },
     });
   }
 
+  /**
+   * Find all ReceivedOut items with pagination and filtering
+   */
   async findAll(pageOptionReceivedOutDto: PageOptionReceivedOutDto): Promise<PageDto<ReceivedOut>> {
     const { skip, take, order, order_by, search, search_by } = pageOptionReceivedOutDto;
 
@@ -31,7 +42,7 @@ export class ReceivedOutService {
 
     if (search && search_by) {
       filter.OR = search_by.map((field: ColumnReceivedOut) => ({
-        [field]: { contains: search, mode: 'insensitive' },
+        [field]: { equals: search } // Removed `mode: 'insensitive'`
       }));
     }
 
@@ -47,9 +58,17 @@ export class ReceivedOutService {
         skip,
         take,
         orderBy,
-        include: {}, // Tidak memasukkan relasi
+        include: {
+          joborder: true,
+          edc: true,
+          region: true,
+          vendor: true,
+          merchant: true,
+        },
       }),
-      this.prisma.receivedOut.count({ where: filter }),
+      this.prisma.receivedOut.count({
+        where: filter,
+      }),
     ]);
 
     const pageMetaDto = new PageMetaDto({
@@ -60,33 +79,63 @@ export class ReceivedOutService {
     return new PageDto(items, pageMetaDto);
   }
 
+  /**
+   * Find a single ReceivedOut by ID
+   */
   async findOne(id: number): Promise<ReceivedOut | null> {
     return this.prisma.receivedOut.findUnique({
       where: { id },
-      include: {}, // Tidak memasukkan relasi
+      include: {
+        joborder: true,
+        edc: true,
+        region: true,
+        vendor: true,
+        merchant: true,
+      },
     });
   }
 
+  /**
+   * Update a ReceivedOut by ID
+   */
   async update(id: number, updateReceivedOutDto: CreateReceivedOutDto): Promise<ReceivedOut> {
     return this.prisma.receivedOut.update({
       where: { id },
       data: updateReceivedOutDto,
+      include: {
+        joborder: true,
+        edc: true,
+        region: true,
+        vendor: true,
+        merchant: true,
+      },
     });
   }
 
+  /**
+   * Soft delete a ReceivedOut by ID
+   */
   async remove(id: number): Promise<ReceivedOut> {
     return this.prisma.receivedOut.update({
       where: { id },
       data: { deleted_at: new Date() },
+      include: {
+        joborder: true,
+        edc: true,
+        region: true,
+        vendor: true,
+        merchant: true,
+      },
     });
   }
 
+  /**
+   * Bulk approve ReceivedOut items
+   */
   async bulkApprove(ids: number[]): Promise<Prisma.BatchPayload> {
     return this.prisma.receivedOut.updateMany({
       where: {
-        id: {
-          in: ids,
-        },
+        id: { in: ids },
         deleted_at: null,
       },
       data: {
@@ -95,13 +144,24 @@ export class ReceivedOutService {
     });
   }
 
+  /**
+   * Bulk reject ReceivedOut items
+   */
   async bulkReject(ids: number[]): Promise<Prisma.BatchPayload> {
     return this.prisma.receivedOut.updateMany({
-      where: { id: { in: ids }, deleted_at: null },
-      data: { status: StatusReceivedOut.REJECTED },
+      where: {
+        id: { in: ids },
+        deleted_at: null,
+      },
+      data: {
+        status: StatusReceivedOut.REJECTED,
+      },
     });
   }
 
+  /**
+   * Get statistics of ReceivedOut items
+   */
   async getReceivedOutStatistics(): Promise<{ waiting: number; approved: number; rejected: number }> {
     const stats = await this.prisma.receivedOut.groupBy({
       by: ['status'],
@@ -119,12 +179,15 @@ export class ReceivedOutService {
     }, { waiting: 0, approved: 0, rejected: 0 });
   }
 
+  /**
+   * Get all waiting ReceivedOut items with pagination
+   */
   async getWaitingReceivedOuts(pageOptionReceivedOutDto: PageOptionReceivedOutDto): Promise<PageDto<ReceivedOut>> {
     return this.findAll({
       ...pageOptionReceivedOutDto,
       search: StatusReceivedOut.WAITING,
       search_by: [ColumnReceivedOut.status],
-      skip: 0,
+      skip: 0, // Adjust based on pagination logic
     });
   }
 }

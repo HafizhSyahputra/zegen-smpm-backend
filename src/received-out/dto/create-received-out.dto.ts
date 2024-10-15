@@ -1,4 +1,3 @@
-
 // src/received-out/dto/create-received-out.dto.ts
 
 import { IsExist } from "@smpm/common/validator/is-exists.validator";
