@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '@smpm/prisma/prisma.service';
 import { CreateDocMerchantDto } from './dto/create-docMerchant.dto';
 import { DocumentMerchant, Prisma } from '@prisma/client';
@@ -78,12 +78,58 @@ export class DocumentMerchantService {
     });
   }
 
-  async update(id: number, updateApproveDto: UpdateDocMerchantDto): Promise<DocMerchantEntity> {
-    return this.prisma.documentMerchant.update({
-      where: { id },
-      data: updateApproveDto,
-    });
+  async update(id: number, updateDocMerchantDto: UpdateDocMerchantDto): Promise<DocMerchantEntity> {  
+    const updatedDocument = await this.prisma.documentMerchant.update({  
+      where: { id },  
+      data: {  
+        ...updateDocMerchantDto,  
+        updated_at: new Date(),    
+      },  
+    });  
+    return new DocMerchantEntity(updatedDocument);  
+}
+
+async deleteFile(id: number, fileKey: 'file1' | 'file2'): Promise<void> {
+  const docMerchant = await this.findOne(id);
+  if (!docMerchant) {
+    throw new BadRequestException('Data not found.');
   }
 
+  const filePath = docMerchant[fileKey];
+  if (!filePath) {
+    throw new BadRequestException(`No file found for ${fileKey}.`);
+  }
+
+  try {
+    await this.prisma.documentMerchant.update({
+      where: { id },
+      data: {
+        [fileKey]: null,
+      },
+    });
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    throw new BadRequestException('Error deleting file.');
+  }
+}
   
+async updateFilesPaths(id: number, filePaths: string[]): Promise<DocMerchantEntity> {  
+  const docMerchant = await this.prisma.documentMerchant.findUnique({  
+    where: { id },  
+  });  
+  if (!docMerchant) {  
+    throw new BadRequestException('Data not found.');  
+  }  
+
+  const updatedDocument = await this.prisma.documentMerchant.update({  
+    where: { id },  
+    data: {  
+      file1: filePaths[0] || null,  
+      file2: filePaths[1] || null,  
+      updated_at: new Date(),  
+    },  
+  });  
+
+  return new DocMerchantEntity(updatedDocument);  
+}  
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '@smpm/prisma/prisma.service';
 import { PageDto } from '@smpm/common/decorator/page.dto';
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
@@ -87,13 +87,41 @@ export class DocumentVendorService {
     });
   }
 
+  async deleteFile(id: number, fileKey: 'file1' | 'file2'): Promise<void> {
+    const docVendor = await this.findOne(id);
+    if (!docVendor) {
+      throw new BadRequestException('Data not found.');
+    }
+
+    const filePath = docVendor[fileKey];
+    if (!filePath) {
+      throw new BadRequestException(`No file found for ${fileKey}.`);
+    }
+
+    try {
+      await this.prisma.documentVendor.update({
+        where: { id },
+        data: {
+          [fileKey]: null,
+        },
+      });
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      throw new BadRequestException('Error deleting file.');
+    }
+  }
+
   async update(
     id: number,
-    updateApproveDto: UpdateDocVendorDto,
+    updateDocVendorDto: UpdateDocVendorDto,
   ): Promise<DocVendorEntity> {
-    return this.prisma.documentVendor.update({
+    const updatedDocument = await this.prisma.documentVendor.update({
       where: { id },
-      data: updateApproveDto,
+      data: {
+        ...updateDocVendorDto,
+        updated_at: new Date(),
+      },
     });
+    return new DocVendorEntity(updatedDocument);
   }
 }

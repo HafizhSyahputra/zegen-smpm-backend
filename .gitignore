@@ -41,3 +41,12 @@ yarn.lock
 .env.*
 /uploads
 
+.../.env
+.gitignore
+.../nest-cli.json
+.../.prettierrc
+.../.eslintrc.js
+.gitignore
+.../tsconfig.build.json
+.../tsconfig.json
+.../README.md

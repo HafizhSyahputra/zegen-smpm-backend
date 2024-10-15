@@ -1,26 +1,45 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Query, Req } from '@nestjs/common';
- import { AuditService } from '@smpm/audit/audit.service';
- import { PageDto } from '@smpm/common/decorator/page.dto';
- import { ParamIdDto } from '@smpm/common/decorator/param-id.dto';
- import { User } from '@smpm/common/decorator/currentuser.decorator';
-import { Request } from 'express';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Req,
+  Res,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { AuditService } from '@smpm/audit/audit.service';
+import { PageDto } from '@smpm/common/decorator/page.dto';
+import { ParamIdDto } from '@smpm/common/decorator/param-id.dto';
+import { User } from '@smpm/common/decorator/currentuser.decorator';
+import { Request, Response } from 'express';
 import { DocumentVendorService } from './document-vendor.service';
 import { PageOptionDocVendorDto } from './dto/page-option.dto';
 import { DocVendorEntity } from './entities/docVendor.entity';
 import { UpdateDocVendorDto } from './dto/update-docVendor.dto';
- 
+import { FileFieldsInterceptor } from '@nestjs/platform-express/multer';
+import { extname } from 'path';
+import { diskStorage } from 'multer';
+import { AccessTokenGuard } from '@smpm/common/guards/access-token.guard';
+
+@UseGuards(AccessTokenGuard)
 @Controller('document-vendor')
 export class DocumentVendorController {
-    constructor(
-        private readonly docmerchantService: DocumentVendorService,
-        private readonly auditService: AuditService,
-      ) {}
+  constructor(
+    private readonly docVendorService: DocumentVendorService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async findAll(
-    @Query() pageOptionDocMerchantDto: PageOptionDocVendorDto,
+    @Query() pageOptionDocVendorDto: PageOptionDocVendorDto,
   ): Promise<PageDto<DocVendorEntity>> {
-    const data = await this.docmerchantService.findAll(pageOptionDocMerchantDto);
+    const data = await this.docVendorService.findAll(pageOptionDocVendorDto);
     data.data = data.data.map(
       (item) =>
         new DocVendorEntity({
@@ -32,61 +51,157 @@ export class DocumentVendorController {
 
   @Get(':id')
   async findOne(@Param() param: ParamIdDto): Promise<DocVendorEntity> {
-    const find = await this.docmerchantService.findOne(param.id);
+    const find = await this.docVendorService.findOne(param.id);
     if (!find) throw new BadRequestException('Data not found.');
     return new DocVendorEntity(find);
   }
 
-  @Patch(':id')
-  async update(
-    @Param() param: ParamIdDto,
-    @Body() updateDocMerchantDto: UpdateDocVendorDto,
-    @User() user: any,
-    @Req() req: Request,
-  ): Promise<DocVendorEntity> {
-    const find = await this.docmerchantService.findOne(param.id);
-    if (!find) throw new BadRequestException('Data not found.');
-
-    const oldData = await this.docmerchantService.findOne(Number(param.id));
-    const update = new DocVendorEntity(
-      await this.docmerchantService.update(param.id, updateDocMerchantDto),
-    );
+  @Patch(':id')  
+  @UseInterceptors(  
+    FileFieldsInterceptor(  
+      [  
+        { name: 'file1', maxCount: 1 },  
+        { name: 'file2', maxCount: 1 },  
+      ],  
+      {  
+        storage: diskStorage({  
+          destination: 'uploads/document-vendor/',  
+          filename: (req, file, cb) => {  
+            const originalName = file.originalname;  
+            return cb(null, originalName);  
+          },  
+        }),  
+      }  
+    )  
+  )  
+  async update(  
+    @Param() param: ParamIdDto,  
+    @UploadedFiles()  
+    files: { file1?: Express.Multer.File[]; file2?: Express.Multer.File[] },  
+    @Body() updateDocVendorDto: UpdateDocVendorDto,  
+    @User() user: any,  
+    @Req() req: Request  
+  ): Promise<DocVendorEntity> {  
+    const find = await this.docVendorService.findOne(param.id);  
+    if (!find) throw new BadRequestException('Data not found.');  
+  
+    const oldData = await this.docVendorService.findOne(Number(param.id));  
+  
+    if (files.file1 && files.file1.length > 0) {  
+      updateDocVendorDto.file1 = files.file1[0].path;  
+    }  
+    if (files.file2 && files.file2.length > 0) {  
+      updateDocVendorDto.file2 = files.file2[0].path;  
+    }  
+  
+    const update = new DocVendorEntity(  
+      await this.docVendorService.update(param.id, updateDocVendorDto)  
+    );  
 
     await this.auditService.create({
       Url: req.url,
-      ActionName: 'Update Document Merchant',
-      MenuName: 'Document Merchant',
+      ActionName: 'Update Document Vendor',
+      MenuName: 'Document Vendor',
       DataBefore: JSON.stringify(oldData),
       DataAfter: JSON.stringify(update),
-      UserName: user.name,
+      UserName: user?.name || 'Unknown',    
       IpAddress: req.ip,
       ActivityDate: new Date(),
       Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
       OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
       AppSource: 'Desktop',
-      created_by: user.sub,
-      updated_by: user.sub,
+      created_by: user?.sub || null,   
+      updated_by: user?.sub || null, 
     });
 
     return update;
   }
 
+  @Delete(':id/file/:fileKey')
+  async deleteFile(
+    @Param('id') id: number,
+    @Param('fileKey') fileKey: 'file1' | 'file2',
+    @User() user: any,
+    @Req() req: Request,
+  ) {
+    const docVendor = await this.docVendorService.findOne(id);
+    if (!docVendor) {
+      throw new BadRequestException('Data not found.');
+    }
+
+    const filePath = docVendor[fileKey];
+    if (!filePath) {
+      throw new BadRequestException(`No file found for ${fileKey}.`);
+    }
+
+    await this.docVendorService.deleteFile(id, fileKey);
+
+    await this.auditService.create({  
+      Url: req.url,  
+      ActionName: 'Delete File',  
+      MenuName: 'Document Vendor',  
+      DataBefore: JSON.stringify(docVendor),  
+      DataAfter: '',  
+      UserName: user?.name || 'Unknown',    
+      IpAddress: req.ip,  
+      ActivityDate: new Date(),  
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+      AppSource: 'Desktop',  
+      created_by: user?.sub || null,   
+      updated_by: user?.sub || null,    
+    });  
   
+
+    return { message: 'File deleted successfully.' };
+  }
+
+  @Get(':id/download/:file')  
+  async getFile(  
+    @Param('id') id: number,  
+    @Param('file') file: 'file1' | 'file2',  
+    @Res() res: Response  
+  ) {  
+    const docVendor = await this.docVendorService.findOne(id);  
+    if (!docVendor) {  
+      throw new BadRequestException('Data not found.');  
+    }  
+  
+    const filePath = docVendor[file];  
+    if (!filePath) {  
+      throw new BadRequestException(`No file found for ${file}.`);  
+    }  
+  
+    try {  
+      const fileName = this.getFileName(filePath);  
+      res.download(filePath, fileName, (err) => {  
+        if (err) {  
+          console.error('Error downloading file:', err);  
+          throw new BadRequestException('Error downloading file.');  
+        }  
+      });  
+    } catch (error) {  
+      console.error('Error downloading file:', error);  
+      throw new BadRequestException('Error downloading file.');  
+    }  
+  }  
+  
+
   @Delete(':id')
   async remove(
     @Param() param: ParamIdDto,
     @User() user: any,
     @Req() req: Request,
   ): Promise<void> {
-    const find = await this.docmerchantService.findOne(param.id);
+    const find = await this.docVendorService.findOne(param.id);
     if (!find) throw new BadRequestException('Data not found.');
 
-    await this.docmerchantService.remove(param.id);
+    await this.docVendorService.remove(param.id);
 
     await this.auditService.create({
       Url: req.url,
-      ActionName: 'Delete Document Merchant',
-      MenuName: 'Document Merchant',
+      ActionName: 'Delete Document Vendor',
+      MenuName: 'Document Vendor',
       DataBefore: JSON.stringify(find),
       DataAfter: '',
       UserName: user.name,
@@ -99,6 +214,11 @@ export class DocumentVendorController {
       updated_by: user.sub,
     });
   }
+
+  private getFileName(filePath: string): string {  
+    const parts = filePath.split('/');  
+    return parts[parts.length - 1];  
+  }  
 
   private getBrowserFromUserAgent(userAgent: string): string {
     if (userAgent.includes('Chrome')) return 'Chrome';
@@ -117,5 +237,4 @@ export class DocumentVendorController {
     if (userAgent.includes('Linux')) return 'Linux';
     return 'Unknown';
   }
-
 }

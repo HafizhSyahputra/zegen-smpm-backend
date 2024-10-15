@@ -12,6 +12,7 @@ import {
   UploadedFile,
   ParseFilePipe,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { MerchantService } from './merchant.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
@@ -26,7 +27,9 @@ import { AuditService } from '@smpm/audit/audit.service';
  import { DocumentMerchantService } from '@smpm/document-merchant/document-merchant.service';
 import { ValidationException } from '@smpm/common/validator/validationExeption';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
+import { AccessTokenGuard } from '@smpm/common/guards/access-token.guard';
 
+@UseGuards(AccessTokenGuard)
 @Controller('merchant')
 export class MerchantController {
   constructor(
