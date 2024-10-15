@@ -493,7 +493,7 @@ model StagingJobOrder {
   deleted_at     DateTime?
 
   jobOrderReport   JobOrderReport?              @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  preventiveReport PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  preventiveMaintenanceReport PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model Approved {

@@ -515,8 +515,6 @@ export class JobOrderController {
       updated_by: user.sub,  
     });
 
-    
-
     await this.jobOrderService.createMany(data);
 
     return {
