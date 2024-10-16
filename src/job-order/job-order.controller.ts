@@ -15,7 +15,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, StagingJobOrder } from '@prisma/client';
 import { PageDto } from '@smpm/common/decorator/page.dto';
 import { AccessTokenGuard } from '@smpm/common/guards/access-token.guard';
 import { FileUploadInterceptor } from '@smpm/common/interceptors/file-upload.interceptor';
@@ -89,6 +89,17 @@ export class JobOrderController {
 
     return data;
   }
+
+  @Get('activity/:no_jo')  
+  async getJobOrderByNoJo(@Param('no_jo') no_jo: string): Promise<StagingJobOrder[]> {  
+    const jobOrders = await this.jobOrderService.findByNoJo(no_jo);  
+
+     if (jobOrders.length === 0) {  
+      throw new NotFoundException(`No job orders found with no_jo: ${no_jo}`);  
+    }  
+
+    return jobOrders;  
+  }  
 
   @Get('template/download')
   async downloadTemplateBulkInsert(@Res() res: Response) {
@@ -674,6 +685,7 @@ export class JobOrderController {
     const stagingRecords = data.map((acknowledge) => ({  
       job_order_no: acknowledge.no,  
       petugas: acknowledge.officer_name,  
+      reason: `Job Order ditugaskan Kepada ${acknowledge.officer_name}`,
       staging_id: 2,  
       created_by: user.sub,  
       updated_by: user.sub,  
@@ -1104,6 +1116,35 @@ export class JobOrderController {
         await createReceivedOut();
       }
 
+      const mediaEvidencePaths = await Promise.all(  
+        mediaEvidence.map(media => this.mediaService.findMediaById(media.media_id))  
+      );  
+      
+      const mediaOptionalPaths = await Promise.all(  
+        mediaOptional.map(media => this.mediaService.findMediaById(media.media_id))  
+      );  
+  
+      const photoEvidencePaths = mediaEvidencePaths.map(media => media.path);  
+      const photoOptionalPaths = mediaOptionalPaths.map(media => media.path);  
+  
+      let stagingId = createActivityJobOrderDto.status === 'Cancel' ? 6 : 4;  
+  
+      const stagingJobOrderData = {  
+        job_order_no: jobOrder.no,  
+        jo_report_id: jobOrder.type === 'Preventive Maintenance' ? null : report.id,  
+        pm_report_id: jobOrder.type === 'Preventive Maintenance' ? report.id : null,  
+        photo_evidence: photoEvidencePaths.join(','),  
+        reason: report.information,  
+        photo_optional: photoOptionalPaths.join(','),   
+        created_by: user.sub,  
+        updated_by: user.sub,  
+        staging_id: stagingId,  
+      };  
+  
+      await this.prisma.stagingJobOrder.create({  
+        data: stagingJobOrderData,  
+      });  
+  
       return report;  
     } catch (error) {  
       if (error instanceof BadRequestException) {  

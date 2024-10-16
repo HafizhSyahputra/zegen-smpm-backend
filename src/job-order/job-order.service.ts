@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { JobOrder, Prisma } from '@prisma/client';
+import { JobOrder, Prisma, StagingJobOrder } from '@prisma/client';
 import { ColumnJobOrder, JobOrderStatus } from '@smpm/common/constants/enum';
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
 import { PageDto } from '@smpm/common/decorator/page.dto';
@@ -273,12 +273,45 @@ export class JobOrderService {
     return data;
   }
 
+  async findByNoJo(no_jo: string): Promise<StagingJobOrder[]> {  
+    const data = await this.prismaService.stagingJobOrder.findMany({  
+      where: {  
+        job_order_no: no_jo,  
+      },  
+      include: {  
+        jobOrder: true,  
+        jobOrderReport: {  
+          include: {  
+            MediaJobOrderReportProofOfVisit: true,  
+            MediaJobOrderReportOptionalPhoto: true,  
+            JobOrderReportEdcEquipmentDongle: true,  
+            JobOrderReportMaterialPromo: true,  
+            JobOrderReportProduct: true,  
+            JobOrderReportMaterialTraining: true,  
+          },  
+        },  
+        preventiveMaintenanceReport: {  
+          include: {  
+            MediaJobOrderReportProofOfVisit: true,  
+            MediaJobOrderReportOptionalPhoto: true,  
+            JobOrderReportEdcEquipmentDongle: true,  
+            JobOrderReportMaterialPromo: true,  
+            JobOrderReportProduct: true,  
+            JobOrderReportMaterialTraining: true,  
+          },  
+        },  
+      },  
+    });  
+  
+    return data;  
+  }  
+
   createMany(data: Prisma.JobOrderUncheckedCreateInput[]) {
     return this.prismaService.jobOrder.createMany({
       data,
     });
   }
-  
+
   async acknowlege(data: AcknowledgeDto[]) {
     await this.prismaService.$transaction(async () => {
       for (const item of data) {
