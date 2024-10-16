@@ -107,6 +107,7 @@ export class ReceivedInService {
       where: { id },
       data: {
         petugas: approveReceivedInDto.petugas,
+
         status: 'approved',
         approved_by: approveReceivedInDto.approved_by,
         updated_by: approveReceivedInDto.updated_by,

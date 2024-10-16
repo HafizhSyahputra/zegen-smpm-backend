@@ -482,8 +482,8 @@ model JobOrder {
 model Staging {
   id_staging  Int      @id @default(autoincrement())
   name        String
-  staging     Int
-  description String
+  staging     Int       @unique
+  description String?
   created_by  Int?
   updated_by  Int?
   created_at  DateTime @default(now())
@@ -498,6 +498,7 @@ model StagingJobOrder {
   jo_report_id   Int?
   pm_report_id   Int?
   staging_id     Int
+  petugas        String?
   text           String?
   reason         String?
   photo_evidence String?
@@ -509,7 +510,7 @@ model StagingJobOrder {
   updated_at     DateTime  @updatedAt
   deleted_at     DateTime?
 
-  staging                     Staging                      @relation(fields: [staging_id], references: [id_staging], onDelete: NoAction, onUpdate: NoAction)
+  staging                     Staging                      @relation(fields: [staging_id], references: [staging], onDelete: NoAction, onUpdate: NoAction)
   jobOrder                    JobOrder                     @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
   jobOrderReport              JobOrderReport?              @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   preventiveMaintenanceReport PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
