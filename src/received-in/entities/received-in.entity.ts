@@ -6,6 +6,7 @@ export class ReceivedInEntity {
   id_vendor: number;
   id_merchant: number;
   status: string;
+  petugas: string;
   approved_by: number;
   created_by: number;
   updated_by: number;

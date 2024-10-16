@@ -10,4 +10,6 @@ export class ApproveReceivedInDto {
   @IsString()
   @IsIn(['approved'])
   status?: string;  
+  @IsString()
+  petugas: string;
 }

@@ -365,6 +365,7 @@ model ElectronicDataCaptureMachine {
   simcard_provider    String?
   simcard_number      String?
   info                String?
+  kondisibarang       String?
   region              String?
   created_by          Int?
   updated_by          Int?
@@ -474,25 +475,43 @@ model JobOrder {
   DocumentVendor DocumentVendor[]
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
+
+  StagingJobOrder StagingJobOrder[]
+}
+
+model Staging {
+  id_staging  Int      @id @default(autoincrement())
+  name        String
+  staging     Int
+  description String
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  StagingJobOrder StagingJobOrder[]
 }
 
 model StagingJobOrder {
   id             Int       @id @default(autoincrement())
+  job_order_no   String
   jo_report_id   Int?
   pm_report_id   Int?
-  staging        String
+  staging_id     Int
   text           String?
   reason         String?
   photo_evidence String?
   photo_optional String?
-  info_remark    String?  
+  info_remark    String?
   created_by     Int?
   updated_by     Int?
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   deleted_at     DateTime?
 
-  jobOrderReport   JobOrderReport?              @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  staging                     Staging                      @relation(fields: [staging_id], references: [id_staging], onDelete: NoAction, onUpdate: NoAction)
+  jobOrder                    JobOrder                     @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
+  jobOrderReport              JobOrderReport?              @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   preventiveMaintenanceReport PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
@@ -858,6 +877,8 @@ model ReceivedIn {
   vendor        Vendor?                       @relation(fields: [id_vendor], references: [id], onDelete: NoAction, onUpdate: NoAction)
   id_merchant   Int?
   merchant      Merchant?                     @relation(fields: [id_merchant], references: [id])
+  petugas       String?
+  kondisibarang String?
   status        String                        @default("waiting") @db.VarChar(255)
   approved_by   Int?
   created_by    Int?
@@ -881,6 +902,8 @@ model ReceivedOut {
   vendor        Vendor?                       @relation(fields: [id_vendor], references: [id], onDelete: NoAction, onUpdate: NoAction)
   id_merchant   Int?
   merchant      Merchant?                     @relation(fields: [id_merchant], references: [id])
+  petugas       String?
+  kondisibarang String?
   status        String                        @default("waiting") @db.VarChar(255)
   approved_by   Int?
   created_by    Int?

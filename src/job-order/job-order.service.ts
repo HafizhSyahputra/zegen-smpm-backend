@@ -279,6 +279,18 @@ export class JobOrderService {
     });
   }
 
+  async findMany(ids: number[]) {  
+    const validIds = ids.filter((id) => id !== undefined);  
+    return this.prismaService.jobOrder.findMany({  
+      where: {  
+        id: {  
+          in: validIds,  
+        },  
+        deleted_at: null,  
+      },  
+    });  
+  }  
+
   async acknowlege(data: AcknowledgeDto[]) {
     await this.prismaService.$transaction(async () => {
       for (const item of data) {
@@ -334,6 +346,7 @@ export class JobOrderService {
       },
     });
   }
+
 
   findOneBy(where: Prisma.JobOrderWhereInput) {
     return this.prismaService.jobOrder.findFirst({

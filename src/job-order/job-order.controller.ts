@@ -515,7 +515,28 @@ export class JobOrderController {
       updated_by: user.sub,  
     });
 
-    await this.jobOrderService.createMany(data);
+    const batchPayload = await this.jobOrderService.createMany(data);  
+
+    const createdJobOrderIds = data.map((item) => item.id).filter((id) => id !== undefined);  
+    const createdJobOrders = await this.jobOrderService.findMany(createdJobOrderIds);
+
+    const stagingRecords = createdJobOrders.map((jobOrder) => {  
+      return {  
+        job_order_no: jobOrder.no,
+        jo_report_id: jobOrder.type === 'Preventive Maintenance' ? null : jobOrder.id,  
+        pm_report_id: jobOrder.type === 'Preventive Maintenance' ? jobOrder.id : null,  
+        staging_id: 1,  
+        created_by: user.sub,  
+        updated_by: user.sub,  
+      };  
+    });  
+
+    console.log('Data After Creation:', createdJobOrders);  
+    console.log('Staging Records:', stagingRecords);
+  
+    await this.prisma.stagingJobOrder.createMany({  
+      data: stagingRecords,  
+    });  
 
     return {
       data_uploaded_count: data.length,
