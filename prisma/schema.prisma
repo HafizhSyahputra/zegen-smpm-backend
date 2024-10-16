@@ -384,6 +384,20 @@ model ElectronicDataCaptureMachine {
   DocumentVendor DocumentVendor[]
 }
 
+model NominalJobOrder {
+  id         Int       @id @default(autoincrement())
+  jenis      String
+  nominal    String
+  tipe       String
+  created_by Int?
+  updated_by Int?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  JobOrder JobOrder[]
+}
+
 model JobOrder {
   id                                                         Int       @id @default(autoincrement())
   vendor_id                                                  Int
@@ -391,6 +405,7 @@ model JobOrder {
   no                                                         String    @unique
   type                                                       String
   date                                                       DateTime  @db.Date
+  nominal_id                                                 Int?
   mid                                                        String
   tid                                                        String
   officer_name                                               String?
@@ -459,12 +474,13 @@ model JobOrder {
   updated_at                                                 DateTime  @updatedAt
   deleted_at                                                 DateTime?
 
-  vendor   Vendor   @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  region   Region   @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  merchant Merchant @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
+  nominal  NominalJobOrder? @relation(fields: [nominal_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendor   Vendor           @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  region   Region           @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  merchant Merchant         @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
   // edc ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
 
-  JobOrderReport JobOrderReport[]
+  JobOrderReport JobOrderReport[] 
 
   Approved Approved[]
 
@@ -482,7 +498,7 @@ model JobOrder {
 model Staging {
   id_staging  Int      @id @default(autoincrement())
   name        String
-  staging     Int       @unique
+  staging     Int      @unique
   description String?
   created_by  Int?
   updated_by  Int?

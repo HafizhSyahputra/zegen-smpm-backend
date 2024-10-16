@@ -10,6 +10,8 @@ export class DocMerchantEntity {
   @Expose()
   merchant_id: number;
   @Expose()
+  region_id: number;
+  @Expose()
   file1?: string;
   @Expose()
   file2?: String;

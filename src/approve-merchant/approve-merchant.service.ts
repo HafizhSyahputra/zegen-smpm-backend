@@ -21,7 +21,7 @@ export class ApproveMerchantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly merchantService: MerchantService,
-    private readonly docmerchantService: DocumentMerchantService,
+    // private readonly docmerchantService: DocumentMerchantService,
   ) {}
 
   async create(createApproveMerchantDto: CreateApproveMerchantDto, user: any, req: Request): Promise<ApproveMerchant> {
@@ -210,15 +210,15 @@ export class ApproveMerchantService {
         switch (approveMerchant.type) {
             case 'Add':
                 const newMerchantData: CreateMerchantDto = JSON.parse(approveMerchant.DataAfter);
-                const createdMerchant = await this.merchantService.create(newMerchantData);
-                const location = createdMerchant.address1 + ' ' + createdMerchant.address2 + ' ' + createdMerchant.address3 + ' ' + createdMerchant.address4 + ', ' + createdMerchant.postal_code;
+                await this.merchantService.create(newMerchantData);
+                // const location = createdMerchant.address1 + ' ' + createdMerchant.address2 + ' ' + createdMerchant.address3 + ' ' + createdMerchant.address4 + ', ' + createdMerchant.postal_code;
 
-                await this.docmerchantService.create({  
-                  merchant_id: createdMerchant.id,  
-                  region_id: createdMerchant.region_id,
-                  location : location,
-                  created_by: userId,  
-                });  
+                // await this.docmerchantService.create({  
+                //   merchant_id: createdMerchant.id,  
+                //   region_id: createdMerchant.region_id,
+                //   location : location,
+                //   created_by: userId,  
+                // });  
                 break;
             case 'Edit':
                 const editedMerchantData: UpdateMerchantDto = JSON.parse(approveMerchant.DataAfter);

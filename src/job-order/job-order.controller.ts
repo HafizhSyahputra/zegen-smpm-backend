@@ -61,7 +61,7 @@ export class JobOrderController {
     private readonly mediaService: MediaService,
     private readonly approveService: ApproveService,
     private readonly auditService: AuditService,
-    private readonly docVendorService: DocumentVendorService,
+    // private readonly docVendorService: DocumentVendorService,
     private readonly receivedInService: ReceivedInService, 
     private readonly receivedOutService: ReceivedOutService, 
     private readonly eDCTerpasangService: EDCTerpasangService,  
@@ -90,7 +90,7 @@ export class JobOrderController {
     return data;
   }
 
-  @Get('activity/:no_jo')  
+  @Get(':no_jo')  
   async getJobOrderByNoJo(@Param('no_jo') no_jo: string): Promise<StagingJobOrder[]> {  
     const jobOrders = await this.jobOrderService.findByNoJo(no_jo);  
 
@@ -1028,20 +1028,20 @@ export class JobOrderController {
         updated_by: user.sub,  
       });  
 
-      const location = `${jobOrder.address1}, ${jobOrder.address2}, ${jobOrder.address3}, ${jobOrder.address4} ${jobOrder.postal_code}`;  
+      // const location = `${jobOrder.address1}, ${jobOrder.address2}, ${jobOrder.address3}, ${jobOrder.address4} ${jobOrder.postal_code}`;  
 
-       const documentVendorPayload = {  
-        job_order_no: jobOrder.no,  
-        vendor_id: jobOrder.vendor_id,  
-        region_id: jobOrder.region_id,  
-        mid: jobOrder.mid,  
-        tid: jobOrder.tid,   
-        location: location,  
-        created_by: user.sub,  
-        updated_by: user.sub,  
-      };  
+      //  const documentVendorPayload = {  
+      //   job_order_no: jobOrder.no,  
+      //   vendor_id: jobOrder.vendor_id,  
+      //   region_id: jobOrder.region_id,  
+      //   mid: jobOrder.mid,  
+      //   tid: jobOrder.tid,   
+      //   location: location,  
+      //   created_by: user.sub,  
+      //   updated_by: user.sub,  
+      // };  
 
-       await this.docVendorService.create(documentVendorPayload);  
+      //  await this.docVendorService.create(documentVendorPayload);  
 
       const approveData = {  
         id_jobOrder: jobOrder.id,  

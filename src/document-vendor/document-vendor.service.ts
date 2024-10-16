@@ -8,16 +8,58 @@ import { UpdateDocVendorDto } from './dto/update-docVendor.dto';
 import { ColumnDocVendor } from '@smpm/common/constants/enum';
 import { PageOptionDocVendorDto } from './dto/page-option.dto';
 import { CreateDocVendorDto } from './dto/create-docVendor.dto';
+import { v4 as uuidv4 } from 'uuid';  
+import { extname } from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class DocumentVendorService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(create: CreateDocVendorDto): Promise<DocumentVendor> {
-    return this.prisma.documentVendor.create({
-      data: create,
-    });
-  }
+  async create(  
+    createDocVendorDto: CreateDocVendorDto,  
+    file1?: Express.Multer.File,  
+    file2?: Express.Multer.File,  
+  ): Promise<DocVendorEntity> {  
+    const { job_order_no, vendor_id, mid, tid, region_id, location, created_by } = createDocVendorDto;  
+
+    // Generate unique file names  
+    const file1Name = file1 ? this.generateUniqueFileName(file1.originalname) : null;  
+    const file2Name = file2 ? this.generateUniqueFileName(file2.originalname) : null;  
+
+    // Create the DocumentMerchant entity  
+    const createdDocument = await this.prisma.documentVendor.create({  
+      data: {  
+        job_order_no,  
+        vendor_id,
+        mid,
+        tid,
+        region_id,  
+        location,  
+        file1: file1 ? `uploads/document-vendor/${file1Name}` : null,  
+        file2: file2 ? `uploads/document-vendor/${file2Name}` : null,  
+        created_by,  
+      },  
+    });  
+
+    // Save the uploaded files  
+    if (file1) {  
+      const file1Name = `uploads/document-vendor/${file1.filename}`;  
+      await fs.promises.writeFile(file1Name, file1.buffer);  
+    }  
+    if (file2) {  
+      const file2Name = `uploads/document-vendor/${file2.filename}`;  
+      await fs.promises.writeFile(file2Name, file2.buffer);  
+    }  
+
+    return new DocVendorEntity(createdDocument);  
+  }  
+
+  private generateUniqueFileName(originalName: string): string {  
+    const extension = extname(originalName);  
+    const fileName = `${uuidv4()}${extension}`;  
+    return fileName;  
+  }  
 
   async findAll(
     pageOptionDocVendorDto: PageOptionDocVendorDto,

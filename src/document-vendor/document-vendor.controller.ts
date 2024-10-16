@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   Req,
   Res,
@@ -26,6 +27,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express/multer';
 import { extname } from 'path';
 import { diskStorage } from 'multer';
 import { AccessTokenGuard } from '@smpm/common/guards/access-token.guard';
+import { CreateDocVendorDto } from './dto/create-docVendor.dto';
 
 @UseGuards(AccessTokenGuard)
 @Controller('document-vendor')
@@ -34,6 +36,48 @@ export class DocumentVendorController {
     private readonly docVendorService: DocumentVendorService,
     private readonly auditService: AuditService,
   ) {}
+
+  @Post()
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'file1', maxCount: 1 },
+      { name: 'file2', maxCount: 1 },
+    ]),
+  )
+  async create(
+    @UploadedFiles()
+    files: { file1?: Express.Multer.File[]; file2?: Express.Multer.File[] },
+    @Body() createDocVendorDto: CreateDocVendorDto,
+    @User() user: any,
+    @Req() req: Request,
+  ): Promise<DocVendorEntity> {
+    const file1 = files.file1 ? files.file1[0] : undefined;
+    const file2 = files.file2 ? files.file2[0] : undefined;
+
+    const createdDocument = await this.docVendorService.create(
+      createDocVendorDto,
+      file1,
+      file2,
+    );
+
+    await this.auditService.create({
+      Url: req.url,
+      ActionName: 'Create Document Vendor',
+      MenuName: 'Document Vendor',
+      DataBefore: '',
+      DataAfter: JSON.stringify(createdDocument),
+      UserName: user?.name || 'Unknown',
+      IpAddress: req.ip,
+      ActivityDate: new Date(),
+      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
+      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
+      AppSource: 'Desktop',
+      created_by: user?.sub || null,
+      updated_by: user?.sub || null,
+    });
+
+    return createdDocument;
+  }
 
   @Get()
   async findAll(

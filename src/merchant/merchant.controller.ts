@@ -37,8 +37,7 @@ export class MerchantController {
   constructor(
     private readonly merchantService: MerchantService,
     private readonly auditService: AuditService,
-    private readonly docmerchantService: DocumentMerchantService,
-    private readonly approveMerchantService: ApproveMerchantService, // Inject ApproveMerchantService
+     private readonly approveMerchantService: ApproveMerchantService, // Inject ApproveMerchantService
   ) {}
 
   @Post()  

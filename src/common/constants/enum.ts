@@ -101,6 +101,13 @@ export enum ColumnApprovedMerchant {
   rejected_by = 'rejected_by',
 }
 
+export enum NominalJobOrder {
+  id = 'id',
+  jenis = 'jenis',
+  nominal = 'nominal',
+  tipe = 'tipe',
+}
+
 
 export enum ColumnEDCTerpasang {
   id = 'id',

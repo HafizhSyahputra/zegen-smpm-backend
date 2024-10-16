@@ -8,16 +8,53 @@ import { ColumntDocMerchant } from '@smpm/common/constants/enum';
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
 import { UpdateDocMerchantDto } from './dto/update-docMerchant.dto';
 import { DocMerchantEntity } from './entities/docMerchant.entity';
+import { v4 as uuidv4 } from 'uuid';  
+import { extname } from 'path';
+import * as fs from 'fs';  
 
 @Injectable()
 export class DocumentMerchantService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async create(createDocMerchantDto: CreateDocMerchantDto): Promise<DocumentMerchant> {
-        return this.prisma.documentMerchant.create({
-          data: createDocMerchantDto,
-        });
-      }
+    async create(  
+      createDocMerchantDto: CreateDocMerchantDto,  
+      file1?: Express.Multer.File,  
+      file2?: Express.Multer.File,  
+    ): Promise<DocMerchantEntity> {  
+      const { merchant_id, region_id, location, created_by } = createDocMerchantDto;  
+  
+      const file1Name = file1 ? this.generateUniqueFileName(file1.originalname) : null;  
+      const file2Name = file2 ? this.generateUniqueFileName(file2.originalname) : null;  
+  
+       const createdDocument = await this.prisma.documentMerchant.create({  
+        data: {  
+          merchant_id,  
+          region_id,
+          location,  
+          file1: file1 ? `uploads/document-merchant/${file1Name}` : null,  
+          file2: file2 ? `uploads/document-merchant/${file2Name}` : null,  
+          created_by,  
+        },  
+      });  
+  
+      if (file1) {  
+        const file1Name = `uploads/document-merchant/${file1.filename}`;  
+        await fs.promises.writeFile(file1Name, file1.buffer);  
+      }  
+      if (file2) {  
+        const file2Name = `uploads/document-merchant/${file2.filename}`;  
+        await fs.promises.writeFile(file2Name, file2.buffer);  
+      }  
+  
+      return new DocMerchantEntity(createdDocument);  
+    }  
+  
+    private generateUniqueFileName(originalName: string): string {  
+      const extension = extname(originalName);  
+      const fileName = `${uuidv4()}${extension}`;  
+      return fileName;  
+    }  
+  
 
  async findAll(pageOptionDocMerchantDto: PageOptionDocMerchantDto): Promise<PageDto<DocumentMerchant>> {
     const { skip, take, order, order_by, search, search_by } = pageOptionDocMerchantDto;
@@ -133,3 +170,7 @@ async updateFilesPaths(id: number, filePaths: string[]): Promise<DocMerchantEnti
   return new DocMerchantEntity(updatedDocument);  
 }  
 }
+function uuidv4() {
+  throw new Error('Function not implemented.');
+}
+
