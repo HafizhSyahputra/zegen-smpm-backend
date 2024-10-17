@@ -14,7 +14,7 @@ export class DocMerchantEntity {
   @Expose()
   merchant_name: string;
   @Expose()
-  logitude: string;
+  longitude: string;
   @Expose()
   latitude: string;
   @Expose()

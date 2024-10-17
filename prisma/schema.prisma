@@ -213,6 +213,8 @@ model Vendor {
   // DocumentVendor DocumentVendor[]
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model Region {
@@ -285,6 +287,8 @@ model Merchant {
   ApproveMerchant ApproveMerchant[]
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model ApproveMerchant {
@@ -502,6 +506,8 @@ model JobOrder {
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 
   StagingJobOrder StagingJobOrder[]
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model Staging {
@@ -539,6 +545,8 @@ model StagingJobOrder {
   jobOrder                    JobOrder                     @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
   jobOrderReport              JobOrderReport?              @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   preventiveMaintenanceReport PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model Approved {
@@ -564,6 +572,8 @@ model Approved {
   jobOrder                    JobOrder                     @relation(fields: [id_jobOrder], references: [id], onDelete: NoAction, onUpdate: NoAction)
   vendor                      Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   region                      Region                       @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model Media {
@@ -664,6 +674,52 @@ model JobOrderReport {
   StagingJobOrder StagingJobOrder[]
 }
 
+model ActivityVendorReport {
+  id                    Int       @id @default(autoincrement())
+  job_order_no          String
+  vendor_id             Int
+  mid                   String
+  status                String
+  status_approve        String    @default("Waiting")
+  reason                String?
+  info_remark           String?
+  edc_brand             String
+  edc_brand_type        String
+  edc_serial_number     String
+  edc_note              String?
+  edc_action            String?
+  information           String
+  arrival_time          DateTime?
+  start_time            DateTime?
+  end_time              DateTime?
+  communication_line    String?
+  direct_line_number    String?
+  simcard_provider      String?
+  paper_supply          String?
+  merchant_pic          String?
+  merchant_pic_phone    String?
+  swipe_cash_indication String?
+  created_by            Int?
+  updated_by            Int?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+  deleted_at            DateTime?
+
+  merchant                         Merchant                           @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
+  vendor                           Vendor                             @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  job_order                        JobOrder                           @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
+  MediaJobOrderReportProofOfVisit  MediaJobOrderReportProofOfVisit[]
+  MediaJobOrderReportOptionalPhoto MediaJobOrderReportOptionalPhoto[]
+  JobOrderReportMaterialTraining   JobOrderReportMaterialTraining[]
+  JobOrderReportMaterialPromo      JobOrderReportMaterialPromo[]
+  JobOrderReportProduct            JobOrderReportProduct[]
+  JobOrderReportEdcEquipmentDongle JobOrderReportEdcEquipmentDongle[]
+
+  Approved Approved[]
+
+  StagingJobOrder StagingJobOrder[]
+}
+
 model PreventiveMaintenanceReport {
   id                    Int       @id @default(autoincrement())
   job_order_no          String
@@ -726,6 +782,8 @@ model JobOrderReportProduct {
 
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model JobOrderReportEdcEquipmentDongle {
@@ -759,6 +817,8 @@ model JobOrderReportEdcEquipmentDongle {
   deleted_at              DateTime?
 
   pm_report PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model JobOrderReportMaterialPromo {
@@ -784,6 +844,8 @@ model JobOrderReportMaterialPromo {
   job_order_report JobOrderReport? @relation(fields: [job_order_report_id], references: [id])
 
   pm_report PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model JobOrderReportMaterialTraining {
@@ -812,6 +874,8 @@ model JobOrderReportMaterialTraining {
 
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model MediaJobOrderReportProofOfVisit {
@@ -828,6 +892,8 @@ model MediaJobOrderReportProofOfVisit {
   media            Media                        @relation(fields: [media_id], references: [id])
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model MediaJobOrderReportOptionalPhoto {
@@ -844,6 +910,8 @@ model MediaJobOrderReportOptionalPhoto {
   media            Media                        @relation(fields: [media_id], references: [id])
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model EdcBrandType {
