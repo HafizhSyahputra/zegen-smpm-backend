@@ -313,7 +313,7 @@ model DocumentMerchant {
   // region_id  Int
   merchant_name String?
   location      String    @db.Text
-  logitude      String    @db.Text
+  longitude      String    @db.Text
   latitude      String    @db.Text
   file1         String?   @db.Text
   file2         String?   @db.Text
@@ -339,7 +339,7 @@ model DocumentVendor {
   jo_type            String?
   vendor_name        String?
   location           String?   @db.Text
-  logitude           String    @db.Text
+  longitude           String    @db.Text
   latitude           String    @db.Text
   tanggal_perjanjian DateTime?
   file1              String?   @db.Text
