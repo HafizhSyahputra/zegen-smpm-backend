@@ -21,20 +21,22 @@ export class DocumentVendorService {
     file1?: Express.Multer.File,  
     file2?: Express.Multer.File,  
   ): Promise<DocVendorEntity> {  
-    const { job_order_no, vendor_id, mid, tid, region_id, location, created_by } = createDocVendorDto;  
+    const { job_order_no, edc_brand, jo_type, vendor_name, tanggal_perjanjian, location, created_by } = createDocVendorDto;  
 
-    // Generate unique file names  
-    const file1Name = file1 ? this.generateUniqueFileName(file1.originalname) : null;  
+     const file1Name = file1 ? this.generateUniqueFileName(file1.originalname) : null;  
     const file2Name = file2 ? this.generateUniqueFileName(file2.originalname) : null;  
 
-    // Create the DocumentMerchant entity  
-    const createdDocument = await this.prisma.documentVendor.create({  
+     const createdDocument = await this.prisma.documentVendor.create({  
       data: {  
         job_order_no,  
-        vendor_id,
-        mid,
-        tid,
-        region_id,  
+        edc_brand,
+        jo_type,
+        vendor_name,
+        tanggal_perjanjian,
+        // vendor_id,
+        // mid,
+        // tid,
+        // region_id,  
         location,  
         file1: file1 ? `uploads/document-vendor/${file1Name}` : null,  
         file2: file2 ? `uploads/document-vendor/${file2Name}` : null,  
@@ -42,8 +44,7 @@ export class DocumentVendorService {
       },  
     });  
 
-    // Save the uploaded files  
-    if (file1) {  
+     if (file1) {  
       const file1Name = `uploads/document-vendor/${file1.filename}`;  
       await fs.promises.writeFile(file1Name, file1.buffer);  
     }  
@@ -91,11 +92,11 @@ export class DocumentVendorService {
         take,
         orderBy,
         include: {
-          vendor: true,
+          // vendor: true,
           jobOrder: true,
-          region: true,
-          merchant: true,
-          edc: true,
+          // region: true,
+          // merchant: true,
+          // edc: true,
         },
       }),
       this.prisma.documentVendor.count({ where: filter }),
@@ -113,11 +114,11 @@ export class DocumentVendorService {
     return this.prisma.documentVendor.findUnique({
       where: { id, deleted_at: null },
       include: {
-        vendor: true,
+        // vendor: true,
         jobOrder: true,
-        region: true,
-        merchant: true,
-        edc: true,
+        // region: true,
+        // merchant: true,
+        // edc: true,
       },
     });
   }

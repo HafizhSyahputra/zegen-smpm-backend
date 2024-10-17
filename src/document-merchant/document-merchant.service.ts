@@ -21,15 +21,16 @@ export class DocumentMerchantService {
       file1?: Express.Multer.File,  
       file2?: Express.Multer.File,  
     ): Promise<DocMerchantEntity> {  
-      const { merchant_id, region_id, location, created_by } = createDocMerchantDto;  
+      const { merchant_name  ,location, created_by } = createDocMerchantDto;  
   
       const file1Name = file1 ? this.generateUniqueFileName(file1.originalname) : null;  
       const file2Name = file2 ? this.generateUniqueFileName(file2.originalname) : null;  
   
        const createdDocument = await this.prisma.documentMerchant.create({  
         data: {  
-          merchant_id,  
-          region_id,
+          // merchant_id,  
+          // region_id,
+          merchant_name,
           location,  
           file1: file1 ? `uploads/document-merchant/${file1Name}` : null,  
           file2: file2 ? `uploads/document-merchant/${file2Name}` : null,  
@@ -82,10 +83,10 @@ export class DocumentMerchantService {
         skip,
         take,
         orderBy,
-        include: {
-          merchant: true,
-          region: true,
-        },
+        // include: {
+        //   merchant: true,
+        //   region: true,
+        // },
       }),
       this.prisma.documentMerchant.count({ where: filter }),
     ]);
@@ -101,10 +102,10 @@ export class DocumentMerchantService {
   async findOne(id: number): Promise<DocumentMerchant | null> {
     return this.prisma.documentMerchant.findUnique({
       where: { id, deleted_at: null },
-      include: {
-        merchant: true,
-        region: true,
-      },
+      // include: {
+      //   merchant: true,
+      //   region: true,
+      // },
     });
   }
 

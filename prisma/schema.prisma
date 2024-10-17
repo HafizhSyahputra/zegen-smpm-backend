@@ -210,7 +210,7 @@ model Vendor {
 
   EDCTerpasang EDCTerpasang[]
 
-  DocumentVendor DocumentVendor[]
+  // DocumentVendor DocumentVendor[]
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 }
@@ -235,9 +235,9 @@ model Region {
 
   ReceivedOut ReceivedOut[]
 
-  DocumentMerchant DocumentMerchant[]
+  // DocumentMerchant DocumentMerchant[]
 
-  DocumentVendor DocumentVendor[]
+  // DocumentVendor DocumentVendor[]
 }
 
 model Merchant {
@@ -269,7 +269,8 @@ model Merchant {
 
   region Region @relation(fields: [region_id], references: [id])
 
-  DocumentMerchant DocumentMerchant[]
+  // DocumentMerchant DocumentMerchant[]
+  // DocumentVendor DocumentVendor[]
 
   ReceivedIn ReceivedIn[]
 
@@ -278,8 +279,6 @@ model Merchant {
   ReceivedOut ReceivedOut[]
 
   EDCTerpasang EDCTerpasang[]
-
-  DocumentVendor DocumentVendor[]
 
   JobOrder JobOrder[]
 
@@ -309,43 +308,49 @@ model ApproveMerchant {
 }
 
 model DocumentMerchant {
-  id          Int       @id @default(autoincrement())
-  merchant_id Int
-  region_id   Int
-  file1       String?   @db.Text
-  file2       String?   @db.Text
-  location    String    @db.Text
-  created_by  Int?
-  updated_by  Int?
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  deleted_at  DateTime?
+  id            Int       @id @default(autoincrement())
+  // merchant_id Int
+  // region_id   Int
+  merchant_name String?
+  location      String    @db.Text
+  file1         String?   @db.Text
+  file2         String?   @db.Text
+  created_by    Int?
+  updated_by    Int?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
 
-  merchant Merchant @relation(fields: [merchant_id], references: [id])
-  region   Region   @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // merchant Merchant @relation(fields: [merchant_id], references: [id])
+  // region   Region   @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model DocumentVendor {
-  id           Int       @id @default(autoincrement())
-  job_order_no String
-  mid          String
-  tid          String
-  vendor_id    Int
-  region_id    Int
-  file1        String?   @db.Text
-  file2        String?   @db.Text
-  location     String?   @db.Text
-  created_by   Int?
-  updated_by   Int?
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  deleted_at   DateTime?
+  id                 Int       @id @default(autoincrement())
+  job_order_no       String
+  // mid          String
+  // tid          String
+  // vendor_id    Int
+  // region_id    Int
+  edc_brand          String?
+  edc_type           String?
+  jo_type            String?
+  vendor_name        String?
+  tanggal_perjanjian DateTime?
+  file1              String?   @db.Text
+  file2              String?   @db.Text
+  location           String?   @db.Text
+  created_by         Int?
+  updated_by         Int?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+  deleted_at         DateTime?
 
-  merchant Merchant                     @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
-  edc      ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
-  region   Region                       @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  vendor   Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  jobOrder JobOrder                     @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
+  // merchant Merchant                     @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
+  // edc      ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
+  // region   Region                       @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // vendor   Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  jobOrder JobOrder @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model ElectronicDataCaptureMachine {
@@ -381,7 +386,7 @@ model ElectronicDataCaptureMachine {
 
   // JobOrder JobOrder[]
 
-  DocumentVendor DocumentVendor[]
+  // DocumentVendor DocumentVendor[]
 }
 
 model NominalJobOrder {
@@ -480,7 +485,7 @@ model JobOrder {
   merchant Merchant         @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
   // edc ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
 
-  JobOrderReport JobOrderReport[] 
+  JobOrderReport JobOrderReport[]
 
   Approved Approved[]
 
