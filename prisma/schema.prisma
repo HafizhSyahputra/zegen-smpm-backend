@@ -191,7 +191,7 @@ model Menu_Role {
 model Vendor {
   id                           Int                            @id @default(autoincrement())
   name                         String
-  code                         String?                         @unique
+  code                         String?                        @unique
   description                  String?
   created_by                   Int?
   updated_by                   Int?
@@ -214,7 +214,6 @@ model Vendor {
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model Region {
@@ -288,7 +287,6 @@ model Merchant {
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model ApproveMerchant {
@@ -317,7 +315,7 @@ model DocumentMerchant {
   // region_id  Int
   merchant_name String?
   location      String    @db.Text
-  longitude      String    @db.Text
+  longitude     String    @db.Text
   latitude      String    @db.Text
   file1         String?   @db.Text
   file2         String?   @db.Text
@@ -343,7 +341,7 @@ model DocumentVendor {
   jo_type            String?
   vendor_name        String?
   location           String?   @db.Text
-  longitude           String    @db.Text
+  longitude          String    @db.Text
   latitude           String    @db.Text
   tanggal_perjanjian DateTime?
   file1              String?   @db.Text
@@ -507,7 +505,6 @@ model JobOrder {
 
   StagingJobOrder StagingJobOrder[]
 
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model Staging {
@@ -546,7 +543,6 @@ model StagingJobOrder {
   jobOrderReport              JobOrderReport?              @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   preventiveMaintenanceReport PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model Approved {
@@ -573,7 +569,6 @@ model Approved {
   vendor                      Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   region                      Region                       @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model Media {
@@ -680,9 +675,10 @@ model ActivityVendorReport {
   vendor_id             Int
   mid                   String
   status                String
-  status_approve        String    @default("Waiting")
-  reason                String?
-  info_remark           String?
+  jenis                 String
+  description           String
+  amount                String
+  petugas               String
   edc_brand             String
   edc_brand_type        String
   edc_serial_number     String
@@ -708,12 +704,6 @@ model ActivityVendorReport {
   merchant                         Merchant                           @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
   vendor                           Vendor                             @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   job_order                        JobOrder                           @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
-  MediaJobOrderReportProofOfVisit  MediaJobOrderReportProofOfVisit[]
-  MediaJobOrderReportOptionalPhoto MediaJobOrderReportOptionalPhoto[]
-  JobOrderReportMaterialTraining   JobOrderReportMaterialTraining[]
-  JobOrderReportMaterialPromo      JobOrderReportMaterialPromo[]
-  JobOrderReportProduct            JobOrderReportProduct[]
-  JobOrderReportEdcEquipmentDongle JobOrderReportEdcEquipmentDongle[]
 
   Approved Approved[]
 
@@ -783,7 +773,6 @@ model JobOrderReportProduct {
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model JobOrderReportEdcEquipmentDongle {
@@ -818,7 +807,6 @@ model JobOrderReportEdcEquipmentDongle {
 
   pm_report PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model JobOrderReportMaterialPromo {
@@ -845,7 +833,6 @@ model JobOrderReportMaterialPromo {
 
   pm_report PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model JobOrderReportMaterialTraining {
@@ -875,7 +862,6 @@ model JobOrderReportMaterialTraining {
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model MediaJobOrderReportProofOfVisit {
@@ -892,8 +878,6 @@ model MediaJobOrderReportProofOfVisit {
   media            Media                        @relation(fields: [media_id], references: [id])
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
-
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model MediaJobOrderReportOptionalPhoto {
@@ -911,7 +895,6 @@ model MediaJobOrderReportOptionalPhoto {
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
 
-  ActivityVendorReport ActivityVendorReport[]
 }
 
 model EdcBrandType {
