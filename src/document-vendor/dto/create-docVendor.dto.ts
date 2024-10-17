@@ -12,10 +12,12 @@ export class CreateDocVendorDto {
   @IsNumber()
   @Validate(IsExist, ['JobOrder', 'no'])
   job_order_no: string;
-
   @IsNotEmpty()
   @IsString()
   edc_brand: string;
+  @IsNotEmpty()
+  @IsString()
+  edc_type: string;
   @IsNotEmpty()
   @IsString()
   jo_type: string;
@@ -53,6 +55,12 @@ export class CreateDocVendorDto {
   @IsOptional()
   @IsString()
   file2?: string;
+
+  @IsString()
+  longitude: string;
+  
+  @IsString()
+  latitude: string;
 
   @IsString()
   location?: string;

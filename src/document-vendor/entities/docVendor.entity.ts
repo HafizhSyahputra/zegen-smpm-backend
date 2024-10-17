@@ -12,6 +12,8 @@ export class DocVendorEntity {
   @Expose()
   edc_brand: string;
   @Expose()
+  edc_type: string;
+  @Expose()
   jo_type: string;
   @Expose()
   vendor_name: string;
@@ -29,6 +31,10 @@ export class DocVendorEntity {
   file1?: string;
   @Expose()
   file2?: String;
+  @Expose()
+  longitude?: String;
+  @Expose()
+  latitude?: String;
   @Expose()
   location?: String;
   @Exclude()

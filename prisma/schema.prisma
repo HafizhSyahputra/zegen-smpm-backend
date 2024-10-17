@@ -269,7 +269,7 @@ model Merchant {
 
   region Region @relation(fields: [region_id], references: [id])
 
-  // DocumentMerchant DocumentMerchant[]
+  DocumentMerchant DocumentMerchant[]
   // DocumentVendor DocumentVendor[]
 
   ReceivedIn ReceivedIn[]
@@ -309,10 +309,12 @@ model ApproveMerchant {
 
 model DocumentMerchant {
   id            Int       @id @default(autoincrement())
-  // merchant_id Int
-  // region_id   Int
+  merchant_id   Int
+  // region_id  Int
   merchant_name String?
   location      String    @db.Text
+  logitude      String    @db.Text
+  latitude      String    @db.Text
   file1         String?   @db.Text
   file2         String?   @db.Text
   created_by    Int?
@@ -321,7 +323,7 @@ model DocumentMerchant {
   updated_at    DateTime  @updatedAt
   deleted_at    DateTime?
 
-  // merchant Merchant @relation(fields: [merchant_id], references: [id])
+  merchant Merchant @relation(fields: [merchant_id], references: [id])
   // region   Region   @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
@@ -336,10 +338,12 @@ model DocumentVendor {
   edc_type           String?
   jo_type            String?
   vendor_name        String?
+  location           String?   @db.Text
+  logitude           String    @db.Text
+  latitude           String    @db.Text
   tanggal_perjanjian DateTime?
   file1              String?   @db.Text
   file2              String?   @db.Text
-  location           String?   @db.Text
   created_by         Int?
   updated_by         Int?
   created_at         DateTime  @default(now())

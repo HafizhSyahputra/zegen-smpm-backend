@@ -21,7 +21,7 @@ export class DocumentVendorService {
     file1?: Express.Multer.File,  
     file2?: Express.Multer.File,  
   ): Promise<DocVendorEntity> {  
-    const { job_order_no, edc_brand, jo_type, vendor_name, tanggal_perjanjian, location, created_by } = createDocVendorDto;  
+    const { job_order_no, edc_brand, longitude, latitude, edc_type, jo_type, vendor_name, tanggal_perjanjian, location, created_by } = createDocVendorDto;  
 
      const file1Name = file1 ? this.generateUniqueFileName(file1.originalname) : null;  
     const file2Name = file2 ? this.generateUniqueFileName(file2.originalname) : null;  
@@ -30,6 +30,7 @@ export class DocumentVendorService {
       data: {  
         job_order_no,  
         edc_brand,
+        edc_type,
         jo_type,
         vendor_name,
         tanggal_perjanjian,
@@ -37,6 +38,8 @@ export class DocumentVendorService {
         // mid,
         // tid,
         // region_id,  
+        longitude,
+        latitude,
         location,  
         file1: file1 ? `uploads/document-vendor/${file1Name}` : null,  
         file2: file2 ? `uploads/document-vendor/${file2Name}` : null,  
