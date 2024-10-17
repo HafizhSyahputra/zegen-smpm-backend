@@ -31,6 +31,7 @@ import { ValidationException } from '@smpm/common/validator/validationExeption';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
 import { ApproveMerchantService } from '@smpm/approve-merchant/approve-merchant.service';
 import { CreateApproveMerchantDto } from '@smpm/approve-merchant/dto/create-approve-merchant.dto';
+import { Merchant } from '@prisma/client';
 
 @Controller('merchant')
 export class MerchantController {
@@ -103,8 +104,31 @@ export class MerchantController {
   }
 
   @Get()
-  async findAll(@Query() pageOptionsDto: PageOptionsDto & GetMerchantQuery) {
+    async findAll(@Query() pageOptionsDto: PageOptionsDto & GetMerchantQuery) {
     return await this.merchantService.findAll(pageOptionsDto);
+  }
+
+  @Get('all')  
+  async getAllLogs(): Promise<{ status: { code: number; description: string }; result: Merchant[] }> {  
+    try {  
+      const data = await this.merchantService.getAll();  
+      return {  
+        status: {  
+          code: 200,  
+          description: "OK"  
+        },  
+        result: data  
+      };  
+    } catch (error) {  
+      console.error('Error fetching audit logs:', error);  
+      return {  
+        status: {  
+          code: 500,  
+          description: "Internal Server Error"  
+        },  
+        result: []  
+      };  
+    }  
   }
 
   @Get(':id')

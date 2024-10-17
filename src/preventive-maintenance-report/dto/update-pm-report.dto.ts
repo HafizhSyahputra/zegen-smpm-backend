@@ -4,6 +4,10 @@ export class UpdatePreventiveMaintenanceReportDto {
     @IsOptional()  
     @IsString()  
     job_order_no?: string;  
+    
+    @IsOptional()  
+    @IsString()  
+    nominal?: string;  
 
     @IsOptional()  
     @IsString()  

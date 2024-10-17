@@ -886,6 +886,7 @@ export class JobOrderController {
           {  
             job_order_no: createActivityJobOrderDto.no_jo,  
             status: createActivityJobOrderDto.status,  
+            nominal: '200.000',
             status_approve: 'Waiting',  
             vendor_id: jobOrder.vendor_id,  
             mid: jobOrder.mid,  
@@ -914,6 +915,7 @@ export class JobOrderController {
           {  
             job_order_no: createActivityJobOrderDto.no_jo,  
             status: createActivityJobOrderDto.status,  
+            nominal: '200.000',
             status_approve: 'Waiting',  
             edc_brand: createActivityJobOrderDto.edc_brand,  
             edc_brand_type: createActivityJobOrderDto.edc_brand_type,  
@@ -1144,6 +1146,42 @@ export class JobOrderController {
       await this.prisma.stagingJobOrder.create({  
         data: stagingJobOrderData,  
       });  
+
+      const amount = createActivityJobOrderDto.products ? createActivityJobOrderDto.products.length : 0;  
+
+      await this.prisma.activityVendorReport.create({
+        data:
+        {  
+            job_order_no: createActivityJobOrderDto.no_jo,  
+            vendor_id: jobOrder.vendor_id,  
+            mid: jobOrder.mid,  
+            tid: jobOrder.tid,  
+            status: createActivityJobOrderDto.status,  
+            nominal: '200.000',
+            jenis: jobOrder.type,  
+            description: this.getDescriptionByJobOrderType(jobOrder.type),    
+            amount: amount,  
+            petugas: jobOrder.officer_name,  
+            edc_brand: createActivityJobOrderDto.edc_brand,  
+            edc_brand_type: createActivityJobOrderDto.edc_brand_type,  
+            edc_serial_number: createActivityJobOrderDto.edc_serial_number,  
+            edc_note: createActivityJobOrderDto.edc_note,  
+            edc_action: createActivityJobOrderDto.edc_action,  
+            information: createActivityJobOrderDto.information,  
+            arrival_time:  new Date(createActivityJobOrderDto.arrival_time),  
+            start_time:  new Date(createActivityJobOrderDto.start_time),  
+            end_time:  new Date(createActivityJobOrderDto.end_time),  
+            communication_line: createActivityJobOrderDto.communication_line,  
+            direct_line_number: createActivityJobOrderDto.direct_line_number,  
+            simcard_provider: createActivityJobOrderDto.simcard_provider,  
+            paper_supply: createActivityJobOrderDto.paper_supply,  
+            merchant_pic: createActivityJobOrderDto.merchant_pic,  
+            merchant_pic_phone: createActivityJobOrderDto.merchant_pic_phone,  
+            swipe_cash_indication: createActivityJobOrderDto.swipe_cash_indication,  
+            created_by: user.sub,  
+            updated_by: user.sub,  
+          }
+      })
   
       return report;  
     } catch (error) {  
@@ -1165,8 +1203,25 @@ export class JobOrderController {
         );  
       }  
     }  
+   
   }
   
+  private getDescriptionByJobOrderType(type: string): string {  
+    switch (type) {  
+      case 'New Installation':  
+        return 'Pemasangan EDC';  
+      case 'Withdrawal':  
+        return 'Penarikan EDC';  
+      case 'CM Replace':  
+        return 'Pergantian EDC';  
+      case 'Preventive Maintenance':  
+        return 'Maintenance EDC';  
+      case 'CM Re-init':  
+        return 'Install Ulang EDC';  
+      default:  
+        return '';  
+    }  
+  }
 
   private getBrowserFromUserAgent(userAgent: string): string {
     if (userAgent.includes('Chrome')) return 'Chrome';

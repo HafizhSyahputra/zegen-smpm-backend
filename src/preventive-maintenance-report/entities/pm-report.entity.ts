@@ -10,6 +10,9 @@ export class PreventiveMaintenanceReportEntity {
   
     @Expose()
     job_order_no: string;
+
+    @Expose()
+    nominal?: string;
   
     @Expose()
     status: string;

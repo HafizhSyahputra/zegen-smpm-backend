@@ -5,6 +5,10 @@ export class CreatePreventiveMaintenanceReportDto {
     @IsString()  
     job_order_no: string;  
 
+    @IsOptional()
+    @IsString()  
+    nominal: string;  
+
     @IsNotEmpty()  
     @IsString()  
     vendor_id: number;  

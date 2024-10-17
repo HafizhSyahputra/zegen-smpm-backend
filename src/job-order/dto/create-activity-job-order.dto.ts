@@ -18,6 +18,10 @@ export class CreateActivityJobOrderDto {
   @Validate(IsExist, ['JobOrder', 'no'])
   no_jo: string;
 
+  @IsOptional()
+  @IsString()
+  nominal: string;
+
   @IsNotEmpty()
   @IsIn(['Done', 'Cancel'])
   status: 'Done' | 'Cancel';
@@ -43,16 +47,16 @@ export class CreateActivityJobOrderDto {
   @IsOptional()
   edc_action: string;
 
-  @IsOptional()  
-  @IsString()  
-  edc_second_brand: string;  
+  @IsOptional()
+  @IsString()
+  edc_second_brand: string;
 
-  @IsOptional()  
-  @IsString()  
-  edc_second_brand_type: string;  
+  @IsOptional()
+  @IsString()
+  edc_second_brand_type: string;
 
-  @IsOptional()  
-  @IsString()  
+  @IsOptional()
+  @IsString()
   edc_second_serial_number: string;
 
   @IsOptional()
@@ -122,8 +126,8 @@ export class CreateActivityJobOrderDto {
   @IsOptional()
   optional: File[];
 
-  public isEDCSecondRequired(jobOrder: { type: string; }): boolean {  
-    return jobOrder.type !== 'CM Replace';  
+  public isEDCSecondRequired(jobOrder: { type: string }): boolean {
+    return jobOrder.type !== 'CM Replace';
   }
 }
 
@@ -144,5 +148,3 @@ class JobOrderProduct {
   @IsString()
   action: string;
 }
-
-

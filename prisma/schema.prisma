@@ -214,6 +214,7 @@ model Vendor {
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model Region {
@@ -287,6 +288,7 @@ model Merchant {
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model ApproveMerchant {
@@ -393,6 +395,8 @@ model ElectronicDataCaptureMachine {
   // JobOrder JobOrder[]
 
   // DocumentVendor DocumentVendor[]
+
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model NominalJobOrder {
@@ -505,6 +509,7 @@ model JobOrder {
 
   StagingJobOrder StagingJobOrder[]
 
+  ActivityVendorReport ActivityVendorReport[]
 }
 
 model Staging {
@@ -542,7 +547,6 @@ model StagingJobOrder {
   jobOrder                    JobOrder                     @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
   jobOrderReport              JobOrderReport?              @relation(fields: [jo_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   preventiveMaintenanceReport PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
 }
 
 model Approved {
@@ -568,7 +572,6 @@ model Approved {
   jobOrder                    JobOrder                     @relation(fields: [id_jobOrder], references: [id], onDelete: NoAction, onUpdate: NoAction)
   vendor                      Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   region                      Region                       @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
 }
 
 model Media {
@@ -625,6 +628,7 @@ model Media {
 model JobOrderReport {
   id                       Int       @id @default(autoincrement())
   job_order_no             String
+  nominal                  String?
   status                   String
   status_approve           String    @default("Waiting")
   reason                   String?
@@ -673,11 +677,13 @@ model ActivityVendorReport {
   id                    Int       @id @default(autoincrement())
   job_order_no          String
   vendor_id             Int
+  nominal               String?
   mid                   String
+  tid                   String
   status                String
   jenis                 String
   description           String
-  amount                String
+  amount                Int
   petugas               String
   edc_brand             String
   edc_brand_type        String
@@ -701,19 +707,17 @@ model ActivityVendorReport {
   updated_at            DateTime  @updatedAt
   deleted_at            DateTime?
 
-  merchant                         Merchant                           @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
-  vendor                           Vendor                             @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  job_order                        JobOrder                           @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
-
-  Approved Approved[]
-
-  StagingJobOrder StagingJobOrder[]
+  edc       ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
+  merchant  Merchant                     @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
+  vendor    Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  job_order JobOrder                     @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model PreventiveMaintenanceReport {
   id                    Int       @id @default(autoincrement())
   job_order_no          String
   vendor_id             Int
+  nominal               String?
   mid                   String
   status                String
   status_approve        String    @default("Waiting")
@@ -772,7 +776,6 @@ model JobOrderReportProduct {
 
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
-
 }
 
 model JobOrderReportEdcEquipmentDongle {
@@ -806,7 +809,6 @@ model JobOrderReportEdcEquipmentDongle {
   deleted_at              DateTime?
 
   pm_report PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
-
 }
 
 model JobOrderReportMaterialPromo {
@@ -832,7 +834,6 @@ model JobOrderReportMaterialPromo {
   job_order_report JobOrderReport? @relation(fields: [job_order_report_id], references: [id])
 
   pm_report PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
-
 }
 
 model JobOrderReportMaterialTraining {
@@ -861,7 +862,6 @@ model JobOrderReportMaterialTraining {
 
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
-
 }
 
 model MediaJobOrderReportProofOfVisit {
@@ -894,7 +894,6 @@ model MediaJobOrderReportOptionalPhoto {
   media            Media                        @relation(fields: [media_id], references: [id])
   job_order_report JobOrderReport?              @relation(fields: [job_order_report_id], references: [id])
   pm_report        PreventiveMaintenanceReport? @relation(fields: [pm_report_id], references: [id])
-
 }
 
 model EdcBrandType {
