@@ -14,7 +14,6 @@ import { JobOrderReportModule } from '@smpm/job-order-report/job-order-report.mo
 import { DocumentVendorService } from '@smpm/document-vendor/document-vendor.service';
 import { MerchantService } from '@smpm/merchant/merchant.service';
 import { ElectronicDataCaptureService } from '@smpm/electronic-data-capture/electronic-data-capture.service';
-import { EDCTerpasangService } from '@smpm/edc-terpasang/edc-terpasang.service';
 import { ReceivedInModule } from '@smpm/received-in/received-in.module';
 import { ReceivedOutModule } from '@smpm/received-out/received-out.module';
 import { ReceivedInService } from '@smpm/received-in/received-in.service';
@@ -39,7 +38,6 @@ import { ReceivedOutService } from '@smpm/received-out/received-out.service';
     DocumentVendorService,
     MerchantService,
     ElectronicDataCaptureService,
-    EDCTerpasangService,
     ReceivedInService,
     ReceivedOutService,
   ],

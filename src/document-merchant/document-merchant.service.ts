@@ -16,39 +16,38 @@ import * as fs from 'fs';
 export class DocumentMerchantService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async create(  
-      createDocMerchantDto: CreateDocMerchantDto,  
-      file1?: Express.Multer.File,  
-      file2?: Express.Multer.File,  
-    ): Promise<DocMerchantEntity> {  
+    async create(createDocMerchantDto: CreateDocMerchantDto, file1?: Express.Multer.File, file2?: Express.Multer.File): Promise<DocMerchantEntity> {  
       const { merchant_id, merchant_name, longitude, latitude, location, created_by } = createDocMerchantDto;  
+
+      const createdDocument = await this.prisma.documentMerchant.create({  
+          data: {  
+              merchant_id, 
+              merchant_name,  
+              location,  
+              longitude,  
+              latitude,  
+              file1: file1 ? `uploads/document-merchant/${this.generateUniqueFileName(file1.originalname)}` : null,  
+              file2: file2 ? `uploads/document-merchant/${this.generateUniqueFileName(file2.originalname)}` : null,  
+              created_by,  
+          },  
+      });  
   
       const file1Name = file1 ? this.generateUniqueFileName(file1.originalname) : null;  
       const file2Name = file2 ? this.generateUniqueFileName(file2.originalname) : null;  
-  
-       const createdDocument = await this.prisma.documentMerchant.create({  
-        data: {  
-          merchant_id,  
-          // region_id,
-          merchant_name,
-          location,  
-          longitude,
-          latitude,
-          file1: file1 ? `uploads/document-merchant/${file1Name}` : null,  
-          file2: file2 ? `uploads/document-merchant/${file2Name}` : null,  
-          created_by,  
-        },  
-      });  
-  
+
+      // Move files to the destination folder  
       if (file1) {  
-        const file1Name = `uploads/document-merchant/${file1.filename}`;  
-        await fs.promises.writeFile(file1Name, file1.buffer);  
+        const uploadPath1 = `uploads/document-merchant/${file1Name}`;  
+        await fs.promises.mkdir('uploads/document-merchant', { recursive: true }); // Ensure the directory exists  
+        await fs.promises.writeFile(uploadPath1, file1.buffer);  
       }  
+
       if (file2) {  
-        const file2Name = `uploads/document-merchant/${file2.filename}`;  
-        await fs.promises.writeFile(file2Name, file2.buffer);  
+        const uploadPath2 = `uploads/document-merchant/${file2Name}`;  
+        await fs.promises.mkdir('uploads/document-merchant', { recursive: true }); // Ensure the directory exists  
+        await fs.promises.writeFile(uploadPath2, file2.buffer);  
       }  
-  
+
       return new DocMerchantEntity(createdDocument);  
     }  
   

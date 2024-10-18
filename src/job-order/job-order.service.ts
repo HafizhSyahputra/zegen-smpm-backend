@@ -238,6 +238,36 @@ export class JobOrderService {
     return new PageDto(data, pageMetaDto);
   }
 
+  getAllJO() {
+    return this.prismaService.jobOrder.findMany({
+      include: {
+        region: true,
+        vendor: true,
+        merchant: true,
+        JobOrderReport: {
+          include: {
+            MediaJobOrderReportProofOfVisit: true,
+            MediaJobOrderReportOptionalPhoto: true,
+            JobOrderReportEdcEquipmentDongle: true,
+            JobOrderReportMaterialPromo: true,
+            JobOrderReportProduct: true,
+            JobOrderReportMaterialTraining: true,
+          },
+        },
+        PreventiveMaintenanceReport: {
+          include: {
+            MediaJobOrderReportProofOfVisit: true,
+            MediaJobOrderReportOptionalPhoto: true,
+            JobOrderReportEdcEquipmentDongle: true,
+            JobOrderReportMaterialPromo: true,
+            JobOrderReportProduct: true,
+            JobOrderReportMaterialTraining: true,
+          },
+        }
+      },
+    });
+  }
+
   findOne(no_jo: string): Promise<JobOrder> {
     const data = this.prismaService.jobOrder.findUnique({
       where: {

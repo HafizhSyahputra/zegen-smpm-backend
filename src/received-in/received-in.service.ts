@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@smpm/prisma/prisma.service';
-import { ReceivedIn, Prisma, EDCTerpasang } from '@prisma/client';
+import { ReceivedIn, Prisma } from '@prisma/client';
 import { CreateReceivedInDto } from './dto/create-received-in.dto';
 import { PageOptionReceivedInDto } from './dto/page-option.dto';
 import { PageDto } from '@smpm/common/decorator/page.dto';
@@ -122,19 +122,6 @@ export class ReceivedInService {
       where: { id },
       data: { deleted_at: new Date() },
     });
-  }
-
-  async findEDCTerpasangBySerialNumber(serial_number: string): Promise<EDCTerpasang | null> {
-    this.logger.log(`Mencari EDCTerpasang dengan serial_number: ${serial_number}`);
-    const edc = await this.prisma.eDCTerpasang.findFirst({
-      where: { serial_number: serial_number.toUpperCase(), deleted_at: null },
-    });
-    if (edc) {
-      this.logger.log(`EDCTerpasang ditemukan: ${JSON.stringify(edc)}`);
-    } else {
-      this.logger.warn(`EDCTerpasang tidak ditemukan untuk serial_number: ${serial_number}`);
-    }
-    return edc;
   }
 
 }

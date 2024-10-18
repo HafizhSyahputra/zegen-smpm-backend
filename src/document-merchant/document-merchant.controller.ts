@@ -54,9 +54,15 @@ export class DocumentMerchantController {
     @Body() createDocMerchantDto: CreateDocMerchantDto,
     @User() user: any,
     @Req() req: Request,
-  ): Promise<DocMerchantEntity> {
+  ) {
     const file1 = files.file1 ? files.file1[0] : undefined;
     const file2 = files.file2 ? files.file2[0] : undefined;
+
+    // Ensure merchant_id is treated as a number
+    createDocMerchantDto.merchant_id = parseInt(
+      createDocMerchantDto.merchant_id as unknown as string,
+      10,
+    );
 
     const createdDocument = await this.docmerchantService.create(
       createDocMerchantDto,
@@ -101,7 +107,7 @@ export class DocumentMerchantController {
 
   @Get(':id')
   async findOne(@Param() param: ParamIdDto): Promise<DocMerchantEntity> {
-    const find = await this.docmerchantService.findOne(param.id);
+    const find = await this.docmerchantService.findOne(Number(param.id));
     if (!find) throw new BadRequestException('Data not found.');
     return new DocMerchantEntity(find);
   }

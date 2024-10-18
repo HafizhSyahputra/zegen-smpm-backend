@@ -22,9 +22,9 @@ import { DocumentVendorModule } from './document-vendor/document-vendor.module';
 import { ReceivedOutModule } from './received-out/received-out.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PreventiveMaintenanceReportModule } from './preventive-maintenance-report/preventive-maintenance-report.module';
-import { EDCTerpasangModule } from './edc-terpasang/edc-terpasang.module';
 import { ApproveMerchantModule } from './approve-merchant/approve-merchant.module';
 import { NominalModule } from './nominal/nominal.module';
+import { ActivityVendorReportModule } from './activity-vendor-report/activity-vendor-report.module';
  
 @Module({
   imports: [
@@ -51,9 +51,9 @@ import { NominalModule } from './nominal/nominal.module';
     ReceivedOutModule,
     NotificationsModule,
     PreventiveMaintenanceReportModule,
-    EDCTerpasangModule,
     ApproveMerchantModule,
     NominalModule,
+    ActivityVendorReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -208,8 +208,6 @@ model Vendor {
 
   ReceivedOut ReceivedOut[]
 
-  EDCTerpasang EDCTerpasang[]
-
   // DocumentVendor DocumentVendor[]
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
@@ -279,8 +277,6 @@ model Merchant {
   ElectronicDataCaptureMachine ElectronicDataCaptureMachine[]
 
   ReceivedOut ReceivedOut[]
-
-  EDCTerpasang EDCTerpasang[]
 
   JobOrder JobOrder[]
 
@@ -368,6 +364,7 @@ model ElectronicDataCaptureMachine {
   mid                 String
   tid                 String    @unique
   brand               String
+  status_edc  String?
   brand_type          String
   serial_number       String    @unique
   status_owner        String
@@ -1017,32 +1014,4 @@ model SLA_Region {
   deleted_at   DateTime?
 
   regionGroup Group_Wilayah? @relation(fields: [group_region], references: [id_group])
-}
-
-model EDCTerpasang {
-  id                  Int       @id @default(autoincrement())
-  owner_id            Int?
-  merchant_id         Int?
-  mid                 String
-  tid                 String    @unique
-  brand               String
-  brand_type          String
-  serial_number       String
-  status_owner        String
-  status_owner_desc   String?
-  status_machine      String
-  status_machine_desc String?
-  status_active       Boolean
-  simcard_provider    String?
-  simcard_number      String?
-  info                String?
-  region              String?
-  created_by          Int?
-  updated_by          Int?
-  created_at          DateTime  @default(now())
-  updated_at          DateTime  @updatedAt
-  deleted_at          DateTime?
-
-  owner    Vendor?   @relation(fields: [owner_id], references: [id])
-  merchant Merchant? @relation(fields: [merchant_id], references: [id])
 }

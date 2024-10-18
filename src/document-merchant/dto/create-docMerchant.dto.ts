@@ -4,7 +4,7 @@ import { IsNotEmpty, IsNumber, IsOptional, IsString, Validate } from "class-vali
 export class CreateDocMerchantDto {
     @IsNotEmpty()
     @IsNumber()
-    @Validate(IsExist, ['Merchant', 'id'])
+    // @Validate(IsExist, ['Merchant', 'id'])
     merchant_id: number;
   
     // @IsNotEmpty()
