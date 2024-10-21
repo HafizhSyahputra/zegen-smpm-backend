@@ -8,9 +8,8 @@ import { UpdateDocVendorDto } from './dto/update-docVendor.dto';
 import { ColumnDocVendor } from '@smpm/common/constants/enum';
 import { PageOptionDocVendorDto } from './dto/page-option.dto';
 import { CreateDocVendorDto } from './dto/create-docVendor.dto';
-import { v4 as uuidv4 } from 'uuid';  
-import { extname } from 'path';
 import * as fs from 'fs';
+import * as path from 'path';  
 
 @Injectable()
 export class DocumentVendorService {
@@ -20,11 +19,12 @@ export class DocumentVendorService {
     createDocVendorDto: CreateDocVendorDto,  
     file1?: Express.Multer.File,  
     file2?: Express.Multer.File,  
+    createdBy?: number,  
   ): Promise<DocVendorEntity> {  
-    const { job_order_no, edc_brand, longitude, latitude, edc_type, jo_type, vendor_name, tanggal_perjanjian, location, created_by } = createDocVendorDto;  
-
-     const file1Name = file1 ? this.generateUniqueFileName(file1.originalname) : null;  
-    const file2Name = file2 ? this.generateUniqueFileName(file2.originalname) : null;  
+    const { job_order_no, edc_brand, edc_type, jo_type, vendor_name, tanggal_perjanjian } = createDocVendorDto;  
+    const parsedDate = new Date(tanggal_perjanjian);
+    const file1Path = file1 ? path.join('uploads', 'document-vendor', file1.originalname) : null;  
+    const file2Path = file2 ? path.join('uploads', 'document-vendor', file2.originalname) : null;  
 
      const createdDocument = await this.prisma.documentVendor.create({  
       data: {  
@@ -33,37 +33,40 @@ export class DocumentVendorService {
         edc_type,
         jo_type,
         vendor_name,
-        tanggal_perjanjian,
+        tanggal_perjanjian: parsedDate,
         // vendor_id,
         // mid,
         // tid,
         // region_id,  
-        longitude,
-        latitude,
-        location,  
-        file1: file1 ? `uploads/document-vendor/${file1Name}` : null,  
-        file2: file2 ? `uploads/document-vendor/${file2Name}` : null,  
-        created_by,  
+        // longitude,
+        // latitude,
+        // location,  
+        file1: file1Path,  
+        file2: file2Path,  
+        created_by: createdBy,  
+        updated_by: createdBy,   
       },  
     });  
 
-     if (file1) {  
-      const file1Name = `uploads/document-vendor/${file1.filename}`;  
-      await fs.promises.writeFile(file1Name, file1.buffer);  
+    if (file1) {  
+      await this.saveFile(file1);  
     }  
+    
     if (file2) {  
-      const file2Name = `uploads/document-vendor/${file2.filename}`;  
-      await fs.promises.writeFile(file2Name, file2.buffer);  
+      await this.saveFile(file2);  
     }  
-
-    return new DocVendorEntity(createdDocument);  
-  }  
-
-  private generateUniqueFileName(originalName: string): string {  
-    const extension = extname(originalName);  
-    const fileName = `${uuidv4()}${extension}`;  
-    return fileName;  
-  }  
+    
+    return createdDocument;  
+  }
+  private async saveFile(file: Express.Multer.File) {  
+    const uploadPath = path.join('uploads', 'document-vendor', file.originalname);  
+    await fs.promises.mkdir(path.dirname(uploadPath), { recursive: true });  
+    try {  
+      await fs.promises.writeFile(uploadPath, file.buffer);  
+    } catch (e) {  
+      throw new BadRequestException('Failed to save file');  
+    }  
+  }
 
   async findAll(
     pageOptionDocVendorDto: PageOptionDocVendorDto,
@@ -160,11 +163,13 @@ export class DocumentVendorService {
   async update(
     id: number,
     updateDocVendorDto: UpdateDocVendorDto,
+    updatedBy: number
   ): Promise<DocVendorEntity> {
     const updatedDocument = await this.prisma.documentVendor.update({
       where: { id },
       data: {
         ...updateDocVendorDto,
+        updated_by: updatedBy,  
         updated_at: new Date(),
       },
     });

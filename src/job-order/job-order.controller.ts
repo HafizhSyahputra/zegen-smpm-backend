@@ -93,9 +93,9 @@ export class JobOrderController {
     return data;
   }
 
-  @Get(':no_jo')  
+  @Get('staging/:no_jo')  
   async getJobOrderByNoJo(@Param('no_jo') no_jo: string): Promise<StagingJobOrder[]> {  
-    const jobOrders = await this.jobOrderService.findByNoJo(no_jo);  
+    const jobOrders = await this.jobOrderService.findStagingNoJo(no_jo);  
 
      if (jobOrders.length === 0) {  
       throw new NotFoundException(`No job orders found with no_jo: ${no_jo}`);  
@@ -1151,6 +1151,7 @@ export class JobOrderController {
       });  
 
       const amount = createActivityJobOrderDto.products ? createActivityJobOrderDto.products.length : 0;  
+      const location = `${jobOrder.address1}, ${jobOrder.address2}, ${jobOrder.address3}, ${jobOrder.address4} ${jobOrder.postal_code}`;  
 
       await this.prisma.activityVendorReport.create({
         data:
@@ -1162,6 +1163,7 @@ export class JobOrderController {
             status: createActivityJobOrderDto.status,  
             nominal: '200.000',
             jenis: jobOrder.type,  
+            location: location,
             description: this.getDescriptionByJobOrderType(jobOrder.type),    
             amount: amount,  
             petugas: jobOrder.officer_name,  

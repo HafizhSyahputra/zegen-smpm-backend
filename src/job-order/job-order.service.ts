@@ -303,13 +303,14 @@ export class JobOrderService {
     return data;
   }
 
-  async findByNoJo(no_jo: string): Promise<StagingJobOrder[]> {  
+  async findStagingNoJo(no_jo: string): Promise<StagingJobOrder[]> {  
     const data = await this.prismaService.stagingJobOrder.findMany({  
       where: {  
         job_order_no: no_jo,  
       },  
       include: {  
         jobOrder: true,  
+        staging:true,
         jobOrderReport: {  
           include: {  
             MediaJobOrderReportProofOfVisit: true,  

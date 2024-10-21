@@ -1,17 +1,45 @@
 import { IsOptional, IsString, IsNumber, IsDate } from "class-validator";  
 
-export class UpdateJobOrderReportDto {  
+export class UpdateActivityVendorReportDto {  
     @IsOptional()  
     @IsString()  
-    job_order_no?: string;  
+    job_order_no: string; 
+
+    @IsOptional()  
+    @IsNumber()  
+    vendor_id: string; 
 
     @IsOptional()  
     @IsString()  
-    status?: string;  
+    nominal: string;  
+    
+    @IsOptional()  
+    @IsString()  
+    mid: string;  
+    
+    @IsOptional()  
+    @IsString()  
+    tid: string;  
 
     @IsOptional()  
     @IsString()  
-    status_approve?: string;  
+    status: string;  
+    
+    @IsOptional()  
+    @IsString()  
+    jenis: string;  
+    
+    @IsOptional()  
+    @IsString()  
+    description: string;  
+  
+    @IsOptional()  
+    @IsNumber()  
+    amount: number;  
+    
+    @IsOptional()  
+    @IsString()  
+    petugas: string;  
 
     @IsOptional()  
     @IsString()  

@@ -3,9 +3,9 @@ import { IsNumber, IsOptional, IsString, Validate } from "class-validator";
 
 export class UpdateDocMerchantDto {  
 
-    @IsOptional()  
-    @IsNumber()
-    merchant_id?: number;
+    // @IsOptional()  
+    // @IsNumber()
+    // merchant_id?: number;
 
     @IsOptional()  
     @IsString()

@@ -1,9 +1,25 @@
 import { IsOptional, IsString, IsNumber, IsNotEmpty, IsIn, IsDate, Validate } from "class-validator";  
  
-export class CreateJobOrderReportDto {  
+export class CreateActivityVendorReportDto {  
     @IsNotEmpty()  
     @IsString()  
-    job_order_no: string;  
+    job_order_no: string; 
+
+    @IsNotEmpty()  
+    @IsNumber()  
+    vendor_id: string; 
+
+    @IsNotEmpty()  
+    @IsString()  
+    nominal: string;  
+    
+    @IsNotEmpty()  
+    @IsString()  
+    mid: string;  
+    
+    @IsNotEmpty()  
+    @IsString()  
+    tid: string;  
 
     @IsNotEmpty()  
     @IsString()  
@@ -11,7 +27,19 @@ export class CreateJobOrderReportDto {
     
     @IsNotEmpty()  
     @IsString()  
-    status_approve: string;  
+    jenis: string;  
+    
+    @IsNotEmpty()  
+    @IsString()  
+    description: string;  
+  
+    @IsNotEmpty()  
+    @IsNumber()  
+    amount: number;  
+    
+    @IsNotEmpty()  
+    @IsString()  
+    petugas: string;  
 
     @IsNotEmpty()  
     @IsString()  

@@ -23,15 +23,6 @@ export class UpdateDocVendorDto {
   @IsOptional()
   @IsString()
   file2?: string;
-  @IsOptional()  
-  @IsString()
-  longitude?: string;
-  @IsOptional()  
-  @IsString()
-  latitude?: string;
-  @IsOptional()  
-  @IsString()
-  location?: string;
   @IsOptional()
   @Validate(IsExist, ['User', 'id'])
   updated_by?: number;

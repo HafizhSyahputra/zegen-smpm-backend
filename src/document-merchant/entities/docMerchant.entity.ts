@@ -7,8 +7,8 @@ export class DocMerchantEntity {
 
   @Expose()
   id: number;
-  @Expose()
-  merchant_id: number;
+  // @Expose()
+  // merchant_id: number;
   // @Expose()
   // region_id: number;
   @Expose()

@@ -8,54 +8,57 @@ import { ColumntDocMerchant } from '@smpm/common/constants/enum';
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
 import { UpdateDocMerchantDto } from './dto/update-docMerchant.dto';
 import { DocMerchantEntity } from './entities/docMerchant.entity';
-import { v4 as uuidv4 } from 'uuid';  
-import { extname } from 'path';
 import * as fs from 'fs';  
+import * as path from 'path';  
 
 @Injectable()
 export class DocumentMerchantService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async create(createDocMerchantDto: CreateDocMerchantDto, file1?: Express.Multer.File, file2?: Express.Multer.File): Promise<DocMerchantEntity> {  
-      const { merchant_id, merchant_name, longitude, latitude, location, created_by } = createDocMerchantDto;  
-
+    async create(  
+      createDocMerchantDto: CreateDocMerchantDto,  
+      file1?: Express.Multer.File,  
+      file2?: Express.Multer.File,  
+      createdBy?: number,  
+    ): Promise<DocumentMerchant> {  
+      const { merchant_name, longitude, latitude, location } = createDocMerchantDto;  
+    
+      const file1Path = file1 ? path.join('uploads', 'document-merchant', file1.originalname) : null;  
+      const file2Path = file2 ? path.join('uploads', 'document-merchant', file2.originalname) : null;  
+    
       const createdDocument = await this.prisma.documentMerchant.create({  
-          data: {  
-              merchant_id, 
-              merchant_name,  
-              location,  
-              longitude,  
-              latitude,  
-              file1: file1 ? `uploads/document-merchant/${this.generateUniqueFileName(file1.originalname)}` : null,  
-              file2: file2 ? `uploads/document-merchant/${this.generateUniqueFileName(file2.originalname)}` : null,  
-              created_by,  
-          },  
+        data: {  
+          merchant_name,  
+          location,  
+          longitude,  
+          latitude,  
+          file1: file1Path,  
+          file2: file2Path,  
+          created_by: createdBy,  
+          updated_by: createdBy,  
+        },  
       });  
-  
-      const file1Name = file1 ? this.generateUniqueFileName(file1.originalname) : null;  
-      const file2Name = file2 ? this.generateUniqueFileName(file2.originalname) : null;  
-
-      // Move files to the destination folder  
+    
       if (file1) {  
-        const uploadPath1 = `uploads/document-merchant/${file1Name}`;  
-        await fs.promises.mkdir('uploads/document-merchant', { recursive: true }); // Ensure the directory exists  
-        await fs.promises.writeFile(uploadPath1, file1.buffer);  
+        await this.saveFile(file1);  
       }  
-
+      
       if (file2) {  
-        const uploadPath2 = `uploads/document-merchant/${file2Name}`;  
-        await fs.promises.mkdir('uploads/document-merchant', { recursive: true }); // Ensure the directory exists  
-        await fs.promises.writeFile(uploadPath2, file2.buffer);  
+        await this.saveFile(file2);  
       }  
-
-      return new DocMerchantEntity(createdDocument);  
-    }  
-  
-    private generateUniqueFileName(originalName: string): string {  
-      const extension = extname(originalName);  
-      const fileName = `${uuidv4()}${extension}`;  
-      return fileName;  
-    }  
+      
+      return createdDocument;  
+    }
+    
+    private async saveFile(file: Express.Multer.File) {  
+      const uploadPath = path.join('uploads', 'document-merchant', file.originalname);  
+      await fs.promises.mkdir(path.dirname(uploadPath), { recursive: true });  
+      try {  
+        await fs.promises.writeFile(uploadPath, file.buffer);  
+      } catch (e) {  
+        throw new BadRequestException('Failed to save file');  
+      }  
+    }
   
 
  async findAll(pageOptionDocMerchantDto: PageOptionDocMerchantDto): Promise<PageDto<DocumentMerchant>> {
@@ -84,10 +87,10 @@ export class DocumentMerchantService {
         skip,
         take,
         orderBy,
-        include: {
-          merchant: true,
-          // region: true,
-        },
+        // include: {
+        //   merchant: true,
+        //   // region: true,
+        // },
       }),
       this.prisma.documentMerchant.count({ where: filter }),
     ]);
@@ -103,10 +106,10 @@ export class DocumentMerchantService {
   async findOne(id: number): Promise<DocumentMerchant | null> {
     return this.prisma.documentMerchant.findUnique({
       where: { id, deleted_at: null },
-      include: {
-        merchant: true,
-        // region: true,
-      },
+      // include: {
+      //   merchant: true,
+      //   // region: true,
+      // },
     });
   }
 
@@ -117,16 +120,17 @@ export class DocumentMerchantService {
     });
   }
 
-  async update(id: number, updateDocMerchantDto: UpdateDocMerchantDto): Promise<DocMerchantEntity> {  
+  async update(id: number, updateDocMerchantDto: UpdateDocMerchantDto, updatedBy: number): Promise<DocumentMerchant> {  
     const updatedDocument = await this.prisma.documentMerchant.update({  
       where: { id },  
       data: {  
         ...updateDocMerchantDto,  
+        updated_by: updatedBy,  
         updated_at: new Date(),    
       },  
     });  
-    return new DocMerchantEntity(updatedDocument);  
-}
+    return updatedDocument;  
+}   
 
 async deleteFile(id: number, fileKey: 'file1' | 'file2'): Promise<void> {
   const docMerchant = await this.findOne(id);

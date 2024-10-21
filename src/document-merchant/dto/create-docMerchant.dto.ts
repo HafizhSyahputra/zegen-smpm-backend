@@ -2,10 +2,10 @@ import { IsExist } from "@smpm/common/validator/is-exists.validator";
 import { IsNotEmpty, IsNumber, IsOptional, IsString, Validate } from "class-validator";
 
 export class CreateDocMerchantDto {
-    @IsNotEmpty()
-    @IsNumber()
-    // @Validate(IsExist, ['Merchant', 'id'])
-    merchant_id: number;
+    // @IsNotEmpty()
+    // @IsNumber()
+    // // @Validate(IsExist, ['Merchant', 'id'])
+    // merchant_id: number;
   
     // @IsNotEmpty()
     // @IsNumber()
@@ -36,5 +36,8 @@ export class CreateDocMerchantDto {
     @IsOptional()
     @Validate(IsExist, ['User', 'id'])  
     created_by?: number;
+    @IsOptional()
+    @Validate(IsExist, ['User', 'id'])  
+    updated_by?: number;
   }
   

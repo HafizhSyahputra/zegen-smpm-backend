@@ -9,7 +9,7 @@ import {
 
 export class CreateDocVendorDto {
   @IsNotEmpty()
-  @IsNumber()
+  @IsString()
   @Validate(IsExist, ['JobOrder', 'no'])
   job_order_no: string;
   @IsNotEmpty()
@@ -55,15 +55,6 @@ export class CreateDocVendorDto {
   @IsOptional()
   @IsString()
   file2?: string;
-
-  @IsString()
-  longitude: string;
-  
-  @IsString()
-  latitude: string;
-
-  @IsString()
-  location?: string;
 
   @IsOptional()
   @Validate(IsExist, ['User', 'id'])

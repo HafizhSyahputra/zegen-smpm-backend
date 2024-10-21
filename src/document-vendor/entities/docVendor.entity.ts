@@ -31,12 +31,6 @@ export class DocVendorEntity {
   file1?: string;
   @Expose()
   file2?: String;
-  @Expose()
-  longitude?: String;
-  @Expose()
-  latitude?: String;
-  @Expose()
-  location?: String;
   @Exclude()
   created_by?: number;
   @Exclude()

@@ -47,17 +47,22 @@ export class DocumentVendorController {
   async create(
     @UploadedFiles()
     files: { file1?: Express.Multer.File[]; file2?: Express.Multer.File[] },
-    @Body() createDocVendorDto: CreateDocVendorDto,
-    @User() user: any,
+    @Body() createDoVendorDto: CreateDocVendorDto,
     @Req() req: Request,
-  ): Promise<DocVendorEntity> {
+    @User() user: any,
+  ) {
     const file1 = files.file1 ? files.file1[0] : undefined;
     const file2 = files.file2 ? files.file2[0] : undefined;
 
+    if (!file1) {
+      throw new BadRequestException('File1 is required.');
+    }
+
     const createdDocument = await this.docVendorService.create(
-      createDocVendorDto,
+      createDoVendorDto,
       file1,
       file2,
+      user?.sub,
     );
 
     await this.auditService.create({
@@ -118,29 +123,31 @@ export class DocumentVendorController {
       }  
     )  
   )  
-  async update(  
-    @Param() param: ParamIdDto,  
-    @UploadedFiles()  
-    files: { file1?: Express.Multer.File[]; file2?: Express.Multer.File[] },  
-    @Body() updateDocVendorDto: UpdateDocVendorDto,  
-    @User() user: any,  
-    @Req() req: Request  
-  ): Promise<DocVendorEntity> {  
-    const find = await this.docVendorService.findOne(param.id);  
-    if (!find) throw new BadRequestException('Data not found.');  
-  
-    const oldData = await this.docVendorService.findOne(Number(param.id));  
-  
-    if (files.file1 && files.file1.length > 0) {  
-      updateDocVendorDto.file1 = files.file1[0].path;  
-    }  
-    if (files.file2 && files.file2.length > 0) {  
-      updateDocVendorDto.file2 = files.file2[0].path;  
-    }  
-  
-    const update = new DocVendorEntity(  
-      await this.docVendorService.update(param.id, updateDocVendorDto)  
-    );  
+  async update(
+    @Param() param: ParamIdDto,
+    @UploadedFiles()
+    files: { file1?: Express.Multer.File[]; file2?: Express.Multer.File[] },
+    @Body() updateDocVendorDto: UpdateDocVendorDto,
+    @User() user: any,
+    @Req() req: Request,
+  ): Promise<DocVendorEntity> {
+    const find = await this.docVendorService.findOne(param.id);
+    if (!find) throw new BadRequestException('Data not found.');
+
+    const oldData = await this.docVendorService.findOne(Number(param.id));
+
+    if (files.file1 && files.file1.length > 0) {
+      updateDocVendorDto.file1 = files.file1[0].path;
+    }
+    if (files.file2 && files.file2.length > 0) {
+      updateDocVendorDto.file2 = files.file2[0].path;
+    }
+
+    const update = await this.docVendorService.update(
+      param.id,
+      updateDocVendorDto,
+      user?.sub,
+    );
 
     await this.auditService.create({
       Url: req.url,
@@ -148,14 +155,14 @@ export class DocumentVendorController {
       MenuName: 'Document Vendor',
       DataBefore: JSON.stringify(oldData),
       DataAfter: JSON.stringify(update),
-      UserName: user?.name || 'Unknown',    
+      UserName: user?.name || 'Unknown',
       IpAddress: req.ip,
       ActivityDate: new Date(),
       Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
       OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
       AppSource: 'Desktop',
-      created_by: user?.sub || null,   
-      updated_by: user?.sub || null, 
+      created_by: user?.sub || null,
+      updated_by: user?.sub || null,
     });
 
     return update;
@@ -200,36 +207,35 @@ export class DocumentVendorController {
     return { message: 'File deleted successfully.' };
   }
 
-  @Get(':id/download/:file')  
-  async getFile(  
-    @Param('id') id: number,  
-    @Param('file') file: 'file1' | 'file2',  
-    @Res() res: Response  
-  ) {  
-    const docVendor = await this.docVendorService.findOne(id);  
-    if (!docVendor) {  
-      throw new BadRequestException('Data not found.');  
-    }  
-  
-    const filePath = docVendor[file];  
-    if (!filePath) {  
-      throw new BadRequestException(`No file found for ${file}.`);  
-    }  
-  
-    try {  
-      const fileName = this.getFileName(filePath);  
-      res.download(filePath, fileName, (err) => {  
-        if (err) {  
-          console.error('Error downloading file:', err);  
-          throw new BadRequestException('Error downloading file.');  
-        }  
-      });  
-    } catch (error) {  
-      console.error('Error downloading file:', error);  
-      throw new BadRequestException('Error downloading file.');  
-    }  
-  }  
-  
+  @Get(':id/download/:file')
+  async getFile(
+    @Param('id') id: number,
+    @Param('file') file: 'file1' | 'file2',
+    @Res() res: Response,
+  ) {
+    const docVendor = await this.docVendorService.findOne(id);
+    if (!docVendor) {
+      throw new BadRequestException('Data not found.');
+    }
+
+    const filePath = docVendor[file];
+    if (!filePath) {
+      throw new BadRequestException(`No file found for ${file}.`);
+    }
+
+    try {
+      const fileName = this.getFileName(filePath);
+      res.download(filePath, fileName, (err) => {
+        if (err) {
+          console.error('Error downloading file:', err);
+          throw new BadRequestException('Error downloading file.');
+        }
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      throw new BadRequestException('Error downloading file.');
+    }
+  }
 
   @Delete(':id')
   async remove(

@@ -52,22 +52,21 @@ export class DocumentMerchantController {
     @UploadedFiles()
     files: { file1?: Express.Multer.File[]; file2?: Express.Multer.File[] },
     @Body() createDocMerchantDto: CreateDocMerchantDto,
-    @User() user: any,
     @Req() req: Request,
+    @User() user: any,
   ) {
     const file1 = files.file1 ? files.file1[0] : undefined;
     const file2 = files.file2 ? files.file2[0] : undefined;
 
-    // Ensure merchant_id is treated as a number
-    createDocMerchantDto.merchant_id = parseInt(
-      createDocMerchantDto.merchant_id as unknown as string,
-      10,
-    );
+    if (!file1) {
+      throw new BadRequestException('File1 is required.');
+    }
 
     const createdDocument = await this.docmerchantService.create(
       createDocMerchantDto,
       file1,
       file2,
+      user?.sub,
     );
 
     await this.auditService.create({
@@ -150,8 +149,10 @@ export class DocumentMerchantController {
       updateDocMerchantDto.file2 = files.file2[0].path;
     }
 
-    const update = new DocMerchantEntity(
-      await this.docmerchantService.update(param.id, updateDocMerchantDto),
+    const update = await this.docmerchantService.update(
+      param.id,
+      updateDocMerchantDto,
+      user?.sub,
     );
 
     await this.auditService.create({
