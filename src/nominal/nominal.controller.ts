@@ -3,9 +3,11 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -18,6 +20,8 @@ import { Request } from 'express';
 import { ParamIdDto } from '@smpm/common/decorator/param-id.dto';
 import { UpdateNominalDto } from './dto/update-nominal.dto';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
+import { PageOptionNominalDto } from './dto/page-option.dto';
+import { PageDto } from '@smpm/common/decorator/page.dto';
 
 @UseGuards(AccessTokenGuard)
 @Controller('nominal')
@@ -26,6 +30,20 @@ export class NominalController {
     private readonly nominalService: NominalService,
     private readonly auditService: AuditService,
   ) {}
+  
+  @Get()
+  async findAll(
+    @Query() pageOptionNominalDto: PageOptionNominalDto,
+  ): Promise<PageDto<NominalEntity>> {
+    const data = await this.nominalService.findAll(pageOptionNominalDto);
+    data.data = data.data.map(
+      (item) =>
+        new NominalEntity({
+          ...item,
+        }),
+    );
+    return data;
+  }
 
   @Post()
   async create(
@@ -34,7 +52,7 @@ export class NominalController {
     @Req() req: Request,
   ): Promise<NominalEntity> {
     const create = new NominalEntity(
-      await this.nominalService.create(createNominalDto),
+      await this.nominalService.create(createNominalDto, user?.sub),
     );
 
     await this.auditService.create({
@@ -70,7 +88,7 @@ export class NominalController {
 
     const oldData = await this.nominalService.findOne(Number(param.id));
     const update = new NominalEntity(
-      await this.nominalService.update(param.id, updateNominalDto),
+      await this.nominalService.update(param.id, updateNominalDto, user?.sub),
     );
 
     await this.auditService.create({

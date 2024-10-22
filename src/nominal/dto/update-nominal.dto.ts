@@ -1,15 +1,15 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateNominalDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  jenis: string;
+  jenis?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  nominal: string;
+  nominal?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  tipe: string;
+  tipe?: string;
 }

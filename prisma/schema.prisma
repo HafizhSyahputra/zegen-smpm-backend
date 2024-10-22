@@ -395,7 +395,7 @@ model ElectronicDataCaptureMachine {
 
 model NominalJobOrder {
   id         Int       @id @default(autoincrement())
-  jenis      String
+  jenis      String    @unique
   nominal    String
   tipe       String
   created_by Int?

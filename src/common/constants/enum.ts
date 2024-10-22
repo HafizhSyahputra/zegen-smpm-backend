@@ -272,6 +272,13 @@ export enum ColumnActivityVendorReport{
   swipe_cash_indication = 'swipe_cash_indication',  
 }
 
+export enum ColumnNominal{
+  id = 'id',
+  jenis = 'jensi',
+  nominal = 'nominal',
+  tipe = 'tipe',
+}
+
 export enum ColumnPreventiveMaintenanceReport{  
   id = 'id',  
   job_order_no = 'job_order_no',  
