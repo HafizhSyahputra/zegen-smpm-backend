@@ -22,7 +22,7 @@ export class MediaService {
   async findMediaById(id: number) {  
     const media = await this.prisma.media.findUnique({ where: { id } });  
     if (!media) {  
-        console.log(`Media with ID ${id} not found`); // Tambahkan log ini  
+        console.log(`Media with ID ${id} not found`);   
         throw new BadRequestException('Media not found');  
     }  
     return media;  

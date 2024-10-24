@@ -191,6 +191,7 @@ model Menu_Role {
 model Vendor {
   id                           Int                            @id @default(autoincrement())
   name                         String
+  jenis                        String?
   code                         String?                        @unique
   description                  String?
   created_by                   Int?
@@ -252,9 +253,9 @@ model Merchant {
   phone1        String
   phone2        String?
   address1      String
-  address2      String
-  address3      String
-  address4      String
+  address2      String?
+  address3      String?
+  address4      String?
   district      String?
   subdistrict   String?
   city          String?
@@ -403,8 +404,6 @@ model NominalJobOrder {
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
-
-  JobOrder JobOrder[]
 }
 
 model JobOrder {
@@ -414,7 +413,9 @@ model JobOrder {
   no                                                         String    @unique
   type                                                       String
   date                                                       DateTime  @db.Date
-  nominal_id                                                 Int?
+  nominal_awal                                               String?
+  nominal_akhir                                              String?
+  sla_penalty                                                String?
   mid                                                        String
   tid                                                        String
   officer_name                                               String?
@@ -483,10 +484,9 @@ model JobOrder {
   updated_at                                                 DateTime  @updatedAt
   deleted_at                                                 DateTime?
 
-  nominal  NominalJobOrder? @relation(fields: [nominal_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  vendor   Vendor           @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  region   Region           @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  merchant Merchant         @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
+  vendor   Vendor   @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  region   Region   @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  merchant Merchant @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
   // edc ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
 
   JobOrderReport JobOrderReport[]

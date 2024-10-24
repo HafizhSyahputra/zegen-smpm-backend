@@ -11,6 +11,8 @@ export class VendorEntity implements Vendor {
 
   @Expose()
   name: string;
+  @Expose()
+  jenis: string;
 
   @Expose()
   code: string;

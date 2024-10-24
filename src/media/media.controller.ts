@@ -29,4 +29,22 @@ export class MediaController {
       res.status(HttpStatus.NOT_FOUND).send('Media not found');  
     }  
   }  
+
+  @Get('gambar/:id')  
+  async getMedias(@Param('id') id: number, @Res() res: Response) {  
+  const media = await this.mediaService.findMediaById(id);  
+  if (!media) {  
+    return res.status(HttpStatus.NOT_FOUND).send('Media not found');  
+  }  
+
+  console.log('Media found:', media);  
+
+  const uploadsDir = path.resolve('uploads');  
+  const filePath = path.join(uploadsDir, media.path);  
+  console.log('Full file path:', filePath);   
+
+  res.setHeader('Content-Type', media.mime);   
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Sesuaikan ini jika perlu  
+  res.sendFile(filePath);  
+}
 }

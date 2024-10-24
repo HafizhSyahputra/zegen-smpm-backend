@@ -38,9 +38,6 @@ export class NominalService {
         skip,
         take,
         orderBy,
-        include: {
-          JobOrder: true,
-        },
       }),
       this.prisma.nominalJobOrder.count({ where: filter }),
     ]);
