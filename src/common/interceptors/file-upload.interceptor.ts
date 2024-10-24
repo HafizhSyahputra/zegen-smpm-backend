@@ -14,7 +14,7 @@ export const FileUploadInterceptor = ({
   prefixName,
   maxSize = 6,
   maxCount = 20,
-  ext = ['jpg', 'jpeg', 'png', 'gif', 'xlsx'],
+  ext = ['jpg', 'jpeg', 'png', 'gif', 'xlsx', 'pdf', 'doc', 'docx', 'ppt', 'pptx'],
 }: {
   name: string;
   dirPath: string;

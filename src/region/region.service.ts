@@ -50,6 +50,9 @@ export class RegionService {
         orderBy: order,
         skip: pageOptionRegionDto.skip,
         take: pageOptionRegionDto.take,
+        include: {
+          regionGroup: true,
+        }
       }),
       this.prismaService.region.count({
         where: {
@@ -72,6 +75,9 @@ export class RegionService {
       where: {
         id,
       },
+      include: {
+        regionGroup: true,
+      }
     });
   }
 

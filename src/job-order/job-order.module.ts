@@ -18,6 +18,7 @@ import { ReceivedInModule } from '@smpm/received-in/received-in.module';
 import { ReceivedOutModule } from '@smpm/received-out/received-out.module';
 import { ReceivedInService } from '@smpm/received-in/received-in.service';
 import { ReceivedOutService } from '@smpm/received-out/received-out.service';
+import { NominalService } from '@smpm/nominal/nominal.service';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ReceivedOutService } from '@smpm/received-out/received-out.service';
     ElectronicDataCaptureService,
     ReceivedInService,
     ReceivedOutService,
+    NominalService,
   ],
 })
 export class JobOrderModule {}

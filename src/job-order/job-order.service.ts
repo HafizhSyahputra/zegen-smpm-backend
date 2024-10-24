@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { JobOrder, Prisma, StagingJobOrder } from '@prisma/client';
 import { ColumnJobOrder, JobOrderStatus } from '@smpm/common/constants/enum';
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
@@ -337,11 +337,25 @@ export class JobOrderService {
     return data;  
   }  
 
-  createMany(data: Prisma.JobOrderUncheckedCreateInput[]) {
-    return this.prismaService.jobOrder.createMany({
-      data,
-    });
-  }
+  async createMany(data: Prisma.JobOrderUncheckedCreateInput[]) {  
+    try {  
+      return await this.prismaService.jobOrder.createMany({  
+        data,  
+      });  
+    } catch (error) {  
+      console.error('Error saat menyimpan job orders:', error);  
+      throw new BadRequestException('Gagal menyimpan job orders');  
+    }  
+  }  
+
+  async updateNominal(id: number, nominal: string) {  
+    return await this.prismaService.jobOrder.update({  
+        where: { id },  
+        data: {  
+            nominal_awal: nominal,  
+        },  
+    });  
+}
 
   async acknowlege(data: AcknowledgeDto[]) {
     await this.prismaService.$transaction(async () => {

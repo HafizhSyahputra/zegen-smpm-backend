@@ -45,6 +45,7 @@ import { ElectronicDataCaptureService as EDCService } from '@smpm/electronic-dat
 import { ReceivedInService } from '@smpm/received-in/received-in.service';
 import { ReceivedOutService } from '@smpm/received-out/received-out.service';
 import { PrismaService } from '@smpm/prisma/prisma.service';
+import { NominalService } from '@smpm/nominal/nominal.service';
 
 @UseGuards(AccessTokenGuard)
 @Controller('job-order')
@@ -64,6 +65,7 @@ export class JobOrderController {
     private readonly receivedInService: ReceivedInService, 
     private readonly receivedOutService: ReceivedOutService, 
     private readonly eDCService: EDCService, 
+    private readonly nominalService: NominalService,
   ) {}
 
   @Get('open')
@@ -126,399 +128,415 @@ export class JobOrderController {
     }
   }
 
-  @UseInterceptors(
-    FileUploadInterceptor({
-      name: 'files',
-      dirPath: './uploads/bulk/job-order',
-      prefixName: 'job-order',
-      ext: ['xlsx'],
-    }),
-  )
-  @Post('bulk/upload')
-  async uploadBulk(
-    @Req() req: Request,
-    @User() user: any,
-    @UploadedFiles() files: Express.Multer.File[],
-  ) {
-    if (!files || files.length == 0) {
-      throw new BadRequestException('File tidak boleh kosong');
-    }
+  @UseInterceptors(  
+    FileUploadInterceptor({  
+      name: 'files',  
+      dirPath: './uploads/bulk/job-order',  
+      prefixName: 'job-order',  
+      ext: ['xlsx'],  
+    }),  
+  )  
+  @Post('bulk/upload')  
+  async uploadBulk(  
+    @Req() req: Request,  
+    @User() user: any,  
+    @UploadedFiles() files: Express.Multer.File[],  
+  ) {  
+    if (!files || files.length == 0) {  
+      throw new BadRequestException('File tidak boleh kosong');  
+    }  
+  
+    if (files && files.length > 1) {  
+      throw new BadRequestException('Hanya 1 file yang dizinkan');  
+    }  
+  
+    const workbook = new ExcelJS.Workbook();  
+    await workbook.xlsx.readFile(files[0].path, {  
+      ignoreNodes: ['dataValidations'],  
+    });  
+  
+    const worksheet = workbook.getWorksheet(1);  
+  
+    const [allRegion, allVendor, allMid, allTid, allNominal] = await Promise.all([  
+      this.regionService.getAll(),  
+      this.vendorService.getAll(),  
+      this.merchantService.getAll(),  
+      this.edcService.getAll(),  
+      this.nominalService.getAll(),  
+    ]);  
+  
+    console.log('allNominal:', allNominal);  
+  
+    const data: Prisma.JobOrderUncheckedCreateInput[] = [];  
+    const errors: {  
+      row: number;  
+      column: string;  
+      value: string;  
+      message: string;  
+    }[] = [];  
+    const jobOrderTypeCode = {  
+      'New Installation': 'IS',  
+      'CM Replace': 'CM',  
+      'CM Re-init': 'CM',  
+      'Preventive Maintenance': 'PM',  
+      Withdrawal: 'WD',  
+      'Cancel Installation': 'IS',  
+      'Cancel Withdrawal': 'IS',  
+    };  
+    const ownerStatusCode = {  
+      Sewa: 'SW',  
+      Milik: 'MS',  
+    };  
+  
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {  
+      if (rowNumber >= 4) {  
+        [  
+          {  
+            cell: 'C',  
+            name: 'KODE WILAYAH',  
+          },  
+          {  
+            cell: 'D',  
+            name: 'KODE VENDOR',  
+          },  
+          {  
+            cell: 'E',  
+            name: 'JENIS JO',  
+          },  
+          {  
+            cell: 'G',  
+            name: 'MID',  
+          },  
+          {  
+            cell: 'H',  
+            name: 'TID',  
+          },  
+          {  
+            cell: 'I',  
+            name: 'NAMA MERCHANT',  
+          },  
+          {  
+            cell: 'J',  
+            name: 'Address 1',  
+          },  
+          {  
+            cell: 'K',  
+            name: 'Address 2',  
+          },  
+          {  
+            cell: 'L',  
+            name: 'Address 3',  
+          },  
+          {  
+            cell: 'M',  
+            name: 'Address 4',  
+          },  
+          {  
+            cell: 'R',  
+            name: 'PIC',  
+          },  
+          {  
+            cell: 'S',  
+            name: 'No.Telepon 1',  
+          },  
+          {  
+            cell: 'BN',  
+            name: 'KATEGORI SEWA/MILIK',  
+          },  
+        ].forEach((item) => {  
+          if (!row.getCell(item.cell).value)  
+            errors.push({  
+              row: rowNumber,  
+              column: item.name,  
+              value: row.getCell(item.cell).value  
+                ? row.getCell(item.cell).value.toString()  
+                : null,  
+              message: `${item.name} tidak boleh kosong`,  
+            });  
+        });  
+  
+        const selectedRegion = allRegion.find(  
+          (x) => x.code == row.getCell('C').value?.toString(),  
+        );  
+        if (row.getCell('C').value && !selectedRegion)  
+          errors.push({  
+            row: rowNumber,  
+            column: 'KODE WILAYAH',  
+            value: row.getCell('C').value  
+              ? row.getCell('C').value.toString()  
+              : null,  
+            message: `KODE WILAYAH tidak ditemukan`,  
+          });  
+  
+        const selectedVendor = allVendor.find(  
+          (x) => x.code == row.getCell('D').value?.toString(),  
+        );  
+        if (row.getCell('D').value && !selectedVendor)  
+          errors.push({  
+            row: rowNumber,  
+            column: 'KODE VENDOR',  
+            value: row.getCell('D').value  
+              ? row.getCell('D').value.toString()  
+              : null,  
+            message: `KODE VENDOR tidak ditemukan`,  
+          });  
+  
+        const selectedMid = allMid.find(  
+          (x) => x.mid == row.getCell('G').value?.toString(),  
+        );  
+        if (row.getCell('G').value && !selectedMid)  
+          errors.push({  
+            row: rowNumber,  
+            column: 'MID',  
+            value: row.getCell('G').value  
+              ? row.getCell('G').value.toString()  
+              : null,  
+            message: `data mid tidak ditemukan`,  
+          });  
+  
+        const selectedTid = allTid.find(  
+          (x) => x.tid == row.getCell('H').value?.toString(),  
+        );  
+        if (row.getCell('H').value && !selectedTid)  
+          errors.push({  
+            row: rowNumber,  
+            column: 'TID',  
+            value: row.getCell('H').value  
+              ? row.getCell('H').value.toString()  
+              : null,  
+            message: `data tid tidak ditemukan`,  
+          });  
+  
+        const selectedNominal = allNominal.find(  
+          (x) => x.jenis === row.getCell('E').value?.toString(),  
+        );  
+        if (!selectedNominal) {  
+          errors.push({  
+            row: rowNumber,  
+            column: 'NOMINAL',  
+            value: null,  
+            message: `Nominal tidak ditemukan untuk jenis ${row.getCell('E').value}`,  
+          });  
+        }  
+        console.log('selectedNominal:', selectedNominal);
+  
 
-    if (files && files.length > 1) {
-      throw new BadRequestException('Hanya 1 file yang dizinkan');
-    }
-
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(files[0].path, {
-      ignoreNodes: ['dataValidations'],
-    });
-
-    const worksheet = workbook.getWorksheet(1);
-
-    const [allRegion, allVendor, allMid, allTid] = await Promise.all([
-      this.regionService.getAll(),
-      this.vendorService.getAll(),
-      this.merchantService.getAll(),
-      this.edcService.getAll(),
-    ]);
-
-    const data: Prisma.JobOrderUncheckedCreateInput[] = [];
-    const errors: {
-      row: number;
-      column: string;
-      value: string;
-      message: string;
-    }[] = [];
-    const jobOrderTypeCode = {
-      'New Installation': 'IS',
-      'CM Replace': 'CM',
-      'CM Re-init': 'CM',
-      'Preventive Maintenance' : 'PM',
-      Withdrawal: 'WD',
-      'Cancel Installation': 'IS',
-      'Cancel Withdrawal': 'IS',
-    };
-    const ownerStatusCode = {
-      Sewa: 'SW',
-      Milik: 'MS',
-    };
-
-    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      if (rowNumber >= 4) {
-        [
-          {
-            cell: 'C',
-            name: 'KODE WILAYAH',
-          },
-          {
-            cell: 'D',
-            name: 'KODE VENDOR',
-          },
-          {
-            cell: 'E',
-            name: 'JENIS JO',
-          },
-          {
-            cell: 'G',
-            name: 'MID',
-          },
-          {
-            cell: 'H',
-            name: 'TID',
-          },
-          {
-            cell: 'I',
-            name: 'NAMA MERCHANT',
-          },
-          {
-            cell: 'J',
-            name: 'Address 1',
-          },
-          {
-            cell: 'K',
-            name: 'Address 2',
-          },
-          {
-            cell: 'L',
-            name: 'Address 3',
-          },
-          {
-            cell: 'M',
-            name: 'Address 4',
-          },
-          {
-            cell: 'R',
-            name: 'PIC',
-          },
-          {
-            cell: 'S',
-            name: 'No.Telepon 1',
-          },
-          {
-            cell: 'BN',
-            name: 'KATEGORI SEWA/MILIK',
-          },
-        ].forEach((item) => {
-          if (!row.getCell(item.cell).value)
-            errors.push({
-              row: rowNumber,
-              column: item.name,
-              value: row.getCell(item.cell).value
-                ? row.getCell(item.cell).value.toString()
-                : null,
-              message: `${item.name} tidak boleh kosong`,
-            });
-        });
-
-        const selectedRegion = allRegion.find(
-          (x) => x.code == row.getCell('C').value?.toString(),
-        );
-        if (row.getCell('C').value && !selectedRegion)
-          errors.push({
-            row: rowNumber,
-            column: 'KODE WILAYAH',
-            value: row.getCell('C').value
-              ? row.getCell('C').value.toString()
+        if (errors.length == 0) {  
+          
+          data.push({  
+            nominal_awal:selectedNominal.nominal, 
+            vendor_id: selectedVendor.id,  
+            region_id: selectedRegion.id,  
+            mid: selectedMid.mid,  
+            tid: selectedTid.tid,  
+            no: `${req.user['role']['code']}${selectedRegion.code}-${  
+              selectedVendor.code  
+            }-${dayjs().format('DDMMYYYY')}-${  
+              jobOrderTypeCode[row.getCell('E').value.toString()]  
+            }-${ownerStatusCode[row.getCell('BN').value.toString()]}-`,  
+            type: row.getCell('E').value  
+              ? row.getCell('E').value.toString()  
+              : null,  
+            date: new Date(),  
+            status: 'Open',  
+            merchant_name: row.getCell('I').value  
+              ? row.getCell('I').value.toString()  
+              : null,  
+            address1: row.getCell('J').value  
+              ? row.getCell('J').value.toString()  
+              : null,  
+            address2: row.getCell('K').value  
+              ? row.getCell('K').value.toString()  
+              : null,  
+            address3: row.getCell('L').value  
+              ? row.getCell('L').value.toString()  
+              : null,  
+            address4: row.getCell('M').value  
+              ? row.getCell('M').value.toString()  
+              : null,  
+            subdistrict: row.getCell('N').value  
+              ? row.getCell('N').value.toString()  
+              : null,  
+            village: row.getCell('O').value  
+              ? row.getCell('O').value.toString()  
+              : null,  
+            city: row.getCell('P').value  
+              ? row.getCell('P').value.toString()  
+              : null,  
+            postal_code: row.getCell('Q').value  
+              ? row.getCell('Q').value.toString()  
+              : null,  
+            pic: row.getCell('R').value  
+              ? row.getCell('R').value.toString()  
+              : null,  
+            phone_number1: row.getCell('S').value  
+              ? row.getCell('S').value.toString()  
+              : null,  
+            phone_number2: row.getCell('T').value  
+              ? row.getCell('T').value.toString()  
+              : null,  
+            provider: row.getCell('U').value  
+              ? row.getCell('U').value.toString()  
+              : null,  
+            trx_type_mini_atm: row.getCell('V').value  
+              ? row.getCell('V').value.toString()  
+              : null,  
+            trx_type_visa: row.getCell('W').value  
+              ? row.getCell('W').value.toString()  
+              : null,  
+            trx_type_master: row.getCell('X').value  
+              ? row.getCell('X').value.toString()  
+              : null,  
+            trx_type_jcb: row.getCell('Y').value  
+              ? row.getCell('Y').value.toString()  
+              : null,  
+            trx_type_maestro: row.getCell('Z').value  
+              ? row.getCell('Z').value.toString()  
+              : null,  
+            trx_type_gpn: row.getCell('AA').value  
+              ? row.getCell('AA').value.toString()  
+              : null,  
+            trx_type_tapcash_topup: row.getCell('AB').value  
+              ? row.getCell('AB').value.toString()  
+              : null,  
+            trx_type_tapcash_purchase: row.getCell('AC').value  
+              ? row.getCell('AC').value.toString()  
+              : null,  
+            trx_type_qrcode_qris: row.getCell('AD').value  
+              ? row.getCell('AD').value.toString()  
+              : null,  
+            trx_type_qrcode_linkaja: row.getCell('AE').value  
+              ? row.getCell('AE').value.toString()  
+              : null,  
+            trx_type_contactless_master: row.getCell('AF').value  
+              ? row.getCell('AF').value.toString()  
+              : null,  
+            trx_type_contractless_visa: row.getCell('AG').value  
+              ? row.getCell('AG').value.toString()  
+              : null,  
+            edc_facility_cepp_plan1: row.getCell('AH').value  
+              ? row.getCell('AH').value.toString()  
+              : null,  
+            edc_facility_cepp_plan2: row.getCell('AI').value  
+              ? row.getCell('AI').value.toString()  
+              : null,  
+            edc_facility_cepp_plan3: row.getCell('AJ').value  
+              ? row.getCell('AJ').value.toString()  
+              : null,  
+            edc_facility_reedem_point: row.getCell('AK').value  
+              ? row.getCell('AK').value.toString()  
+              : null,  
+            edc_facility_activation_keyinsales: row.getCell('AL').value  
+              ? row.getCell('AL').value.toString()  
+              : null,  
+            edc_facility_activation_keyinsales_keyinpreauth_completion:  
+              row.getCell('AM').value  
+                ? row.getCell('AM').value.toString()  
+                : null,  
+            edc_facility_activation_keyinpreauth_completion: row.getCell('AN')  
+              .value  
+              ? row.getCell('AN').value.toString()  
+              : null,  
+            edc_facility_activation_preauth_completion: row.getCell('AO').value  
+              ? row.getCell('AO').value.toString()  
+              : null,  
+            edc_facility_activation_keyinsales_preauth_completion: row.getCell(  
+              'AP',  
+            ).value  
+              ? row.getCell('AP').value.toString()  
+              : null,  
+            edc_facility_offline: row.getCell('AQ').value  
+              ? row.getCell('AQ').value.toString()  
+              : null,  
+            edc_facility_card_ver: row.getCell('AR').value  
+              ? row.getCell('AR').value.toString()  
+              : null,  
+            edc_facility_refund: row.getCell('AS').value  
+              ? row.getCell('AS').value.toString()  
+              : null,  
+            edc_facility_adjust_tip: row.getCell('AT').value  
+              ? row.getCell('AT').value.toString()  
+              : null,  
+            trx_test_credit: row.getCell('AU').value  
+              ? row.getCell('AU').value.toString()  
+              : null,  
+            trx_test_debit: row.getCell('AV').value  
+              ? row.getCell('AV').value.toString()  
+              : null,  
+            trx_test_inquiry: row.getCell('AW').value  
+              ? row.getCell('AW').value.toString()  
+              : null,  
+            trx_test_transfer: row.getCell('AX').value  
+              ? row.getCell('AX').value.toString()  
+              : null,  
+            trx_test_jcb: row.getCell('AY').value  
+              ? row.getCell('AY').value.toString()  
+              : null,  
+            trx_test_gpn: row.getCell('AZ').value  
+              ? row.getCell('AZ').value.toString()  
+              : null,  
+            trx_test_tapcash: row.getCell('BA').value  
+              ? row.getCell('BA').value.toString()  
+              : null,  
+            trx_test_qris: row.getCell('BB').value  
+              ? row.getCell('BB').value.toString()  
+              : null,  
+            trx_test_linkaja: row.getCell('BC').value  
+              ? row.getCell('BC').value.toString()  
+              : null,  
+            trx_test_visa_contactless: row.getCell('BD').value  
+              ? row.getCell('BD').value.toString()  
+              : null,  
+            trx_test_master_contactless: row.getCell('BE').value  
+              ? row.getCell('BE').value.toString()  
+              : null,  
+            trx_test_instalment: row.getCell('BF').value  
+              ? row.getCell('BF').value.toString()  
+              : null,  
+            trx_test_reedemption: row.getCell('BG').value  
+              ? row.getCell('BG').value.toString()  
+              : null,  
+            thermal_paper: row.getCell('BH').value  
+              ? Number(row.getCell('BH').value.toString())  
+              : null,  
+            sticker_bni: row.getCell('BI').value  
+              ? row.getCell('BI').value.toString()  
+              : null,  
+            acrylic: row.getCell('BJ').value  
+              ? row.getCell('BJ').value.toString()  
+              : null,  
+            description1: row.getCell('BK').value  
+              ? row.getCell('BK').value.toString()  
+              : null,  
+            description2: row.getCell('BL').value  
+              ? row.getCell('BL').value.toString()  
+              : null,  
+            merchant_category: row.getCell('BM').value  
+              ? row.getCell('BM').value.toString()  
+              : null,  
+            ownership: row.getCell('BN').value  
+              ? row.getCell('BN').value.toString()  
               : null,
-            message: `KODE WILAYAH tidak ditemukan`,
-          });
-
-        const selectedVendor = allVendor.find(
-          (x) => x.code == row.getCell('D').value?.toString(),
-        );
-        if (row.getCell('D').value && !selectedVendor)
-          errors.push({
-            row: rowNumber,
-            column: 'KODE VENDOR',
-            value: row.getCell('D').value
-              ? row.getCell('D').value.toString()
-              : null,
-            message: `KODE VENDOR tidak ditemukan`,
-          });
-
-        const selectedMid = allMid.find(
-          (x) => x.mid == row.getCell('G').value?.toString(),
-        );
-        if (row.getCell('G').value && !selectedMid)
-          errors.push({
-            row: rowNumber,
-            column: 'MID',
-            value: row.getCell('G').value
-              ? row.getCell('G').value.toString()
-              : null,
-            message: `data mid tidak ditemukan`,
-          });
-
-        const selectedTid = allTid.find(
-          (x) => x.tid == row.getCell('H').value?.toString(),
-        );
-        if (row.getCell('H').value && !selectedTid)
-          errors.push({
-            row: rowNumber,
-            column: 'TID',
-            value: row.getCell('H').value
-              ? row.getCell('H').value.toString()
-              : null,
-            message: `data tid tidak ditemukan`,
-          });
-
-        if (errors.length == 0) {
-          data.push({
-            vendor_id: selectedVendor.id,
-            region_id: selectedRegion.id,
-            mid:selectedMid.mid,
-            tid: selectedTid.tid,
-            no: `${req.user['role']['code']}${selectedRegion.code}-${
-              selectedVendor.code
-            }-${dayjs().format('DDMMYYYY')}-${
-              jobOrderTypeCode[row.getCell('E').value.toString()]
-            }-${ownerStatusCode[row.getCell('BN').value.toString()]}-`,
-            type: row.getCell('E').value
-              ? row.getCell('E').value.toString()
-              : null,
-            date: new Date(),
-            // mid: row.getCell('G').value
-            //   ? row.getCell('G').value.toString()
-            //   : null,
-            // tid: row.getCell('H').value
-            //   ? row.getCell('H').value.toString()
-            //   : null,
-            status: 'Open',
-            merchant_name: row.getCell('I').value
-              ? row.getCell('I').value.toString()
-              : null,
-            address1: row.getCell('J').value
-              ? row.getCell('J').value.toString()
-              : null,
-            address2: row.getCell('K').value
-              ? row.getCell('K').value.toString()
-              : null,
-            address3: row.getCell('L').value
-              ? row.getCell('L').value.toString()
-              : null,
-            address4: row.getCell('M').value
-              ? row.getCell('M').value.toString()
-              : null,
-            subdistrict: row.getCell('N').value
-              ? row.getCell('N').value.toString()
-              : null,
-            village: row.getCell('O').value
-              ? row.getCell('O').value.toString()
-              : null,
-            city: row.getCell('P').value
-              ? row.getCell('P').value.toString()
-              : null,
-            postal_code: row.getCell('Q').value
-              ? row.getCell('Q').value.toString()
-              : null,
-            pic: row.getCell('R').value
-              ? row.getCell('R').value.toString()
-              : null,
-            phone_number1: row.getCell('S').value
-              ? row.getCell('S').value.toString()
-              : null,
-            phone_number2: row.getCell('T').value
-              ? row.getCell('T').value.toString()
-              : null,
-            provider: row.getCell('U').value
-              ? row.getCell('U').value.toString()
-              : null,
-            trx_type_mini_atm: row.getCell('V').value
-              ? row.getCell('V').value.toString()
-              : null,
-            trx_type_visa: row.getCell('W').value
-              ? row.getCell('W').value.toString()
-              : null,
-            trx_type_master: row.getCell('X').value
-              ? row.getCell('X').value.toString()
-              : null,
-            trx_type_jcb: row.getCell('Y').value
-              ? row.getCell('Y').value.toString()
-              : null,
-            trx_type_maestro: row.getCell('Z').value
-              ? row.getCell('Z').value.toString()
-              : null,
-            trx_type_gpn: row.getCell('AA').value
-              ? row.getCell('AA').value.toString()
-              : null,
-            trx_type_tapcash_topup: row.getCell('AB').value
-              ? row.getCell('AB').value.toString()
-              : null,
-            trx_type_tapcash_purchase: row.getCell('AC').value
-              ? row.getCell('AC').value.toString()
-              : null,
-            trx_type_qrcode_qris: row.getCell('AD').value
-              ? row.getCell('AD').value.toString()
-              : null,
-            trx_type_qrcode_linkaja: row.getCell('AE').value
-              ? row.getCell('AE').value.toString()
-              : null,
-            trx_type_contactless_master: row.getCell('AF').value
-              ? row.getCell('AF').value.toString()
-              : null,
-            trx_type_contractless_visa: row.getCell('AG').value
-              ? row.getCell('AG').value.toString()
-              : null,
-            edc_facility_cepp_plan1: row.getCell('AH').value
-              ? row.getCell('AH').value.toString()
-              : null,
-            edc_facility_cepp_plan2: row.getCell('AI').value
-              ? row.getCell('AI').value.toString()
-              : null,
-            edc_facility_cepp_plan3: row.getCell('AJ').value
-              ? row.getCell('AJ').value.toString()
-              : null,
-            edc_facility_reedem_point: row.getCell('AK').value
-              ? row.getCell('AK').value.toString()
-              : null,
-            edc_facility_activation_keyinsales: row.getCell('AL').value
-              ? row.getCell('AL').value.toString()
-              : null,
-            edc_facility_activation_keyinsales_keyinpreauth_completion:
-              row.getCell('AM').value
-                ? row.getCell('AM').value.toString()
-                : null,
-            edc_facility_activation_keyinpreauth_completion: row.getCell('AN')
-              .value
-              ? row.getCell('AN').value.toString()
-              : null,
-            edc_facility_activation_preauth_completion: row.getCell('AO').value
-              ? row.getCell('AO').value.toString()
-              : null,
-            edc_facility_activation_keyinsales_preauth_completion: row.getCell(
-              'AP',
-            ).value
-              ? row.getCell('AP').value.toString()
-              : null,
-            edc_facility_offline: row.getCell('AQ').value
-              ? row.getCell('AQ').value.toString()
-              : null,
-            edc_facility_card_ver: row.getCell('AR').value
-              ? row.getCell('AR').value.toString()
-              : null,
-            edc_facility_refund: row.getCell('AS').value
-              ? row.getCell('AS').value.toString()
-              : null,
-            edc_facility_adjust_tip: row.getCell('AT').value
-              ? row.getCell('AT').value.toString()
-              : null,
-            trx_test_credit: row.getCell('AU').value
-              ? row.getCell('AU').value.toString()
-              : null,
-            trx_test_debit: row.getCell('AV').value
-              ? row.getCell('AV').value.toString()
-              : null,
-            trx_test_inquiry: row.getCell('AW').value
-              ? row.getCell('AW').value.toString()
-              : null,
-            trx_test_transfer: row.getCell('AX').value
-              ? row.getCell('AX').value.toString()
-              : null,
-            trx_test_jcb: row.getCell('AY').value
-              ? row.getCell('AY').value.toString()
-              : null,
-            trx_test_gpn: row.getCell('AZ').value
-              ? row.getCell('AZ').value.toString()
-              : null,
-            trx_test_tapcash: row.getCell('BA').value
-              ? row.getCell('BA').value.toString()
-              : null,
-            trx_test_qris: row.getCell('BB').value
-              ? row.getCell('BB').value.toString()
-              : null,
-            trx_test_linkaja: row.getCell('BC').value
-              ? row.getCell('BC').value.toString()
-              : null,
-            trx_test_visa_contactless: row.getCell('BD').value
-              ? row.getCell('BD').value.toString()
-              : null,
-            trx_test_master_contactless: row.getCell('BE').value
-              ? row.getCell('BE').value.toString()
-              : null,
-            trx_test_instalment: row.getCell('BF').value
-              ? row.getCell('BF').value.toString()
-              : null,
-            trx_test_reedemption: row.getCell('BG').value
-              ? row.getCell('BG').value.toString()
-              : null,
-            thermal_paper: row.getCell('BH').value
-              ? Number(row.getCell('BH').value.toString())
-              : null,
-            sticker_bni: row.getCell('BI').value
-              ? row.getCell('BI').value.toString()
-              : null,
-            acrylic: row.getCell('BJ').value
-              ? row.getCell('BJ').value.toString()
-              : null,
-            description1: row.getCell('BK').value
-              ? row.getCell('BK').value.toString()
-              : null,
-            description2: row.getCell('BL').value
-              ? row.getCell('BL').value.toString()
-              : null,
-            merchant_category: row.getCell('BM').value
-              ? row.getCell('BM').value.toString()
-              : null,
-            ownership: row.getCell('BN').value
-              ? row.getCell('BN').value.toString()
-              : null,
-          });
-        }
-      }
-    });
-
-    if (errors.length > 0)
-      throw new BadRequestException({
-        message: 'Terdapat data yang tidak valid pada file yang diupload',
-        errors,
-      });
-
-    await this.auditService.create({
-      Url: req.url,
+          });  
+        }  
+      }  
+    });  
+  
+    console.log('Data yang akan disimpan tanpa nominal:', JSON.stringify(data, null, 2));  
+  
+    if (errors.length > 0)  
+      throw new BadRequestException({  
+        message: 'Terdapat data yang tidak valid pada file yang diupload',  
+        errors,  
+      });  
+      
+  
+    await this.auditService.create({  
+      Url: req.url,  
       ActionName: 'Bulk Create Job Order',
-      MenuName: 'Job Order',
-      DataBefore: '',
-      DataAfter: JSON.stringify(data),
+      MenuName: 'Job Order',  
+      DataBefore: '',  
+      DataAfter: JSON.stringify(data),  
       UserName: user.name,  
       IpAddress: req.ip,  
       ActivityDate: new Date(),  
@@ -527,26 +545,33 @@ export class JobOrderController {
       AppSource: 'Desktop',  
       created_by: user.sub,  
       updated_by: user.sub,  
-    });
-
-    const batchPayload = await this.jobOrderService.createMany(data);  
-
-    const now = new Date();  
-    const createdJobOrders = await this.jobOrderService.getAll({  
-      created_at: {  
-        gte: new Date(now.getTime() - 1000),  
-      },  
     });  
 
-    const stagingRecords = createdJobOrders.map((jobOrder) => {  
-      return {  
-        job_order_no: jobOrder.no,
-        staging_id: 1,  
-        created_by: user.sub,  
-        updated_by: user.sub,  
-      };  
-    });  
-  
+  const createdJobOrders = await this.jobOrderService.createMany(data);   
+
+   const now = new Date();  
+  const jobOrdersWithNominals = await this.jobOrderService.getAll({  
+    created_at: {  
+      gte: new Date(now.getTime() - 1000),  
+    },  
+  });  
+
+   const updatePromises = jobOrdersWithNominals.map(async (jobOrder, index) => {  
+    const nominal = data[index].nominal_awal;   
+    if (nominal) {  
+      await this.jobOrderService.updateNominal(jobOrder.id, nominal);  
+    }  
+  });  
+
+   await Promise.all(updatePromises);  
+
+   const stagingRecords = jobOrdersWithNominals.map((jobOrder) => ({  
+    job_order_no: jobOrder.no,  
+    staging_id: 1,   
+    created_by: user.sub,  
+    updated_by: user.sub,  
+  }));  
+
     try {  
       await this.prisma.stagingJobOrder.createMany({  
         data: stagingRecords,  
@@ -554,11 +579,11 @@ export class JobOrderController {
     } catch (error) {  
       console.error('Error creating StagingJobOrders:', error);  
       throw new BadRequestException('Failed to create staging job orders');  
-    }   
+    }  
 
-    return {
-      data_uploaded_count: data.length,
-    };
+    return {  
+      data_uploaded_count: data.length,  
+    };  
   }
 
   @UseInterceptors(

@@ -61,6 +61,9 @@ export class JobOrderEntity {
 
   @Expose()
   ownership: string;
+  
+  @Expose()  
+  nominal_awal: string;
 
   @Exclude()
   created_by: number;

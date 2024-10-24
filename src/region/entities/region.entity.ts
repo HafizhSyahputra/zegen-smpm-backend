@@ -8,6 +8,10 @@ export class RegionEntity implements Region {
 
   @Expose()
   id: number;
+  
+  @Expose()
+  region_group: number;
+
 
   @Expose()
   name: string;

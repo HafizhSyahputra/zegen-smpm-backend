@@ -50,6 +50,10 @@ export class NominalService {
     return new PageDto(items, pageMetaDto);
   }
 
+  async getAll(): Promise<NominalJobOrder[]> {
+    return this.prisma.nominalJobOrder.findMany({});
+  }
+
   create(createNominalDto: CreateNominalDto, createdBy?: number, ): Promise<NominalJobOrder> {
     return this.prisma.nominalJobOrder.create({
       data: {

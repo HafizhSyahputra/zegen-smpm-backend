@@ -214,21 +214,24 @@ model Vendor {
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 
   ActivityVendorReport ActivityVendorReport[]
+
+  SLA SLA[]
 }
 
 model Region {
-  id          Int        @id @default(autoincrement())
-  name        String
-  code        String     @unique
-  description String?
-  created_by  Int?
-  updated_by  Int?
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @updatedAt
-  deleted_at  DateTime?
-  User        User[]
-  Merchant    Merchant[]
-  JobOrder    JobOrder[]
+  id           Int        @id @default(autoincrement())
+  region_group Int        @default(1)
+  name         String
+  code         String     @unique
+  description  String?
+  created_by   Int?
+  updated_by   Int?
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
+  deleted_at   DateTime?
+  User         User[]
+  Merchant     Merchant[]
+  JobOrder     JobOrder[]
 
   Approved Approved[]
 
@@ -236,9 +239,13 @@ model Region {
 
   ReceivedOut ReceivedOut[]
 
+  regionGroup Group_Wilayah @relation(fields: [region_group], references: [id_group], onDelete: NoAction, onUpdate: NoAction)
+
   // DocumentMerchant DocumentMerchant[]
 
   // DocumentVendor DocumentVendor[]
+
+  SLA SLA[]
 }
 
 model Merchant {
@@ -286,6 +293,8 @@ model Merchant {
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 
   ActivityVendorReport ActivityVendorReport[]
+
+  SLA SLA[]
 }
 
 model ApproveMerchant {
@@ -392,6 +401,8 @@ model ElectronicDataCaptureMachine {
   // DocumentVendor DocumentVendor[]
 
   ActivityVendorReport ActivityVendorReport[]
+
+  SLA SLA[]
 }
 
 model NominalJobOrder {
@@ -504,6 +515,46 @@ model JobOrder {
   StagingJobOrder StagingJobOrder[]
 
   ActivityVendorReport ActivityVendorReport[]
+}
+
+model SLA_Region {
+  id_sla       Int       @id @default(autoincrement())
+  group_region Int
+  action       String    @db.VarChar(255)
+  scope        String    @db.VarChar(255)
+  hour         Int?
+  target       Int?
+  created_by   Int?
+  updated_by   Int?
+  created_at   DateTime  @default(now()) @db.Date
+  updated_at   DateTime  @updatedAt @db.Date
+  deleted_at   DateTime?
+
+  regionGroup Group_Wilayah? @relation(fields: [group_region], references: [id_group])
+
+  SLA SLA[]
+}
+
+model SLA {
+  id           Int       @id @default(autoincrement())
+  job_order_no String
+  vendor_id    Int
+  region_id    Int
+  tid          String
+  mid          String
+  sla_region   Int
+  open_time    DateTime
+  target_time  DateTime?
+  status_sla   String?
+  solved_time  DateTime?
+  status       String
+  duration     String
+
+  slaRegion SLA_Region                   @relation(fields: [sla_region], references: [id_sla], onDelete: NoAction, onUpdate: NoAction)
+  region    Region                       @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendor    Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  merchant  Merchant                     @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
+  edc       ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model Staging {
@@ -996,20 +1047,6 @@ model Group_Wilayah {
   deleted_at DateTime?
 
   SLA_Region SLA_Region[]
-}
 
-model SLA_Region {
-  id_sla       Int       @id @default(autoincrement())
-  group_region Int
-  action       String    @db.VarChar(255)
-  scope        String    @db.VarChar(255)
-  hour         Int?
-  target       Int?
-  created_by   Int?
-  updated_by   Int?
-  created_at   DateTime  @default(now()) @db.Date
-  updated_at   DateTime  @updatedAt @db.Date
-  deleted_at   DateTime?
-
-  regionGroup Group_Wilayah? @relation(fields: [group_region], references: [id_group])
+  Region Region[]
 }
