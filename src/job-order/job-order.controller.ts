@@ -46,6 +46,7 @@ import { ReceivedInService } from '@smpm/received-in/received-in.service';
 import { ReceivedOutService } from '@smpm/received-out/received-out.service';
 import { PrismaService } from '@smpm/prisma/prisma.service';
 import { NominalService } from '@smpm/nominal/nominal.service';
+import { CreatePreventiveMaintenanceReportDto } from '@smpm/preventive-maintenance-report/dto/create-pm-report.dto';
 
 @UseGuards(AccessTokenGuard)
 @Controller('job-order')
@@ -874,7 +875,7 @@ export class JobOrderController {
   )
   @Post('activity')
   async createActivity(
-    @Body() createActivityJobOrderDto: CreateActivityJobOrderDto,
+    @Body() createActivityJobOrderDto: CreateActivityJobOrderDto, createPreventiveMaintenanceReportDto: CreatePreventiveMaintenanceReportDto,
     @UploadedFiles() files: Record<string, Express.Multer.File[]>,
     @User() user: any,
     @Req() req: Request,
@@ -908,13 +909,16 @@ export class JobOrderController {
         status: createActivityJobOrderDto.status,  
       });  
 
+      
       let report;  
+
       if (jobOrder.type === 'Preventive Maintenance') {  
         report = await this.jobOrderService.createPreventiveMaintenanceReport(  
           {  
             job_order_no: createActivityJobOrderDto.no_jo,  
             status: createActivityJobOrderDto.status,  
-            nominal: '200.000',
+            nominal: '0', 
+            sla_penalty: '442',
             status_approve: 'Waiting',  
             vendor_id: jobOrder.vendor_id,  
             mid: jobOrder.mid,  
@@ -943,7 +947,8 @@ export class JobOrderController {
           {  
             job_order_no: createActivityJobOrderDto.no_jo,  
             status: createActivityJobOrderDto.status,  
-            nominal: '200.000',
+            nominal: '0',
+            sla_penalty: '363',
             status_approve: 'Waiting',  
             edc_brand: createActivityJobOrderDto.edc_brand,  
             edc_brand_type: createActivityJobOrderDto.edc_brand_type,  
@@ -1186,7 +1191,7 @@ export class JobOrderController {
             mid: jobOrder.mid,  
             tid: jobOrder.tid,  
             status: createActivityJobOrderDto.status,  
-            nominal: '200.000',
+            nominal: '0',
             jenis: jobOrder.type,  
             location: location,
             description: this.getDescriptionByJobOrderType(jobOrder.type),    
@@ -1212,7 +1217,24 @@ export class JobOrderController {
             updated_by: user.sub,  
           }
       })
-  
+
+      const nominalAwal = Number(jobOrder.nominal_awal) || 0;  
+      const ResponseTimePenalty = Number(jobOrder.sla_penalty) || 0; 
+      const reportSlaPenalty = Number(report.sla_penalty) || 0;  
+      
+      let totalNominal = nominalAwal + ResponseTimePenalty + reportSlaPenalty; 
+      console.log(totalNominal);  
+
+      if (jobOrder.type === 'Preventive Maintenance') {  
+        await this.jobOrderService.updateNominalPMByNoJo(createActivityJobOrderDto.no_jo, {  
+          nominal: totalNominal.toString(),  
+        });   
+      } else {  
+        await this.jobOrderService.updateNominalByNoJo(createActivityJobOrderDto.no_jo, {  
+          nominal: totalNominal.toString(),  
+        });  
+      }     
+
       return report;  
     } catch (error) {  
       if (error instanceof BadRequestException) {  
@@ -1233,7 +1255,6 @@ export class JobOrderController {
         );  
       }  
     }  
-   
   }
   
   private getDescriptionByJobOrderType(type: string): string {  

@@ -38,6 +38,14 @@ export class UpdateJobOrderReportDto {
     information?: string;  
 
     @IsOptional()  
+    @IsString()  
+    nominal?: string;  
+    
+    @IsOptional()  
+    @IsString()  
+    sla_penalty?: string;  
+
+    @IsOptional()  
     @IsDate()  
     arrival_time?: Date;  
 

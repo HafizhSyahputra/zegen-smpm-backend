@@ -672,8 +672,9 @@ model Media {
 
 model JobOrderReport {
   id                       Int       @id @default(autoincrement())
-  job_order_no             String
+  job_order_no             String    @unique
   nominal                  String?
+  sla_penalty              String?
   status                   String
   status_approve           String    @default("Waiting")
   reason                   String?
@@ -723,6 +724,7 @@ model ActivityVendorReport {
   job_order_no          String
   vendor_id             Int
   nominal               String?
+  sla_penalty           String?
   mid                   String
   tid                   String
   status                String
@@ -761,9 +763,10 @@ model ActivityVendorReport {
 
 model PreventiveMaintenanceReport {
   id                    Int       @id @default(autoincrement())
-  job_order_no          String
+  job_order_no          String    @unique
   vendor_id             Int
   nominal               String?
+  sla_penalty           String?
   mid                   String
   status                String
   status_approve        String    @default("Waiting")

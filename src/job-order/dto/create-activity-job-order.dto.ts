@@ -21,6 +21,10 @@ export class CreateActivityJobOrderDto {
   @IsOptional()
   @IsString()
   nominal: string;
+  
+  @IsOptional()
+  @IsString()
+  sla_penalty: string;
 
   @IsNotEmpty()
   @IsIn(['Done', 'Cancel'])

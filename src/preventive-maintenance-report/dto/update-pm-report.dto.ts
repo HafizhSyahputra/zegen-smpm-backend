@@ -7,7 +7,11 @@ export class UpdatePreventiveMaintenanceReportDto {
     
     @IsOptional()  
     @IsString()  
-    nominal?: string;  
+    nominal?: string; 
+
+    @IsOptional()  
+    @IsString()  
+    sla_penalty?: string;  
 
     @IsOptional()  
     @IsString()  

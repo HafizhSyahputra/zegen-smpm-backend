@@ -12,6 +12,10 @@ export class UpdateActivityVendorReportDto {
     @IsOptional()  
     @IsString()  
     nominal: string;  
+
+    @IsOptional()  
+    @IsString()  
+    sla_penalty: string;  
     
     @IsOptional()  
     @IsString()  

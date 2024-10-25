@@ -1,83 +1,99 @@
-import { IsOptional, IsString, IsNumber, IsNotEmpty, IsIn, IsDate, Validate } from "class-validator";  
- 
-export class CreateJobOrderReportDto {  
-    @IsNotEmpty()  
-    @IsString()  
-    job_order_no: string;  
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsNotEmpty,
+  IsIn,
+  IsDate,
+  Validate,
+} from 'class-validator';
 
-    @IsNotEmpty()  
-    @IsString()  
-    status: string;  
-    
-    @IsNotEmpty()  
-    @IsString()  
-    status_approve: string;  
+export class CreateJobOrderReportDto {
+  @IsNotEmpty()
+  @IsString()
+  job_order_no: string;
 
-    @IsNotEmpty()  
-    @IsString()  
-    edc_brand: string;  
+  @IsNotEmpty()
+  @IsString()
+  status: string;
 
-    @IsNotEmpty()  
-    @IsString()  
-    edc_brand_type: string;  
+  @IsNotEmpty()
+  @IsString()
+  status_approve: string;
 
-    @IsNotEmpty()  
-    @IsString()  
-    edc_serial_number: string;  
+  @IsNotEmpty()
+  @IsString()
+  edc_brand: string;
 
-    @IsOptional()  
-    @IsString()  
-    edc_note?: string;  
+  @IsNotEmpty()
+  @IsString()
+  edc_brand_type: string;
 
-    @IsOptional()  
-    @IsString()  
-    edc_action?: string;  
+  @IsNotEmpty()
+  @IsString()
+  edc_serial_number: string;
 
-    @IsNotEmpty()  
-    @IsString()  
-    information: string;  
+  @IsOptional()
+  @IsString()
+  edc_note?: string;
 
-    @IsOptional()  
-    @IsDate()  
-    arrival_time?: Date;  
+  @IsOptional()
+  @IsString()
+  edc_action?: string;
+  
+  @IsOptional()
+  @IsString()
+  nominal?: string;
 
-    @IsOptional()  
-    @IsDate()  
-    start_time?: Date;  
+  @IsOptional()
+  @IsString()
+  sla_penalty?: string;
 
-    @IsOptional()  
-    @IsDate()  
-    end_time?: Date;  
+  @IsNotEmpty()
+  @IsString()
+  information: string;
 
-    @IsOptional()  
-    @IsString()  
-    communication_line?: string;  
+  @IsOptional()
+  @IsDate()
+  arrival_time?: Date;
 
-    @IsOptional()  
-    @IsString()  
-    direct_line_number?: string;  
+  @IsOptional()
+  @IsDate()
+  start_time?: Date;
 
-    @IsOptional()  
-    @IsString()  
-    simcard_provider?: string;  
+  @IsOptional()
+  @IsDate()
+  end_time?: Date;
 
-    @IsOptional()  
-    @IsString()  
-    paper_supply?: string;  
+  @IsOptional()
+  @IsString()
+  communication_line?: string;
 
-    @IsOptional()  
-    @IsString()  
-    merchant_pic?: string;  
+  @IsOptional()
+  @IsString()
+  direct_line_number?: string;
 
-    @IsOptional()  
-    @IsString()  
-    merchant_pic_phone?: string;  
+  @IsOptional()
+  @IsString()
+  simcard_provider?: string;
 
-    @IsOptional()  
-    @IsString()  
-    swipe_cash_indication?: string;  
+  @IsOptional()
+  @IsString()
+  paper_supply?: string;
 
-    @IsOptional()  
-    @IsNumber()  
-    created_by?: number;  
+  @IsOptional()
+  @IsString()
+  merchant_pic?: string;
+
+  @IsOptional()
+  @IsString()
+  merchant_pic_phone?: string;
+
+  @IsOptional()
+  @IsString()
+  swipe_cash_indication?: string;
+
+  @IsOptional()
+  @IsNumber()
+  created_by?: number;
 }

@@ -9,9 +9,13 @@ export class CreateActivityVendorReportDto {
     @IsNumber()  
     vendor_id: string; 
 
-    @IsNotEmpty()  
+    @IsOptional()  
     @IsString()  
-    nominal: string;  
+    nominal?: string;  
+
+    @IsOptional()  
+    @IsString()  
+    sla_penalty?: string;
     
     @IsNotEmpty()  
     @IsString()  

@@ -14,6 +14,7 @@ export class JobOrderReportEntity {
 
   @Expose()
   status: string;
+
   @Expose()
   status_approve: string;
 
@@ -37,6 +38,12 @@ export class JobOrderReportEntity {
 
   @Expose()
   arrival_time?: Date;
+
+  @Expose()
+  nominal?: String;
+
+  @Expose()
+  sla_penalty?: String;
 
   @Expose()
   start_time?: Date;

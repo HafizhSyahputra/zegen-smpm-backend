@@ -16,7 +16,10 @@ export class ActivityVendorReportEntity {
   vendor_id: number;
 
   @Expose()
-  nominal: string;
+  nominal?: string;
+
+  @Expose()
+  sla_penalty?: string;
 
   @Expose()
   mid: string;

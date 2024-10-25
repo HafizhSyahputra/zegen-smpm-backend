@@ -1,24 +1,12 @@
-import { Controller, Get, Query } from '@nestjs/common';  
+import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';  
 import { AuditService } from './audit.service';  
-import { PageDto } from '@smpm/common/decorator/page.dto';  
-import { AuditEntity } from './entities/audit.entity';  
-import { transformEntity } from '@smpm/common/transformer/entity.transformer';  
-import { PageOptionAuditDto } from './dto/page-options-audit.dto';  
 import { AuditTrail } from '@prisma/client';
-
+import { AccessTokenGuard } from '@smpm/common/guards/access-token.guard';
+import { Response } from 'express';  
+@UseGuards(AccessTokenGuard)
 @Controller('audit')  
 export class AuditController {  
   constructor(private readonly auditService: AuditService) {}  
-
-  // @Get()  
-  // async getAllLogs(@Query() pageOptionAuditDto: PageOptionAuditDto): Promise<PageDto<AuditEntity>> {  
-  //   const data = await this.auditService.getAllLogs(pageOptionAuditDto);  
-  //   console.log('Data before transformation:', data.data);  
-  //   const transformedData = transformEntity(AuditEntity, data.data);  
-  //   console.log('Data after transformation:', transformedData);  
-  //   return new PageDto(transformedData, data.meta);  
-  // }  
-
   @Get('all')  
   async getAllLogs(): Promise<{ status: { code: number; description: string }; result: AuditTrail[] }> {  
     try {  
@@ -39,6 +27,25 @@ export class AuditController {
         },  
         result: []  
       };  
+    }  
+  }  
+  
+  @Get('export')  
+  async exportToExcel(@Res() res: Response, @Query('menuName') menuName?: string): Promise<void> {  
+    try {  
+      await this.auditService.exportToExcel(res, menuName);  
+    } catch (error) {  
+      console.error('Error exporting audit logs:', error);  
+      res.status(500).send('Internal Server Error');  
+    }  
+  }  
+  @Get('SystemExport')  
+  async exportSystemToExcel(@Res() res: Response): Promise<void> {  
+    try {  
+      await this.auditService.exportSystemToExcel(res);  
+    } catch (error) {  
+      console.error('Error exporting audit logs:', error);  
+      res.status(500).send('Internal Server Error');  
     }  
   }  
 }

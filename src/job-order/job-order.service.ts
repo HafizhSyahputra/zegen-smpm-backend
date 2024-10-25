@@ -381,6 +381,46 @@ export class JobOrderService {
       data,
     });
   }
+  async updateNominalByNoJo(no_jo: string, data: Prisma.JobOrderReportUpdateInput) {  
+     const jobOrderReports = await this.prismaService.jobOrderReport.findMany({  
+      where: {  
+        job_order_no: no_jo,  
+      },  
+    });  
+  
+     if (jobOrderReports.length === 0) {  
+      throw new Error('JobOrderReport with no_jo not found');  
+    }  
+  
+     const reportToUpdate = jobOrderReports[0]; 
+  
+    return this.prismaService.jobOrderReport.update({  
+      where: {  
+        id: reportToUpdate.id, 
+      },  
+      data,  
+    });  
+  }  
+  
+  async updateNominalPMByNoJo(no_jo: string, data: Prisma.PreventiveMaintenanceReportUpdateInput) {  
+     const preventiveReports = await this.prismaService.preventiveMaintenanceReport.findMany({  
+      where: {  
+        job_order_no: no_jo,  
+      },  
+    });  
+  
+     if (preventiveReports.length === 0) {  
+      throw new Error('PreventiveMaintenanceReport with no_jo not found');  
+    }  
+  
+     const reportToUpdate = preventiveReports[0]; 
+    return this.prismaService.preventiveMaintenanceReport.update({  
+      where: {  
+        id: reportToUpdate.id,    
+      },  
+      data,  
+    });  
+  }
 
   getAll(where: Prisma.JobOrderWhereInput = {}) {
     return this.prismaService.jobOrder.findMany({

@@ -13,6 +13,9 @@ export class PreventiveMaintenanceReportEntity {
 
     @Expose()
     nominal?: string;
+
+    @Expose()
+    sla_penalty?: string;
   
     @Expose()
     status: string;
