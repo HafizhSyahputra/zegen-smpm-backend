@@ -19,9 +19,6 @@ export class ActivityVendorReportEntity {
   nominal?: string;
 
   @Expose()
-  sla_penalty?: string;
-
-  @Expose()
   mid: string;
 
   @Expose()

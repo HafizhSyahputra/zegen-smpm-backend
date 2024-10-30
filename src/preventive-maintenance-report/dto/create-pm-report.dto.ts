@@ -9,10 +9,6 @@ export class CreatePreventiveMaintenanceReportDto {
     @IsString()  
     nominal: string;  
 
-    @IsOptional()
-    @IsString()  
-    sla_penalty?: string;  
-
     @IsNotEmpty()  
     @IsString()  
     vendor_id: number;  

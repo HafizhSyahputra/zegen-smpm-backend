@@ -43,9 +43,6 @@ export class JobOrderReportEntity {
   nominal?: String;
 
   @Expose()
-  sla_penalty?: String;
-
-  @Expose()
   start_time?: Date;
 
   @Expose()

@@ -40,10 +40,6 @@ export class UpdateJobOrderReportDto {
     @IsOptional()  
     @IsString()  
     nominal?: string;  
-    
-    @IsOptional()  
-    @IsString()  
-    sla_penalty?: string;  
 
     @IsOptional()  
     @IsDate()  

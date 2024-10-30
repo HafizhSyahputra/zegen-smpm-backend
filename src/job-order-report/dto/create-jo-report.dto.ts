@@ -40,14 +40,10 @@ export class CreateJobOrderReportDto {
   @IsOptional()
   @IsString()
   edc_action?: string;
-  
-  @IsOptional()
-  @IsString()
-  nominal?: string;
 
   @IsOptional()
   @IsString()
-  sla_penalty?: string;
+  nominal?: string;
 
   @IsNotEmpty()
   @IsString()

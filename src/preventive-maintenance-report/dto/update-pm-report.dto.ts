@@ -11,10 +11,6 @@ export class UpdatePreventiveMaintenanceReportDto {
 
     @IsOptional()  
     @IsString()  
-    sla_penalty?: string;  
-
-    @IsOptional()  
-    @IsString()  
     status?: string;  
 
     @IsOptional()  

@@ -522,9 +522,7 @@ export class JobOrderController {
         }  
       }  
     });  
-  
-    console.log('Data yang akan disimpan tanpa nominal:', JSON.stringify(data, null, 2));  
-  
+    
     if (errors.length > 0)  
       throw new BadRequestException({  
         message: 'Terdapat data yang tidak valid pada file yang diupload',  
@@ -550,12 +548,12 @@ export class JobOrderController {
 
   const createdJobOrders = await this.jobOrderService.createMany(data);   
 
-   const now = new Date();  
-  const jobOrdersWithNominals = await this.jobOrderService.getAll({  
-    created_at: {  
-      gte: new Date(now.getTime() - 1000),  
-    },  
-  });  
+    const now = new Date();  
+    const jobOrdersWithNominals = await this.jobOrderService.getAll({  
+      created_at: {  
+        gte: new Date(now.getTime() - 1000),  
+      },  
+    });  
 
    const updatePromises = jobOrdersWithNominals.map(async (jobOrder, index) => {  
     const nominal = data[index].nominal_awal;   
@@ -573,12 +571,33 @@ export class JobOrderController {
     updated_by: user.sub,  
   }));  
 
+    // To Do : Implement SLA Target Time & SLA Region
+    // SLA Region = Region Group & Merchant_category & Type
+    const SLA = jobOrdersWithNominals.map((jobOrder) => ({  
+      job_order_no: jobOrder.no,  
+      vendor_id: jobOrder.vendor_id,   
+      region_id: jobOrder.region_id,   
+      tid: jobOrder.tid,   
+      mid: jobOrder.mid,   
+      region_group_id: jobOrder.region.region_group,   
+      sla_region: 1,
+      open_time: new Date(now.getTime() - 1000),   
+      target_time: new Date(now.getTime() - 1000),   
+      status: 'Open',
+      created_by: user.sub,  
+      updated_by: user.sub,    
+    }));  
+
     try {  
       await this.prisma.stagingJobOrder.createMany({  
         data: stagingRecords,  
       });  
+      await this.prisma.sLA.createMany({  
+        data: SLA,  
+      });  
+
     } catch (error) {  
-      console.error('Error creating StagingJobOrders:', error);  
+      console.error('Error creating :', error);  
       throw new BadRequestException('Failed to create staging job orders');  
     }  
 
@@ -917,8 +936,7 @@ export class JobOrderController {
           {  
             job_order_no: createActivityJobOrderDto.no_jo,  
             status: createActivityJobOrderDto.status,  
-            nominal: '0', 
-            sla_penalty: '442',
+            nominal: jobOrder.nominal_awal, 
             status_approve: 'Waiting',  
             vendor_id: jobOrder.vendor_id,  
             mid: jobOrder.mid,  
@@ -947,8 +965,7 @@ export class JobOrderController {
           {  
             job_order_no: createActivityJobOrderDto.no_jo,  
             status: createActivityJobOrderDto.status,  
-            nominal: '0',
-            sla_penalty: '363',
+            nominal: jobOrder.nominal_awal,
             status_approve: 'Waiting',  
             edc_brand: createActivityJobOrderDto.edc_brand,  
             edc_brand_type: createActivityJobOrderDto.edc_brand_type,  
@@ -1191,7 +1208,7 @@ export class JobOrderController {
             mid: jobOrder.mid,  
             tid: jobOrder.tid,  
             status: createActivityJobOrderDto.status,  
-            nominal: '0',
+            nominal: jobOrder.nominal_awal,
             jenis: jobOrder.type,  
             location: location,
             description: this.getDescriptionByJobOrderType(jobOrder.type),    
@@ -1218,22 +1235,19 @@ export class JobOrderController {
           }
       })
 
-      const nominalAwal = Number(jobOrder.nominal_awal) || 0;  
-      const ResponseTimePenalty = Number(jobOrder.sla_penalty) || 0; 
-      const reportSlaPenalty = Number(report.sla_penalty) || 0;  
-      
-      let totalNominal = nominalAwal + ResponseTimePenalty + reportSlaPenalty; 
-      console.log(totalNominal);  
+      // Penjumlahan Nominal SLA
+      // const nominalAwal = Number(jobOrder.nominal_awal) || 0;  
+      // let totalNominal = nominalAwal; 
 
-      if (jobOrder.type === 'Preventive Maintenance') {  
-        await this.jobOrderService.updateNominalPMByNoJo(createActivityJobOrderDto.no_jo, {  
-          nominal: totalNominal.toString(),  
-        });   
-      } else {  
-        await this.jobOrderService.updateNominalByNoJo(createActivityJobOrderDto.no_jo, {  
-          nominal: totalNominal.toString(),  
-        });  
-      }     
+      // if (jobOrder.type === 'Preventive Maintenance') {  
+      //   await this.jobOrderService.updateNominalPMByNoJo(createActivityJobOrderDto.no_jo, {  
+      //     nominal: totalNominal.toString(),  
+      //   });   
+      // } else {  
+      //   await this.jobOrderService.updateNominalByNoJo(createActivityJobOrderDto.no_jo, {  
+      //     nominal: totalNominal.toString(),  
+      //   });  
+      // }     
 
       return report;  
     } catch (error) {  

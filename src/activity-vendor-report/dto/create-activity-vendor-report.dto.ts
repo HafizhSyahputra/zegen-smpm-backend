@@ -13,10 +13,6 @@ export class CreateActivityVendorReportDto {
     @IsString()  
     nominal?: string;  
 
-    @IsOptional()  
-    @IsString()  
-    sla_penalty?: string;
-    
     @IsNotEmpty()  
     @IsString()  
     mid: string;  

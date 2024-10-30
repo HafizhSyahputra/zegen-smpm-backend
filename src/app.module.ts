@@ -25,6 +25,7 @@ import { PreventiveMaintenanceReportModule } from './preventive-maintenance-repo
 import { ApproveMerchantModule } from './approve-merchant/approve-merchant.module';
 import { NominalModule } from './nominal/nominal.module';
 import { ActivityVendorReportModule } from './activity-vendor-report/activity-vendor-report.module';
+import { SlaModule } from './sla/sla.module';
  
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { ActivityVendorReportModule } from './activity-vendor-report/activity-ve
     ApproveMerchantModule,
     NominalModule,
     ActivityVendorReportModule,
+    SlaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
