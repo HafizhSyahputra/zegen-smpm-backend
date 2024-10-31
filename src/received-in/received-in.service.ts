@@ -1,17 +1,25 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+// src/received-in/received-in.service.ts
+
+import { BadRequestException, Injectable, Logger, UseGuards } from '@nestjs/common';
 import { PrismaService } from '@smpm/prisma/prisma.service';
-import { ReceivedIn, Prisma } from '@prisma/client';
+import { ReceivedIn, Prisma, ElectronicDataCaptureMachine  } from '@prisma/client';
 import { CreateReceivedInDto } from './dto/create-received-in.dto';
 import { PageOptionReceivedInDto } from './dto/page-option.dto';
 import { PageDto } from '@smpm/common/decorator/page.dto';
-import { ColumnReceivedIn } from '@smpm/common/constants/enum';
+import { ColumnReceivedIn, StatusReceivedIn } from '../common/constants/enum'; // Pastikan StatusReceivedIn memiliki 'APPROVED'
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
 import { ApproveReceivedInDto } from './dto/approve-received-in.dto';
+import { ElectronicDataCaptureService } from '@smpm/electronic-data-capture/electronic-data-capture.service';
+
+
+
 
 @Injectable()
 export class ReceivedInService {
-  private readonly logger = new Logger(ReceivedInService.name); // Inisialisasi Logger
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ReceivedInService.name); // Initialized Logger
+  constructor(private readonly prisma: PrismaService,     private readonly electronicDataCaptureService: ElectronicDataCaptureService, // Injeksi service
+  ) {}
+
 
   async create(createReceivedInDto: CreateReceivedInDto): Promise<ReceivedIn> {
     this.logger.log(`Membuat ReceivedIn dengan data: ${JSON.stringify(createReceivedInDto)}`);
@@ -102,19 +110,58 @@ export class ReceivedInService {
     });
   }
 
-  async approve(id: number, approveReceivedInDto: ApproveReceivedInDto): Promise<ReceivedIn> {
-    return this.prisma.receivedIn.update({
-      where: { id },
-      data: {
-        petugas: approveReceivedInDto.petugas,
+  /**
+   * Approve a ReceivedIn item and update related ElectronicDataCaptureMachine
+   */
+  async approve(id: number, approveReceivedInDto: ApproveReceivedInDto, user: any): Promise<ReceivedIn> {
+    // Mulai transaksi
+    const updatedReceivedIn = await this.prisma.$transaction(async (prismaTransaction) => {
+      // Update ReceivedIn
+      const updatedReceivedInItem = await prismaTransaction.receivedIn.update({
+        where: { id },
+        data: {
+          status: StatusReceivedIn.APPROVED,
+          approved_by: approveReceivedInDto.approved_by ?? user.id,
+          petugas: approveReceivedInDto.petugas,
+          kondisibarang: approveReceivedInDto.kondisibarang,
+          updated_by: approveReceivedInDto.updated_by ?? user.id,
+        },
+        include: {
+          joborder: true,
+          edc: true,
+          region: true,
+          vendor: true,
+          merchant: true,
+        },
+      });
 
-        status: 'approved',
-        approved_by: approveReceivedInDto.approved_by,
-        updated_by: approveReceivedInDto.updated_by,
-      },
+      // Update related ElectronicDataCaptureMachine via service
+      if (updatedReceivedInItem.id_edc) {
+        const updateDto = {
+          status_edc: 'Pemeriksaan',
+          kondisibarang: updatedReceivedInItem.kondisibarang,
+          merchant_id: null,
+          updated_by: approveReceivedInDto.updated_by ?? user.id,
+        };
+
+        this.logger.debug(`Updating ElectronicDataCaptureMachine with ID ${updatedReceivedInItem.id_edc} using DTO: ${JSON.stringify(updateDto)}`);
+
+        // Pass prismaTransaction sebagai instance PrismaClient
+        await this.electronicDataCaptureService.update(
+          updatedReceivedInItem.id_edc,
+          updateDto,
+          user,
+          prismaTransaction, // Berikan instance transaksi
+        );
+      }
+
+      return updatedReceivedInItem;
+    }, {
+      timeout: 100000, // Timeout sesuai kebutuhan
     });
+
+    return updatedReceivedIn;
   }
-  
 
   // Definisi metode remove
   async remove(id: number): Promise<ReceivedIn> {
@@ -124,4 +171,16 @@ export class ReceivedInService {
     });
   }
 
+  async findEDCTerpasangBySerialNumber(serial_number: string): Promise<ElectronicDataCaptureMachine | null> {
+    this.logger.log(`Mencari EDCTerpasang dengan serial_number: ${serial_number}`);
+    const edc = await this.prisma.electronicDataCaptureMachine.findFirst({
+      where: { serial_number: serial_number.toUpperCase(), deleted_at: null },
+    });
+    if (edc) {
+      this.logger.log(`EDCTerpasang ditemukan: ${JSON.stringify(edc)}`);
+    } else {
+      this.logger.warn(`EDCTerpasang tidak ditemukan untuk serial_number: ${serial_number}`);
+    }
+    return edc;
+  }
 }

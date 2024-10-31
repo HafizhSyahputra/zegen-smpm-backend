@@ -136,7 +136,6 @@ export class SlaService {
           break;  
         }  
 
-        // Process current batch  
         const batchResult = await this.processRecordsBatch(records, now);  
         updated += batchResult;  
         processed += records.length;  
@@ -147,8 +146,7 @@ export class SlaService {
           `${batchResult} updated. Total: ${processed} processed, ${updated} updated`  
         );  
 
-        // Small delay between batches to prevent overwhelming the database  
-        await new Promise(resolve => setTimeout(resolve, 100));  
+         await new Promise(resolve => setTimeout(resolve, 100));  
       }  
 
       return { totalUpdated: updated, totalProcessed: processed };  
@@ -164,62 +162,71 @@ export class SlaService {
     try {  
       await this.prisma.$transaction(async (tx) => {  
         for (const record of records) {  
-          const sla = await tx.sLA.findUnique({  
-            where: { id: record.id },  
-            include: {  
-              slaRegion: true  
-            }  
-          });  
-
-          if (!sla || !sla.target_time) continue;  
-
-          const targetTime = new Date(sla.target_time);  
-          if (isNaN(targetTime.getTime())) {  
-            this.logger.warn(`Invalid target_time for SLA ID ${record.id}`);  
-            continue;  
-          }  
-
-          const elapsedMs = now.getTime() - targetTime.getTime();  
-          const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));  
-          const newDuration = Math.max(elapsedHours, record.duration || 0);  
-
-          // Cek apakah perlu menerapkan penalty  
-          let penaltyAmount = '0';  
-          let isPenalty = false;  
-          
-          if (elapsedHours > 0 && sla.slaRegion?.penalty_amount && !sla.is_penalty) {  
-            penaltyAmount = sla.slaRegion.penalty_amount;  
-            isPenalty = true;  
-
-            // Update Job Order dengan penalty  
-            await tx.jobOrder.update({  
-              where: { no: sla.job_order_no },  
-              data: {  
-                sla_penalty: penaltyAmount,  
-                updated_at: now  
+          try {  
+            const sla = await tx.sLA.findUnique({  
+              where: { id: record.id },  
+              select: {  
+                id: true,  
+                target_time: true,  
+                duration: true,  
+                is_penalty: true,  
+                job_order_no: true,
               }  
             });  
 
-            this.logger.log(  
-              `Applied penalty ${penaltyAmount} to Job Order ${sla.job_order_no} ` +  
-              `for SLA ID ${record.id}`  
-            );  
-          }  
+            if (!sla || !sla.target_time) continue;  
 
-          // Update SLA record  
-          await tx.sLA.update({  
-            where: { id: record.id },  
-            data: {  
+            const targetTime = new Date(sla.target_time);  
+            if (isNaN(targetTime.getTime())) {  
+              this.logger.warn(`Invalid target_time for SLA ID ${record.id}`);  
+              continue;  
+            }  
+
+            const elapsedMs = now.getTime() - targetTime.getTime();  
+            const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));  
+            const newDuration = Math.max(elapsedHours, record.duration || 0);  
+
+             const updateData: any = {  
               duration: newDuration,  
               status_sla: 'Not Archived',  
-              penalty_amount: isPenalty ? penaltyAmount : undefined,  
-              is_penalty: isPenalty,  
               updated_at: now,  
-            },  
-          });  
+            };  
 
-          updatedInBatch++;  
+             if (elapsedHours > 0 && !sla.is_penalty) {  
+             // To Do : Set Penalty menjadi dinamis
+              const penaltyAmount = "500000";   
+
+               updateData.penalty_amount = penaltyAmount;  
+              updateData.is_penalty = true;  
+
+               await tx.jobOrder.update({  
+                where: { no: sla.job_order_no },  
+                data: {  
+                  sla_penalty: penaltyAmount,  
+                  updated_at: now  
+                }  
+              });  
+
+              this.logger.log(  
+                `Applied penalty ${penaltyAmount} to SLA ID ${record.id} and Job Order ${sla.job_order_no}`  
+              );  
+            }  
+
+            // Update SLA record  
+            await tx.sLA.update({  
+              where: { id: record.id },  
+              data: updateData  
+            });  
+
+            updatedInBatch++;  
+          } catch (recordError) {  
+            this.logger.error(`Error processing record ${record.id}:`, recordError);  
+            continue;  
+          }  
         }  
+      }, {  
+        maxWait: 5000,  
+        timeout: 10000  
       });  
 
       return updatedInBatch;  
@@ -237,10 +244,7 @@ export class SlaService {
     try {  
       const result = await this.prisma.$transaction(async (tx) => {  
         const sla = await tx.sLA.findUnique({  
-          where: { id: slaId },  
-          include: {  
-            slaRegion: true  
-          }  
+          where: { id: slaId }  
         });  
 
         if (!sla) {  
@@ -262,36 +266,37 @@ export class SlaService {
         const elapsedMs = now.getTime() - targetTime.getTime();  
         const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));  
 
-        if (elapsedHours <= 0 || !sla.slaRegion?.penalty_amount || sla.is_penalty) {  
+        if (elapsedHours <= 0 || sla.is_penalty) {  
           return {  
             success: false,  
             message: 'No penalty applicable'  
           };  
         }  
 
-        // Apply penalty  
-        const penaltyAmount = sla.slaRegion.penalty_amount;  
+        // To Do : Set Penalty menjadi dinamis
+         const penaltyAmount = "500000";    
 
-        await tx.jobOrder.update({  
-          where: { no: sla.job_order_no },  
-          data: {  
-            sla_penalty: penaltyAmount,  
-            updated_at: now  
-          }  
-        });  
-
-        await tx.sLA.update({  
-          where: { id: slaId },  
-          data: {  
-            penalty_amount: penaltyAmount,  
-            is_penalty: true,  
-            updated_at: now  
-          }  
-        });  
+         await Promise.all([  
+          tx.sLA.update({  
+            where: { id: slaId },  
+            data: {  
+              penalty_amount: penaltyAmount,  
+              is_penalty: true,  
+              updated_at: now  
+            }  
+          }),  
+          tx.jobOrder.update({  
+            where: { no: sla.job_order_no },  
+            data: {  
+              sla_penalty: penaltyAmount,  
+              updated_at: now  
+            }  
+          })  
+        ]);  
 
         return {  
           success: true,  
-          message: `Penalty of ${penaltyAmount} applied successfully`,  
+          message: `Penalty of ${penaltyAmount} applied successfully to SLA and Job Order`,  
           penaltyAmount  
         };  
       });  
@@ -310,7 +315,7 @@ export class SlaService {
       await this.slaQueue.add(  
         'update-duration',  
         { timestamp: new Date().toISOString() },  
-        {  
+        {   
           attempts: 3,  
           backoff: {  
             type: 'exponential',  

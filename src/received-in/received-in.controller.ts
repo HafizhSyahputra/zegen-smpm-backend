@@ -25,7 +25,8 @@ import { PageOptionReceivedInDto } from './dto/page-option.dto';
 import { CreateReceivedInDto } from './dto/create-received-in.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ApproveReceivedInDto } from './dto/approve-received-in.dto';
-import { NotificationCategory } from '../common/constants/enum';
+import { NotificationCategory, StatusReceivedIn } from '../common/constants/enum'; // Updated import
+import { UserService } from '../user/user.service'; // Import UserService
 
 @UseGuards(AccessTokenGuard)
 @Controller('received-in')
@@ -34,6 +35,7 @@ export class ReceivedInController {
     private readonly receivedInService: ReceivedInService,
     private readonly auditService: AuditService,
     private readonly notificationsService: NotificationsService,
+    private readonly userService: UserService, // Inject UserService
   ) {}
 
   @Post()
@@ -43,6 +45,13 @@ export class ReceivedInController {
     @Req() req: Request,
   ): Promise<ReceivedInEntity> {
     const create = await this.receivedInService.create(createReceivedInDto);
+    const roleIds = [3, 7];
+
+    // Fetch user's role ID
+    const userData = await this.userService.findOne(user.sub);
+    if (!userData) {
+      throw new BadRequestException('User tidak ditemukan.');
+    }
 
     // Create audit log
     await this.auditService.create({
@@ -63,7 +72,7 @@ export class ReceivedInController {
 
     // Create and send notification
     await this.notificationsService.createNotification(
-      user.sub,
+      roleIds, // Pass array of role IDs
       'ReceivedIn Dibuat',
       `ReceivedIn dengan ID ${create.id} telah dibuat oleh ${user.name} pada ${new Date().toLocaleString()}. Data detail: ${JSON.stringify(create)}.`,
       NotificationCategory.CREATE, // Use enum for category
@@ -95,6 +104,9 @@ export class ReceivedInController {
     return new ReceivedInEntity(find);
   }
 
+  /**
+   * Approve a ReceivedIn by ID
+   */
   @Patch(':id/approve')
   async approve(
     @Param() param: ParamIdDto,
@@ -105,11 +117,18 @@ export class ReceivedInController {
     const find = await this.receivedInService.findOne(param.id);
     if (!find) throw new BadRequestException('Data tidak ditemukan.');
 
-    if (find.status !== 'waiting') {
+    if (find.status !== StatusReceivedIn.WAITING) {
       throw new BadRequestException('Hanya ReceivedIn dengan status "waiting" yang dapat disetujui.');
     }
 
-    const approved = await this.receivedInService.approve(param.id, approveReceivedInDto);
+    const approved = await this.receivedInService.approve(param.id, approveReceivedInDto, user.sub);
+
+    // Fetch user's role ID
+    const userData = await this.userService.findOne(user.sub);
+    if (!userData) {
+      throw new BadRequestException('User tidak ditemukan.');
+    }
+    const roleIds = [3, 7];
 
     // Create audit log
     await this.auditService.create({
@@ -130,7 +149,7 @@ export class ReceivedInController {
 
     // Create and send notification
     await this.notificationsService.createNotification(
-      user.sub,
+      roleIds, // Pass array of role IDs
       'ReceivedIn Disetujui',
       `ReceivedIn dengan ID ${approved.id} telah disetujui oleh ${user.name} pada ${new Date().toLocaleString()}. Data detail disetujui: ${JSON.stringify(approved)}.`,
       NotificationCategory.APPROVE, // Use enum for category
@@ -152,6 +171,13 @@ export class ReceivedInController {
 
     await this.receivedInService.remove(param.id);
 
+    // Fetch user's role ID
+    const userData = await this.userService.findOne(user.sub);
+    if (!userData) {
+      throw new BadRequestException('User tidak ditemukan.');
+    }
+    const roleIds = [3, 7];
+
     // Create audit log
     await this.auditService.create({
       Url: req.url,
@@ -171,7 +197,7 @@ export class ReceivedInController {
 
     // Create and send notification
     await this.notificationsService.createNotification(
-      user.sub,
+      roleIds, // Pass array of role IDs
       'ReceivedIn Dihapus',
       `ReceivedIn dengan ID ${param.id} telah dihapus oleh ${user.name} pada ${new Date().toLocaleString()}. Data detail yang dihapus: ${JSON.stringify(find)}.`,
       NotificationCategory.DELETE, // Use enum for category

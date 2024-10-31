@@ -107,6 +107,32 @@ export enum NominalJobOrder {
   tipe = 'tipe',
 }
 
+export enum StatusReceivedOut {
+  WAITING = 'waiting',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
+export enum StatusReceivedIn {
+  WAITING = 'waiting',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
+export enum ColumnReceivedIn {
+  id = 'id',
+  id_joborder = 'id_joborder',
+  id_edc = 'id_edc',
+  id_region = 'id_region',
+  id_vendor = 'id_vendor',
+  id_merchant = 'id_merchant',
+  status = 'status',
+  approved_by = 'approved_by',
+  created_by = 'created_by',
+  updated_by = 'updated_by',
+  serial_number = 'serial_number',
+  tid = 'tid',
+}
 export enum ColumnEDCTerpasang {
   id = 'id',
   owner_id = 'owner_id',
@@ -127,19 +153,17 @@ export enum ColumnEDCTerpasang {
   region = 'region',
 }
 
-export enum ColumnReceivedIn {
-  id = 'id',
-  id_joborder = 'id_joborder',
-  id_edc = 'id_edc',
-  id_region = 'id_region',
-  id_vendor = 'id_vendor',
-  id_merchant = 'id_merchant',
-  status = 'status',
-  approved_by = 'approved_by',
-  created_by = 'created_by',
-  updated_by = 'updated_by',
-  serial_number = 'serial_number',
-  tid = 'tid',
+export enum Widget {
+  SHORT_FIELD = 'SHORT_FIELD',
+  LONG_FIELD = 'LONG_FIELD',
+  NUMBER_FIELD = 'NUMBER_FIELD',
+  RADIO_BUTTON = 'RADIO_BUTTON',
+  CHECKBOX = 'CHECKBOX',
+  DROPDOWN = 'DROPDOWN',
+  UPLOAD_FILE = 'UPLOAD_FILE',
+  DATE = 'DATE',
+  TIME = 'TIME',
+  DATETIME = 'DATETIME',
 }
 
 export enum ColumnReceivedOut {
@@ -155,12 +179,6 @@ export enum ColumnReceivedOut {
   updated_by = 'updated_by',
   serial_number = 'serial_number',
   tid = 'tid',
-}
-
-export enum StatusReceivedOut {
-  WAITING = 'waiting',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
 }
 
 export enum ColumnUser {
@@ -366,17 +384,4 @@ export enum JobOrderStatus {
   'Acknowledge' = 'Acknowledge',
   'Done' = 'Done',
   'Cancel' = 'Cancel',
-}
-
-export enum Widget {
-  SHORT_FIELD = 'SHORT_FIELD',
-  LONG_FIELD = 'LONG_FIELD',
-  NUMBER_FIELD = 'NUMBER_FIELD',
-  RADIO_BUTTON = 'RADIO_BUTTON',
-  CHECKBOX = 'CHECKBOX',
-  DROPDOWN = 'DROPDOWN',
-  UPLOAD_FILE = 'UPLOAD_FILE',
-  DATE = 'DATE',
-  TIME = 'TIME',
-  DATETIME = 'DATETIME',
 }

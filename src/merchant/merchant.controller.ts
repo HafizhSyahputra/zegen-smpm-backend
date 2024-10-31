@@ -15,6 +15,8 @@ import {
   ParseFilePipe,
   Req,
   BadRequestException,
+  InternalServerErrorException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { MerchantService } from './merchant.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
@@ -102,9 +104,8 @@ export class MerchantController {
   ) {
     return await this.merchantService.createBulk(file.filename);
   }
-
   @Get()
-    async findAll(@Query() pageOptionsDto: PageOptionsDto & GetMerchantQuery) {
+  async findAll(@Query() pageOptionsDto: PageOptionsDto & GetMerchantQuery) {
     return await this.merchantService.findAll(pageOptionsDto);
   }
 
@@ -131,9 +132,23 @@ export class MerchantController {
     }  
   }
 
+  @Get('dropdown')
+  async getMerchantsForDropdown(): Promise<{ status: { code: number; description: string }; result: { id: number; name: string }[] }> {
+    try {
+      const merchants = await this.merchantService.getMerchantsForDropdown();
+      return {
+        status: { code: 200, description: "OK" },
+        result: merchants,
+      };
+    } catch (error) {
+      console.error('Error fetching merchants for dropdown:', error);
+      throw new InternalServerErrorException('Failed to fetch merchants for dropdown.');
+    }
+  }
+
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return await this.merchantService.findOne(+id);
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Merchant> {
+    return this.merchantService.findOne(id);
   }
 
   @Patch(':id')
@@ -177,6 +192,8 @@ export class MerchantController {
       approveMerchantId: approvedMerchant.id,  
     };
   }
+
+  
 
   @Delete(':id')
   async remove(@Param('id') id: string, @User() user: any, @Req() req: Request) {
@@ -230,4 +247,6 @@ export class MerchantController {
     if (userAgent.includes('Linux')) return 'Linux';
     return 'Unknown';
   }
+
+
 }

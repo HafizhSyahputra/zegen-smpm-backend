@@ -22,7 +22,7 @@ export class NotificationsService {
    * @param link Link terkait notifikasi (opsional)
    */
   async createNotification(
-    roleIds: number[],
+    roleIds: number[], // Ensure this is an array of numbers
     title: string,
     detail: string,
     category: NotificationCategory,

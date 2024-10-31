@@ -1,19 +1,26 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+// src/electronic-data-capture/dto/create-electronic-data-capture.dto.ts
+
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsNumber } from 'class-validator';
 
 export class CreateElectronicDataCaptureDto {
+  @IsNumber()
+  @IsNotEmpty()
+  owner_id: number;
+
   @IsString()
   @IsNotEmpty()
   mid: string;
 
   @IsString()
+  @IsNotEmpty()
   tid: string;
 
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   brand: string;
 
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   brand_type: string;
 
   @IsString()
@@ -21,6 +28,7 @@ export class CreateElectronicDataCaptureDto {
   region: string;
 
   @IsString()
+  @IsNotEmpty()
   serial_number: string;
 
   @IsString()
@@ -40,6 +48,7 @@ export class CreateElectronicDataCaptureDto {
   status_machine_desc: string;
 
   @IsBoolean()
+  @IsNotEmpty()
   status_active: boolean;
 
   @IsString()
@@ -52,5 +61,13 @@ export class CreateElectronicDataCaptureDto {
 
   @IsString()
   @IsOptional()
+  status_edc: string;
+
+  @IsString()
+  @IsOptional()
   info: string;
+
+  @IsNumber()
+  @IsOptional()
+  created_by?: number;
 }

@@ -18,5 +18,6 @@ import { AuditService } from '@smpm/audit/audit.service';
     RefreshTokenStrategy,
     AuditService,
   ],
+  exports: [AuthService],
 })
 export class AuthModule {}

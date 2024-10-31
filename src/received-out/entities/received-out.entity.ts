@@ -7,6 +7,8 @@ export class ReceivedOutEntity {
   id_region?: number;
   id_vendor?: number;
   id_merchant?: number;
+  petugas? : string;
+  kondisibarang? : string;
   status: string;
   approved_by?: number;
   created_by?: number;

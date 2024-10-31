@@ -1,6 +1,6 @@
 // src/received-out/received-out.service.ts
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReceivedOut, Prisma } from '@prisma/client';
 import { CreateReceivedOutDto } from './dto/create-received-out.dto';
@@ -8,6 +8,7 @@ import { PageOptionReceivedOutDto } from './dto/page-option.dto';
 import { PageDto } from '@smpm/common/decorator/page.dto';
 import { ColumnReceivedOut, StatusReceivedOut } from '../common/constants/enum';
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
+import { ApproveReceivedOutDto } from './dto/approve-received-out.dto';
 
 @Injectable()
 export class ReceivedOutService {
@@ -42,7 +43,7 @@ export class ReceivedOutService {
 
     if (search && search_by) {
       filter.OR = search_by.map((field: ColumnReceivedOut) => ({
-        [field]: { equals: search } // Removed `mode: 'insensitive'`
+        [field]: { equals: search }
       }));
     }
 
@@ -188,6 +189,45 @@ export class ReceivedOutService {
       search: StatusReceivedOut.WAITING,
       search_by: [ColumnReceivedOut.status],
       skip: 0, // Adjust based on pagination logic
+    });
+  }
+
+  /**
+   * Approve a ReceivedOut item and update related ElectronicDataCaptureMachine
+   */
+  async approve(id: number, approveDto: ApproveReceivedOutDto, approvedBy: number): Promise<ReceivedOut> {
+    return this.prisma.$transaction(async (prisma) => {
+      // Update ReceivedOut
+      const updatedReceivedOut = await prisma.receivedOut.update({
+        where: { id },
+        data: {
+          status: StatusReceivedOut.APPROVED,
+          approved_by: approvedBy,
+          petugas: approveDto.petugas,
+          kondisibarang: approveDto.kondisibarang,
+          updated_by: approvedBy,
+        },
+        include: {
+          joborder: true,
+          edc: true,
+          region: true,
+          vendor: true,
+          merchant: true,
+        },
+      });
+      
+      // Update related ElectronicDataCaptureMachine
+      if (updatedReceivedOut.id_edc) {
+        await prisma.electronicDataCaptureMachine.update({
+          where: { id: updatedReceivedOut.id_edc },
+          data: {
+            status_edc: 'Terpasang',
+            kondisibarang: updatedReceivedOut.kondisibarang,
+          },
+        });
+      }
+
+      return updatedReceivedOut;
     });
   }
 }

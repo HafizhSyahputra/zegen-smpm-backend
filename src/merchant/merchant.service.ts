@@ -1,9 +1,9 @@
-
 import {
   BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
@@ -337,25 +337,31 @@ export class MerchantService {
     }
   }
 
-  async findOne(id: number): Promise<any> {  
-    try {  
-      const response = await this.prisma.merchant.findUnique({  
-        where: { id },  
-        include: {  
-          region: true,  
-        },  
-      });  
-  
-      if (!response) {  
-        throw new NotFoundException(`Merchant with ID ${id} not found.`);  
-      }  
-  
-      return response;  
-    } catch (error) {  
-      console.log('error?', error);  
-      throw new Error(error);  
-    }  
+  /**
+   * Fetch a single merchant by its unique ID.
+   * Ensures that the merchant is not soft-deleted (`deleted_at` is null).
+   * @param id - The unique identifier of the merchant.
+   * @returns The merchant entity.
+   * @throws NotFoundException if the merchant doesn't exist or is deleted.
+   */
+  async findOne(id: number): Promise<Merchant> {
+    try {
+      const merchant = await this.prisma.merchant.findUnique({
+        where: { id }, // Only unique `id` is used here
+        include: { region: true }, // Include related region data if needed
+      });
+
+      if (!merchant || merchant.deleted_at) {
+        throw new NotFoundException(`Merchant with ID ${id} not found.`);
+      }
+
+      return merchant;
+    } catch (error) {
+      console.error('Error fetching merchant by ID:', error);
+      throw new InternalServerErrorException('Error fetching merchant by ID.');
+    }
   }
+
 
   async update(id: number, updateMerchantDto: UpdateMerchantDto): Promise<any> {
     try {
@@ -394,6 +400,27 @@ export class MerchantService {
       return this.prisma.merchant.delete({ where: { id: +id } });
     } catch (error) {
       throw new Error(error);
+    }
+  }
+
+   /**
+   * Fetch merchants for dropdown selection.
+   * Retrieves only `id` and `name` of merchants that are not deleted.
+   * @returns An array of merchants with `id` and `name`.
+   * @throws InternalServerErrorException if the query fails.
+   */
+   async getMerchantsForDropdown(): Promise<{ id: number; name: string }[]> {
+    try {
+      const merchants = await this.prisma.merchant.findMany({
+        where: { deleted_at: null }, // Only include merchants that are not deleted
+        select: { id: true, name: true }, // Select only necessary fields
+        orderBy: { name: 'asc' }, // Optional: order by name for better UX
+      });
+
+      return merchants;
+    } catch (error) {
+      console.error('Error fetching merchants for dropdown:', error);
+      throw new InternalServerErrorException('Failed to fetch merchants for dropdown.');
     }
   }
 }

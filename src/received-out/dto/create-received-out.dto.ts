@@ -1,3 +1,4 @@
+
 // src/received-out/dto/create-received-out.dto.ts
 
 import { IsExist } from "@smpm/common/validator/is-exists.validator";
@@ -37,6 +38,14 @@ export class CreateReceivedOutDto {
   @IsOptional()
   @IsString()
   tid?: string;
+
+  @IsOptional()
+  @IsString()
+  petugas?: string;
+
+  @IsOptional()
+  @IsString()
+  kondisibarang?: string;
 
   @IsNotEmpty()
   @IsString()

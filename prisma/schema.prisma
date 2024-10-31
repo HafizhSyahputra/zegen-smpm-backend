@@ -524,7 +524,6 @@ model SLA_Region {
   scope          String    @db.VarChar(255)
   hour           Int?
   target         Int?
-  penalty_amount String?   @db.VarChar(255)
   created_by     Int?
   updated_by     Int?
   created_at     DateTime  @default(now()) @db.Date
@@ -1068,10 +1067,20 @@ model Group_Wilayah {
 
 model ProviderSimcard {
   id_provider_simcard Int       @id @default(autoincrement())
-  name_provider       String
-  created_by          Int?
-  updated_by          Int?
-  created_at          DateTime  @default(now()) @db.Date
-  updated_at          DateTime  @updatedAt @db.Date
-  deleted_at          DateTime?
+   name_provider       String
+   created_by          Int?
+   updated_by          Int?
+   created_at          DateTime  @default(now()) @db.Date
+   updated_at          DateTime  @updatedAt @db.Date
+   deleted_at          DateTime?
+}
+
+model Payment {
+  id_payment Int       @id @default(autoincrement())
+  name_payment String
+  created_by Int?
+  updated_by Int?
+  created_at DateTime  @default(now()) @db.Date
+  updated_at DateTime  @updatedAt @db.Date
+  deleted_at DateTime?
 }

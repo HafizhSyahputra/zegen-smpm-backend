@@ -1308,26 +1308,24 @@ export class JobOrderController {
         throw new BadRequestException('Serial Number tidak tersedia untuk membuat Received In/Out.');
       }
 
-      // Fungsi untuk Membuat Received In
-      // const createReceivedIn = async () => {
-      //   // Cari EDCTerpasang berdasarkan serial_number
-      //   const edcTerpasang = await this.eDCTerpasangService.findEDCTerpasangBySerialNumber(serialNumber);
-      //   if (!edcTerpasang) {
-      //     throw new BadRequestException(`EDCTerpasang dengan Serial Number ${serialNumber} tidak ditemukan.`);
-      //   }
+      const createReceivedIn = async () => {
+      const edcTerpasang = await this.edcService.findEDCMachineBySerialNumber(serialNumber);
+        if (!edcTerpasang) {
+          throw new BadRequestException(`EDCTerpasang dengan Serial Number ${serialNumber} tidak ditemukan.`);
+        }
 
-      //   const receivedInDto = {
-      //     id_joborder: jobOrder.id,
-      //     id_edc: edcTerpasang.id,
-      //     id_region: jobOrder.region_id,
-      //     id_vendor: jobOrder.vendor_id,
-      //     id_merchant: edcTerpasang.merchant_id,
-      //     serial_number: serialNumber,
-      //     tid: jobOrder.tid,
-      //   };
+        const receivedInDto = {
+          id_joborder: jobOrder.id,
+          id_edc: edcTerpasang.id,
+          id_region: jobOrder.region_id,
+          id_vendor: jobOrder.vendor_id,
+          id_merchant: edcTerpasang.merchant_id,
+          serial_number: serialNumber,
+          tid: jobOrder.tid,
+        };
 
-      //   await this.receivedInService.create(receivedInDto);
-      // };
+        await this.receivedInService.create(receivedInDto);
+      };
 
       const createReceivedOut = async () => {
         const edcMachine = await this.edcService.findEDCMachineBySerialNumber(serialNumber);
@@ -1352,11 +1350,12 @@ export class JobOrderController {
       if (jobOrderType === 'New Installation') {
         await createReceivedOut();
       } else if (jobOrderType === 'Withdrawal') {
-        // await createReceivedIn();
+        await createReceivedIn();
       } else if (jobOrderType === 'CM Replace') {
-        // await createReceivedIn();
+        await createReceivedIn();
         await createReceivedOut();
       }
+
 
       const mediaEvidencePaths = await Promise.all(  
         mediaEvidence.map(media => this.mediaService.findMediaById(media.media_id))  

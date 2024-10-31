@@ -1,7 +1,11 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class GetEdcBrandTypeDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  brand: string;
+  brand?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
 }

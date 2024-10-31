@@ -20,7 +20,7 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserEntity> {
-    const data = this.prismaService.user.create({
+    const user = await this.prismaService.user.create({
       data: {
         ...createUserDto,
         password: await this.authService.hashData(createUserDto.password),
@@ -30,7 +30,7 @@ export class UserService {
       },
     });
 
-    return transformEntity(UserEntity, data);
+    return transformEntity(UserEntity, user);
   }
 
   async findAll(
@@ -39,21 +39,23 @@ export class UserService {
     const filter: Prisma.UserWhereInput = {};
     const order: Prisma.UserOrderByWithRelationInput = {};
 
-    if (pageOptionUserDto.search && pageOptionUserDto.search_by)
+    if (pageOptionUserDto.search && pageOptionUserDto.search_by) {
       filter.OR = pageOptionUserDto.search_by.map((column) => ({
         [column]: {
           contains: pageOptionUserDto.search,
         },
       }));
+    }
 
-    if (pageOptionUserDto.search && !pageOptionUserDto.search_by)
+    if (pageOptionUserDto.search && !pageOptionUserDto.search_by) {
       filter.OR = Object.keys(ColumnUser)
-        .filter((x) => x != ColumnUser.id)
+        .filter((x) => x !== ColumnUser.id)
         .map((column) => ({
           [column]: {
             contains: pageOptionUserDto.search,
           },
         }));
+    }
 
     pageOptionUserDto.order_by
       ? (order[pageOptionUserDto.order_by] = pageOptionUserDto.order)
@@ -81,14 +83,12 @@ export class UserService {
       itemCount: countAll,
       pageOptionsDto: pageOptionUserDto,
     });
-    console.log('Received search_by:', pageOptionUserDto.search_by);
-
 
     return new PageDto(transformEntity(UserEntity, data), pageMetaDto);
   }
 
-  findOne(id: number): Promise<User> {
-    const data = this.prismaService.user.findUnique({
+  async findOne(id: number): Promise<User> {
+    return this.prismaService.user.findUnique({
       where: {
         id,
       },
@@ -98,8 +98,6 @@ export class UserService {
         vendor: true,
       },
     });
-
-    return data;
   }
 
   findOneBy(where: Prisma.UserWhereInput): Promise<User> {

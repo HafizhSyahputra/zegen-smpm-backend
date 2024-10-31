@@ -14,6 +14,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ReceivedOutService } from './received-out.service';
+import { ReceivedOutResponseDto } from './dto/received-out-response.dto';
 import { PageDto } from '@smpm/common/decorator/page.dto';
 import { ParamIdDto } from '@smpm/common/decorator/param-id.dto';
 import { AccessTokenGuard } from '@smpm/common/guards/access-token.guard';
@@ -23,9 +24,9 @@ import { AuditService } from '@smpm/audit/audit.service';
 import { PageOptionReceivedOutDto } from './dto/page-option.dto';
 import { CreateReceivedOutDto } from './dto/create-received-out.dto';
 import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationCategory } from '../common/constants/enum';
-import { ReceivedOutResponseDto } from './dto/received-out-response.dto';
 import { ApproveReceivedOutDto } from './dto/approve-received-out.dto';
+import { NotificationCategory } from '../common/constants/enum';
+import { UserService } from '../user/user.service'; // Import UserService
 
 @UseGuards(AccessTokenGuard)
 @Controller('received-out')
@@ -34,6 +35,7 @@ export class ReceivedOutController {
     private readonly receivedOutService: ReceivedOutService,
     private readonly auditService: AuditService,
     private readonly notificationsService: NotificationsService,
+    private readonly userService: UserService, // Inject UserService
   ) {}
 
   /**
@@ -75,6 +77,13 @@ export class ReceivedOutController {
   ): Promise<ReceivedOutResponseDto> {
     const create = await this.receivedOutService.create(createReceivedOutDto);
 
+    // Fetch user's role ID
+    const userData = await this.userService.findOne(user.sub);
+    if (!userData) {
+      throw new BadRequestException('User tidak ditemukan.');
+    }
+    const roleIds = [3, 7];
+
     // Create audit log
     await this.auditService.create({
       Url: req.url,
@@ -94,9 +103,9 @@ export class ReceivedOutController {
 
     // Create and send notification
     await this.notificationsService.createNotification(
-      user.sub,
-      'ReceivedOut Created',
-      `ReceivedOut with ID ${create.id} has been created by ${user.name} on ${new Date().toLocaleString()}. Detailed data: ${JSON.stringify(create)}.`,
+      roleIds, // Pass array of role IDs
+      'ReceivedOut Dibuat',
+      `ReceivedOut dengan ID ${create.id} telah dibuat oleh ${user.name} pada ${new Date().toLocaleString()}. Data detail: ${JSON.stringify(create)}.`,
       NotificationCategory.CREATE, // Use enum for category
       user.sub,
       `/received-out/${create.id}`, // Link to the specific ReceivedOut
@@ -127,7 +136,7 @@ export class ReceivedOutController {
   @Get(':id')
   async findOne(@Param() param: ParamIdDto): Promise<ReceivedOutResponseDto> {
     const find = await this.receivedOutService.findOne(param.id);
-    if (!find) throw new BadRequestException('Data not found.');
+    if (!find) throw new BadRequestException('Data tidak ditemukan.');
     return find as ReceivedOutResponseDto;
   }
 
@@ -142,13 +151,20 @@ export class ReceivedOutController {
     @Req() req: Request,
   ): Promise<ReceivedOutResponseDto> {
     const find = await this.receivedOutService.findOne(param.id);
-    if (!find) throw new BadRequestException('Data not found.');
+    if (!find) throw new BadRequestException('Data tidak ditemukan.');
 
     const oldData = await this.receivedOutService.findOne(Number(param.id));
     const update = await this.receivedOutService.update(
       param.id,
       updateReceivedOutDto,
     );
+
+    // Fetch user's role ID
+    const userData = await this.userService.findOne(user.sub);
+    if (!userData) {
+      throw new BadRequestException('User tidak ditemukan.');
+    }
+    const roleIds = [3, 7];
 
     // Create audit log
     await this.auditService.create({
@@ -169,9 +185,9 @@ export class ReceivedOutController {
 
     // Create and send notification
     await this.notificationsService.createNotification(
-      user.sub,
-      'ReceivedOut Updated',
-      `ReceivedOut with ID ${update.id} has been updated by ${user.name} on ${new Date().toLocaleString()}. New data: ${JSON.stringify(update)}. Old data: ${JSON.stringify(oldData)}.`,
+      roleIds, // Pass array of role IDs
+      'ReceivedOut Diperbarui',
+      `ReceivedOut dengan ID ${update.id} telah diperbarui oleh ${user.name} pada ${new Date().toLocaleString()}. Data baru: ${JSON.stringify(update)}. Data lama: ${JSON.stringify(oldData)}.`,
       NotificationCategory.UPDATE, // Use enum for category
       user.sub,
       `/received-out/${update.id}`, // Link to the specific ReceivedOut
@@ -191,16 +207,19 @@ export class ReceivedOutController {
     @Req() req: Request,
   ): Promise<ReceivedOutResponseDto> {
     const find = await this.receivedOutService.findOne(param.id);
-    if (!find) throw new BadRequestException('Data not found.');
+    if (!find) throw new BadRequestException('Data tidak ditemukan.');
 
-    // Approve the item
-    const approved = await this.receivedOutService.update(param.id, {
-      status: 'approved',
-      approved_by: user.sub,
-      updated_by: user.sub,
-    });
+    // Approve the item menggunakan metode baru di service
+    const approved = await this.receivedOutService.approve(param.id, approveReceivedOutDto, user.sub);
 
-    // Create audit log
+    // Fetch user's role ID
+    const userData = await this.userService.findOne(user.sub);
+    if (!userData) {
+      throw new BadRequestException('User tidak ditemukan.');
+    }
+    const roleIds = [3, 7];
+
+    // Buat audit log
     await this.auditService.create({
       Url: req.url,
       ActionName: 'Approve ReceivedOut',
@@ -217,11 +236,11 @@ export class ReceivedOutController {
       updated_by: user.sub,
     });
 
-    // Create and send notification
+    // Buat dan kirim notifikasi
     await this.notificationsService.createNotification(
-      user.sub,
-      'ReceivedOut Approved',
-      `ReceivedOut with ID ${approved.id} has been approved by ${user.name} on ${new Date().toLocaleString()}. Approved data: ${JSON.stringify(approved)}.`,
+      roleIds, // Pass array of role IDs
+      'ReceivedOut Disetujui',
+      `ReceivedOut dengan ID ${approved.id} telah disetujui oleh ${user.name} pada ${new Date().toLocaleString()}. Data yang disetujui: ${JSON.stringify(approved)}.`,
       NotificationCategory.APPROVE, // Use enum for category
       user.sub,
       `/received-out/${approved.id}`, // Link to the specific ReceivedOut
@@ -241,6 +260,13 @@ export class ReceivedOutController {
   ): Promise<{ count: number }> {
     console.log('Received IDs:', ids);
     const result = await this.receivedOutService.bulkApprove(ids);
+
+    // Fetch user's role ID
+    const userData = await this.userService.findOne(user.sub);
+    if (!userData) {
+      throw new BadRequestException('User tidak ditemukan.');
+    }
+    const roleIds = [3, 7];
 
     // Create audit log
     await this.auditService.create({
@@ -263,9 +289,9 @@ export class ReceivedOutController {
     await Promise.all(
       ids.map(async (id) => {
         await this.notificationsService.createNotification(
-          user.sub,
-          'Bulk Approved ReceivedOut',
-          `ReceivedOut with ID ${id} has been bulk approved by ${user.name} on ${new Date().toLocaleString()}.`,
+          roleIds, // Pass array of role IDs
+          'ReceivedOut Disetujui secara Massal',
+          `ReceivedOut dengan ID ${id} telah disetujui secara massal oleh ${user.name} pada ${new Date().toLocaleString()}.`,
           NotificationCategory.BULK_APPROVE, // Use enum for category
           user.sub,
           `/received-out/${id}`, // Link to the specific ReceivedOut
@@ -288,6 +314,13 @@ export class ReceivedOutController {
     console.log('Received IDs for Rejection:', ids);
     const result = await this.receivedOutService.bulkReject(ids);
 
+    // Fetch user's role ID
+    const userData = await this.userService.findOne(user.sub);
+    if (!userData) {
+      throw new BadRequestException('User tidak ditemukan.');
+    }
+    const roleIds = [3, 7];
+
     // Create audit log
     await this.auditService.create({
       Url: req.url,
@@ -309,9 +342,9 @@ export class ReceivedOutController {
     await Promise.all(
       ids.map(async (id) => {
         await this.notificationsService.createNotification(
-          user.sub,
-          'Bulk Rejected ReceivedOut',
-          `ReceivedOut with ID ${id} has been bulk rejected by ${user.name} on ${new Date().toLocaleString()}.`,
+          roleIds, // Pass array of role IDs
+          'ReceivedOut Ditolak secara Massal',
+          `ReceivedOut dengan ID ${id} telah ditolak secara massal oleh ${user.name} pada ${new Date().toLocaleString()}.`,
           NotificationCategory.BULK_REJECT, // Use enum for category
           user.sub,
           `/received-out/${id}`, // Link to the specific ReceivedOut
@@ -320,48 +353,6 @@ export class ReceivedOutController {
     );
 
     return { count: result.count };
-  }
-
-  /**
-   * Delete a ReceivedOut by ID
-   */
-  @Delete(':id')
-  async remove(
-    @Param() param: ParamIdDto,
-    @User() user: any,
-    @Req() req: Request,
-  ): Promise<void> {
-    const find = await this.receivedOutService.findOne(param.id);
-    if (!find) throw new BadRequestException('Data not found.');
-
-    await this.receivedOutService.remove(param.id);
-
-    // Create audit log
-    await this.auditService.create({
-      Url: req.url,
-      ActionName: 'Delete ReceivedOut',
-      MenuName: 'ReceivedOut',
-      DataBefore: JSON.stringify(find),
-      DataAfter: '',
-      UserName: user.name,
-      IpAddress: req.ip,
-      ActivityDate: new Date(),
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
-      AppSource: 'Desktop',
-      created_by: user.sub,
-      updated_by: user.sub,
-    });
-
-    // Create and send notification
-    await this.notificationsService.createNotification(
-      user.sub,
-      'ReceivedOut Deleted',
-      `ReceivedOut with ID ${param.id} has been deleted by ${user.name} on ${new Date().toLocaleString()}. Deleted data: ${JSON.stringify(find)}.`,
-      NotificationCategory.DELETE, // Use enum for category
-      user.sub,
-      `/received-out/${param.id}`, // Link to the specific ReceivedOut
-    );
   }
 
   /**

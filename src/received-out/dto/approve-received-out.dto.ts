@@ -16,4 +16,10 @@ export class ApproveReceivedOutDto {
   @IsString()
   @IsIn([StatusReceivedOut.APPROVED])
   status?: string; // Hanya mengizinkan perubahan ke "approved"
+
+  @IsString()
+  petugas: string;
+
+  @IsString()
+  kondisibarang: string;
 }
