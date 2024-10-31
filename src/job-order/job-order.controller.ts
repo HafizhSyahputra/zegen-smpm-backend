@@ -1438,7 +1438,41 @@ export class JobOrderController {
       //     nominal: totalNominal.toString(),  
       //   });  
       // }     
+      try {  
+        const sla = await this.prisma.sLA.findFirst({  
+          where: {  
+            job_order_no: createActivityJobOrderDto.no_jo,  
+            status: 'Acknowledge',  
+            deleted_at: null  
+          }  
+        });  
+      
+        if (sla) {  
+          const slaStatus = createActivityJobOrderDto.status === 'Cancel' ? 'Cancel' : 'Done';  
 
+          let newStatusSla = sla.status_sla;  
+          if (sla.status_sla !== 'Not Archived') {  
+            newStatusSla = 'Archived';  
+          }  
+          
+          await this.prisma.sLA.update({  
+            where: { id: sla.id },  
+            data: {  
+              status: slaStatus,  
+              solved_time: new Date(), 
+              updated_at: new Date(),  
+              updated_by: user.sub,
+              status_sla: newStatusSla,
+            }  
+          });  
+      
+          console.log(`Updated SLA status to ${slaStatus} for job order: ${createActivityJobOrderDto.no_jo}`);  
+        } else {  
+          console.warn(`No open SLA found for job order: ${createActivityJobOrderDto.no_jo}`);  
+        }  
+      } catch (error) {  
+        console.error(`Failed to update SLA for job order ${createActivityJobOrderDto.no_jo}:`, error);  
+      }  
       return report;  
     } catch (error) {  
       if (error instanceof BadRequestException) {  
