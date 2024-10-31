@@ -518,17 +518,18 @@ model JobOrder {
 }
 
 model SLA_Region {
-  id_sla       Int       @id @default(autoincrement())
-  group_region Int
-  action       String    @db.VarChar(255)
-  scope        String    @db.VarChar(255)
-  hour         Int?
-  target       Int?
-  created_by   Int?
-  updated_by   Int?
-  created_at   DateTime  @default(now()) @db.Date
-  updated_at   DateTime  @updatedAt @db.Date
-  deleted_at   DateTime?
+  id_sla         Int       @id @default(autoincrement())
+  group_region   Int
+  action         String    @db.VarChar(255)
+  scope          String    @db.VarChar(255)
+  hour           Int?
+  target         Int?
+  penalty_amount String?   @db.VarChar(255)
+  created_by     Int?
+  updated_by     Int?
+  created_at     DateTime  @default(now()) @db.Date
+  updated_at     DateTime  @updatedAt @db.Date
+  deleted_at     DateTime?
 
   regionGroup Group_Wilayah? @relation(fields: [group_region], references: [id_group])
 
@@ -550,6 +551,8 @@ model SLA {
   solved_time     DateTime?
   status          String?
   duration        Float?                       @default(0)
+  penalty_amount  String?                      @db.VarChar(255)
+  is_penalty      Boolean                      @default(false)
   created_by      Int?
   updated_by      Int?
   created_at      DateTime                     @default(now()) @db.Date

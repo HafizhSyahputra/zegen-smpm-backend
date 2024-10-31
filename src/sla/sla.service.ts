@@ -164,7 +164,16 @@ export class SlaService {
     try {  
       await this.prisma.$transaction(async (tx) => {  
         for (const record of records) {  
-          const targetTime = new Date(record.target_time);  
+          const sla = await tx.sLA.findUnique({  
+            where: { id: record.id },  
+            include: {  
+              slaRegion: true  
+            }  
+          });  
+
+          if (!sla || !sla.target_time) continue;  
+
+          const targetTime = new Date(sla.target_time);  
           if (isNaN(targetTime.getTime())) {  
             this.logger.warn(`Invalid target_time for SLA ID ${record.id}`);  
             continue;  
@@ -174,11 +183,37 @@ export class SlaService {
           const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));  
           const newDuration = Math.max(elapsedHours, record.duration || 0);  
 
+          // Cek apakah perlu menerapkan penalty  
+          let penaltyAmount = '0';  
+          let isPenalty = false;  
+          
+          if (elapsedHours > 0 && sla.slaRegion?.penalty_amount && !sla.is_penalty) {  
+            penaltyAmount = sla.slaRegion.penalty_amount;  
+            isPenalty = true;  
+
+            // Update Job Order dengan penalty  
+            await tx.jobOrder.update({  
+              where: { no: sla.job_order_no },  
+              data: {  
+                sla_penalty: penaltyAmount,  
+                updated_at: now  
+              }  
+            });  
+
+            this.logger.log(  
+              `Applied penalty ${penaltyAmount} to Job Order ${sla.job_order_no} ` +  
+              `for SLA ID ${record.id}`  
+            );  
+          }  
+
+          // Update SLA record  
           await tx.sLA.update({  
             where: { id: record.id },  
             data: {  
               duration: newDuration,  
               status_sla: 'Not Archived',  
+              penalty_amount: isPenalty ? penaltyAmount : undefined,  
+              is_penalty: isPenalty,  
               updated_at: now,  
             },  
           });  
@@ -194,6 +229,80 @@ export class SlaService {
     }  
   }  
 
+  async checkAndApplyPenalty(slaId: number): Promise<{  
+    success: boolean;  
+    message: string;  
+    penaltyAmount?: string;  
+  }> {  
+    try {  
+      const result = await this.prisma.$transaction(async (tx) => {  
+        const sla = await tx.sLA.findUnique({  
+          where: { id: slaId },  
+          include: {  
+            slaRegion: true  
+          }  
+        });  
+
+        if (!sla) {  
+          return {  
+            success: false,  
+            message: 'SLA not found'  
+          };  
+        }  
+
+        if (!sla.target_time) {  
+          return {  
+            success: false,  
+            message: 'Target time not set'  
+          };  
+        }  
+
+        const now = new Date();  
+        const targetTime = new Date(sla.target_time);  
+        const elapsedMs = now.getTime() - targetTime.getTime();  
+        const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));  
+
+        if (elapsedHours <= 0 || !sla.slaRegion?.penalty_amount || sla.is_penalty) {  
+          return {  
+            success: false,  
+            message: 'No penalty applicable'  
+          };  
+        }  
+
+        // Apply penalty  
+        const penaltyAmount = sla.slaRegion.penalty_amount;  
+
+        await tx.jobOrder.update({  
+          where: { no: sla.job_order_no },  
+          data: {  
+            sla_penalty: penaltyAmount,  
+            updated_at: now  
+          }  
+        });  
+
+        await tx.sLA.update({  
+          where: { id: slaId },  
+          data: {  
+            penalty_amount: penaltyAmount,  
+            is_penalty: true,  
+            updated_at: now  
+          }  
+        });  
+
+        return {  
+          success: true,  
+          message: `Penalty of ${penaltyAmount} applied successfully`,  
+          penaltyAmount  
+        };  
+      });  
+
+      return result;  
+    } catch (error) {  
+      this.logger.error(`Error applying penalty for SLA ${slaId}:`, error);  
+      throw new Error('Failed to apply penalty');  
+    }  
+  }  
+
   @Cron(CronExpression.EVERY_HOUR)  
   async handleCronUpdateDuration() {  
     this.logger.log('Starting scheduled SLA duration update');  
@@ -201,7 +310,7 @@ export class SlaService {
       await this.slaQueue.add(  
         'update-duration',  
         { timestamp: new Date().toISOString() },  
-        {   
+        {  
           attempts: 3,  
           backoff: {  
             type: 'exponential',  
