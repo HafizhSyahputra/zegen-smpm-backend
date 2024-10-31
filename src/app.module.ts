@@ -26,13 +26,20 @@ import { ApproveMerchantModule } from './approve-merchant/approve-merchant.modul
 import { NominalModule } from './nominal/nominal.module';
 import { ActivityVendorReportModule } from './activity-vendor-report/activity-vendor-report.module';
 import { SlaModule } from './sla/sla.module';
- 
+import { BullModule } from '@nestjs/bull';  
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
     }),
+    BullModule.forRoot({  
+      redis: {  
+        host: 'localhost',  
+        port: 6379,  
+      },  
+    }),  
     PrismaModule,
     AuthModule,
     UserModule,

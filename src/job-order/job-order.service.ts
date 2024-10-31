@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { JobOrder, Prisma, StagingJobOrder } from '@prisma/client';
+import { JobOrder, Prisma, SLA_Region, StagingJobOrder } from '@prisma/client';
 import { ColumnJobOrder, JobOrderStatus } from '@smpm/common/constants/enum';
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
 import { PageDto } from '@smpm/common/decorator/page.dto';
@@ -372,6 +372,20 @@ export class JobOrderService {
       }
     });
   }
+
+  async findSlaByGroupRegionAndScope(  
+    groupRegionId: number,  
+    merchantCategory: string,  
+    type: string,  
+  ): Promise<SLA_Region[]> {  
+    return this.prismaService.sLA_Region.findMany({  
+      where: {  
+        group_region: groupRegionId,  
+        action: type,  
+        scope: merchantCategory,  
+      },  
+    });  
+  }  
 
   async updateByNoJo(no_jo: string, data: Prisma.JobOrderUpdateInput) {
     return this.prismaService.jobOrder.update({

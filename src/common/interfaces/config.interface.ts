@@ -24,3 +24,21 @@ export interface IMailConfig {
   pass: string;
   from: string;
 }
+
+export interface ValidationError {  
+  row: number;  
+  column: string;  
+  value: string | null;  
+  message: string;  
+}  
+
+export interface ValidationResult {  
+  isValid: boolean;  
+  data: AcknowledgeDto | null;  
+  errors: ValidationError[];  
+}  
+
+export interface AcknowledgeDto {  
+  no: string;  
+  officer_name: string;  
+}

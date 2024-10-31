@@ -5,6 +5,7 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  InternalServerErrorException,
   NotFoundException,
   Param,
   Post,
@@ -47,6 +48,7 @@ import { ReceivedOutService } from '@smpm/received-out/received-out.service';
 import { PrismaService } from '@smpm/prisma/prisma.service';
 import { NominalService } from '@smpm/nominal/nominal.service';
 import { CreatePreventiveMaintenanceReportDto } from '@smpm/preventive-maintenance-report/dto/create-pm-report.dto';
+import { ValidationError, ValidationResult } from '@smpm/common/interfaces/config.interface';
 
 @UseGuards(AccessTokenGuard)
 @Controller('job-order')
@@ -181,15 +183,33 @@ export class JobOrderController {
       'CM Re-init': 'CM',  
       'Preventive Maintenance': 'PM',  
       Withdrawal: 'WD',  
-      'Cancel Installation': 'IS',  
-      'Cancel Withdrawal': 'IS',  
+      'Cancel Installation': 'CI',  
+      'Cancel Withdrawal': 'CW',  
     };  
     const ownerStatusCode = {  
       Sewa: 'SW',  
       Milik: 'MS',  
     };  
+
+    const slaIds: number[] = [];  
+    const slaHours: number[] = []; 
+     const jobOrderActionMapping: { [key: string]: string } = {  
+      'Withdrawal': 'Penarikan',  
+      'New Installation': 'Pemasangan',  
+      'CM Replace': 'Penggantian Unit',  
+      'Preventive Maintenance': 'Preventive Maintenance',  
+      'CM Re-init': 'Corrective Maintenance'  
+    };  
+
+    const merchantCategoryScopeMapping: { [key: string]: string } = {  
+      'Retail': 'RETAIL',  
+      'Local Chainstore': 'CHAINSTORE',  
+      'National Chainstore': 'MALL',  
+      'Strategic': 'CLUSTER PRIORITAS',  
+      'Agen46': 'AGEN'  
+    };  
   
-    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {  
+    worksheet.eachRow({ includeEmpty: false }, async (row, rowNumber) => {  
       if (rowNumber >= 4) {  
         [  
           {  
@@ -320,10 +340,25 @@ export class JobOrderController {
           });  
         }  
         console.log('selectedNominal:', selectedNominal);
-  
 
-        if (errors.length == 0) {  
+        const merchantCategory = row.getCell('BM').value ? row.getCell('BM').value.toString() : null; 
+        const correspondingScope = merchantCategoryScopeMapping[merchantCategory] || 'Unknown Scope';   
+        const jobOrderType = row.getCell('E').value ? row.getCell('E').value.toString() : null;  
+        const correspondingAction = jobOrderActionMapping[jobOrderType] || 'Unknown Action';  
+
+        if (errors.length == 0) { 
+          const relevantSlaRegions = await this.jobOrderService.findSlaByGroupRegionAndScope(  
+            selectedRegion.region_group,  
+            correspondingScope,  
+            correspondingAction  
+          );  
           
+          const slaId = relevantSlaRegions.length ? relevantSlaRegions[0].id_sla : null;  
+          const slaHour = relevantSlaRegions.length ? relevantSlaRegions[0].hour : 0;   
+          slaIds.push(slaId || 0);  
+          slaHours.push(slaHour || 0); 
+          console.log('relevantSlaRegions:', relevantSlaRegions);
+          console.log('SLA ID', slaIds);
           data.push({  
             nominal_awal:selectedNominal.nominal, 
             vendor_id: selectedVendor.id,  
@@ -571,23 +606,25 @@ export class JobOrderController {
     updated_by: user.sub,  
   }));  
 
-    // To Do : Implement SLA Target Time & SLA Region
-    // SLA Region = Region Group & Merchant_category & Type
-    const SLA = jobOrdersWithNominals.map((jobOrder) => ({  
-      job_order_no: jobOrder.no,  
-      vendor_id: jobOrder.vendor_id,   
-      region_id: jobOrder.region_id,   
-      tid: jobOrder.tid,   
-      mid: jobOrder.mid,   
-      region_group_id: jobOrder.region.region_group,   
-      sla_region: 1,
-      open_time: new Date(now.getTime() - 1000),   
-      target_time: new Date(now.getTime() - 1000),   
-      status: 'Open',
-      created_by: user.sub,  
-      updated_by: user.sub,    
-    }));  
-
+     const SLA = jobOrdersWithNominals.map((jobOrder, index) => {  
+      const openTime = new Date(now.getTime() - 1000);  
+      const targetTime = new Date(openTime.getTime() + (slaHours[index] * 60 * 60 * 1000));   
+  
+      return {  
+          job_order_no: jobOrder.no,  
+          vendor_id: jobOrder.vendor_id,   
+          region_id: jobOrder.region_id,   
+          tid: jobOrder.tid,   
+          mid: jobOrder.mid,   
+          region_group_id: jobOrder.region.region_group,   
+          sla_region: slaIds[index] || 0,  
+          open_time: openTime,   
+          target_time: targetTime,      
+          status: 'Open',  
+          created_by: user.sub,  
+          updated_by: user.sub,    
+      };  
+  });
     try {  
       await this.prisma.stagingJobOrder.createMany({  
         data: stagingRecords,  
@@ -606,120 +643,170 @@ export class JobOrderController {
     };  
   }
 
-  @UseInterceptors(
-    FileUploadInterceptor({
-      name: 'files',
-      dirPath: './uploads/bulk/job-order-acknowledge',
-      prefixName: 'job-order-acknowledge',
-      ext: ['xlsx'],
-    }),
-  )
-  @Post('bulk/acknowledge')
-  async acknowledge(
-    @Req() req: Request,
-    @User() user: any,
-    @UploadedFiles() files: Express.Multer.File[],
-  ) {
-    if (!files || files.length == 0) {
-      throw new BadRequestException('File tidak boleh kosong');
-    }
-
-    if (files && files.length > 1) {
-      throw new BadRequestException('Hanya 1 file yang dizinkan');
-    }
-
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(files[0].path, {
-      ignoreNodes: ['dataValidations'],
-    });
-
-    const worksheet = workbook.getWorksheet(1);
-
-    // const whereOfficer: Prisma.UserWhereInput = {};
-    // if (req.user['role']['type'] == 'VENDOR') {
-    //   whereOfficer.vendor_id = req.user['vendor_id'];
-    // }
-    // const [allOfficer] = await Promise.all([
-    //   this.userService.getAll({
-    //     role: {
-    //       type: 'VENDOR',
-    //     },
-    //     ...whereOfficer,
-    //   }),
-    // ]);
-
-    const existJobOrder = await Promise.all(
-      worksheet
-        .getRows(4, worksheet.rowCount - 3)
-        .map((row) => row.values)
-        .map((item) => {
-          return this.jobOrderService.findOneBy({
-            no: item[2],
-            status: 'Open',
-          });
-        }),
-    );
-
-    const data: AcknowledgeDto[] = [];
-    const errors: {
-      row: number;
-      column: string;
-      value: string;
-      message: string;
-    }[] = [];
-
-    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      if (rowNumber >= 4) {
-        [
-          {
-            cell: 'B',
-            name: 'NO. JO',
-          },
-          {
-            cell: 'BO',
-            name: 'NAMA PETUGAS',
-          },
-        ].forEach((item) => {
-          if (!row.getCell(item.cell).value)
-            errors.push({
-              row: rowNumber,
-              column: item.name,
-              value: row.getCell(item.cell).value
-                ? row.getCell(item.cell).value.toString()
-                : null,
-              message: `${item.name} tidak boleh kosong`,
-            });
-        });
-
-        if (row.getCell('B').value && !existJobOrder[rowNumber - 4])
-          errors.push({
-            row: rowNumber,
-            column: 'NO. JO',
-            value: row.getCell('B').value.toString(),
-            message: `NO. JO tidak ditemukan`,
-          });
-
-        if (errors.length == 0) {
-          data.push({
-            no: row.getCell('B').value.toString(),
-            officer_name: row.getCell('BO').value.toString(),
-          });
-        }
-      }
-    });
-
-    if (errors.length > 0)
-      throw new BadRequestException({
-        message: 'Terdapat data yang tidak valid pada file yang diupload',
-        errors,
-      });
-
-      await this.auditService.create({
-        Url: req.url,
-        ActionName: 'Bulk Create Job Order Acknowledge',
-        MenuName: 'Job Order',
-        DataBefore: '',
-        DataAfter: JSON.stringify(data),
+  @UseInterceptors(  
+    FileUploadInterceptor({  
+      name: 'files',  
+      dirPath: './uploads/bulk/job-order-acknowledge',  
+      prefixName: 'job-order-acknowledge',  
+      ext: ['xlsx'],  
+    }),  
+  )  
+  @Post('bulk/acknowledge')  
+  async acknowledge(  
+    @Req() req: Request,  
+    @User() user: any,  
+    @UploadedFiles() files: Express.Multer.File[],  
+  ) {  
+    try {  
+      if (!files?.length) {  
+        throw new BadRequestException('File tidak boleh kosong');  
+      }  
+      if (files.length > 1) {  
+        throw new BadRequestException('Hanya 1 file yang dizinkan');  
+      }  
+  
+      const data = await this.parseExcelFile(files[0]);  
+      
+      const results = await this.processBatchAcknowledge(data, user, req);  
+  
+      return {  
+        message: 'Bulk acknowledge processed successfully',  
+        processed: results.totalProcessed,  
+        details: results.details,  
+      };  
+  
+    } catch (error) {  
+      console.error('Bulk acknowledge error:', error);  
+      throw error;  
+    } finally {  
+      await this.cleanupFiles(files);  
+    }  
+  }  
+  
+  private async parseExcelFile(file: Express.Multer.File): Promise<AcknowledgeDto[]> {  
+    const workbook = new ExcelJS.Workbook();  
+    await workbook.xlsx.readFile(file.path, {  
+      ignoreNodes: ['dataValidations'],  
+    });  
+  
+    const worksheet = workbook.getWorksheet(1);  
+    const data: AcknowledgeDto[] = [];  
+    const errors: ValidationError[] = [];  
+  
+    // Validasi dan ekstrak data dari Excel  
+    const rows = worksheet.getRows(4, worksheet.rowCount - 3);  
+    const existJobOrders = await this.validateJobOrders(rows);  
+  
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {  
+      if (rowNumber >= 4) {  
+        const rowValidation = this.validateRow(row, rowNumber, existJobOrders[rowNumber - 4]);  
+        if (rowValidation.isValid) {  
+          data.push(rowValidation.data);  
+        } else {  
+          errors.push(...rowValidation.errors);  
+        }  
+      }  
+    });  
+  
+    if (errors.length > 0) {  
+      throw new BadRequestException({  
+        message: 'Terdapat data yang tidak valid pada file yang diupload',  
+        errors,  
+      });  
+    }  
+  
+    return data;  
+  }  
+  
+  private async processBatchAcknowledge(  
+    data: AcknowledgeDto[],  
+    user: any,  
+    req: Request,  
+  ): Promise<{ totalProcessed: number; details: any[] }> {  
+    const BATCH_SIZE = 50;  
+    const batches = this.createBatches(data, BATCH_SIZE);  
+    const results = [];  
+  
+    for (const [index, batch] of batches.entries()) {  
+      try {  
+        const result = await this.processsingBatch(batch, user, req, index + 1);  
+        results.push(result);  
+      } catch (error) {  
+        console.error(`Error processing batch ${index + 1}:`, error);  
+        throw new InternalServerErrorException(  
+          `Failed processing batch ${index + 1}: ${error.message}`,  
+        );  
+      }  
+    }  
+  
+    return {  
+      totalProcessed: results.reduce((acc, curr) => acc + curr.processed, 0),  
+      details: results,  
+    };  
+  }  
+  
+  private async processsingBatch(  
+    batch: AcknowledgeDto[],  
+    user: any,  
+    req: Request,  
+    batchNumber: number,  
+  ): Promise<any> {  
+    const startTime = Date.now();  
+  
+    return await this.prisma.$transaction(  
+      async (prisma) => {  
+        // 1. Create audit log  
+        await this.createAuditLog(prisma, batch, user, req);  
+  
+        // 2. Create staging records  
+        const stagingRecords = this.prepareStagingRecords(batch, user);  
+        await prisma.stagingJobOrder.createMany({  
+          data: stagingRecords,  
+        });  
+  
+        // 3. Update SLA records  
+        const slaResults = await this.updateSLARecords(prisma, batch, user);  
+  
+        // 4. Process job order acknowledge  
+        await this.jobOrderService.acknowlege(batch);  
+  
+        const processingTime = Date.now() - startTime;  
+        return {  
+          batchNumber,  
+          processed: batch.length,  
+          slaUpdated: slaResults.count,  
+          processingTime,  
+        };  
+      },  
+      {  
+        timeout: 60000, // 60 seconds timeout  
+        maxWait: 5000, // 5 seconds max wait  
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,  
+      },  
+    );  
+  }  
+  
+  private createBatches<T>(data: T[], batchSize: number): T[][] {  
+    const batches: T[][] = [];  
+    for (let i = 0; i < data.length; i += batchSize) {  
+      batches.push(data.slice(i, i + batchSize));  
+    }  
+    return batches;  
+  }  
+  
+  private async createAuditLog(  
+    prisma: Prisma.TransactionClient,  
+    data: any[],  
+    user: any,  
+    req: Request,  
+  ): Promise<void> {  
+    await prisma.auditTrail.create({  
+      data: {  
+        Url: req.url,  
+        ActionName: 'Bulk Create Job Order Acknowledge',  
+        MenuName: 'Job Order',  
+        DataBefore: '',  
+        DataAfter: JSON.stringify(data),  
         UserName: user.name,  
         IpAddress: req.ip,  
         ActivityDate: new Date(),  
@@ -728,27 +815,130 @@ export class JobOrderController {
         AppSource: 'Desktop',  
         created_by: user.sub,  
         updated_by: user.sub,  
-      });
-
-    const stagingRecords = data.map((acknowledge) => ({  
+      },  
+    });  
+  }  
+  
+  private prepareStagingRecords(  
+    batch: AcknowledgeDto[],  
+    user: any,  
+  ): any[] {  
+    return batch.map((acknowledge) => ({  
       job_order_no: acknowledge.no,  
       petugas: acknowledge.officer_name,  
-      reason: `Job Order ditugaskan Kepada ${acknowledge.officer_name}`,
+      reason: `Job Order ditugaskan Kepada ${acknowledge.officer_name}`,  
       staging_id: 2,  
       created_by: user.sub,  
       updated_by: user.sub,  
     }));  
+  }  
   
-     try {  
-      await this.prisma.stagingJobOrder.createMany({ data: stagingRecords });  
+  private async updateSLARecords(  
+    prisma: Prisma.TransactionClient,  
+    batch: AcknowledgeDto[],  
+    user: any,  
+  ): Promise<{ count: number }> {  
+    const slaRecords = await prisma.sLA.findMany({  
+      where: {  
+        job_order_no: {  
+          in: batch.map((item) => item.no),  
+        },  
+        status: 'Open',  
+        deleted_at: null,  
+      },  
+      select: { id: true },  
+    });  
+  
+    return await prisma.sLA.updateMany({  
+      where: {  
+        id: {  
+          in: slaRecords.map((sla) => sla.id),  
+        },  
+      },  
+      data: {  
+        status: 'Acknowledge',  
+        updated_at: new Date(),  
+        updated_by: user.sub,  
+      },  
+    });  
+  }  
+  
+  private async cleanupFiles(files: Express.Multer.File[]): Promise<void> {  
+    try {  
+      await Promise.all(  
+        files.map((file) =>  
+          fs.promises.unlink(file.path).catch((err) =>  
+            console.error(`Failed to delete file ${file.path}:`, err),  
+          ),  
+        ),  
+      );  
     } catch (error) {  
-      console.error('Error creating StagingJobOrders:', error);  
-      throw new BadRequestException('Failed to create staging job orders acknowledge');  
+      console.error('Error cleaning up files:', error);  
     }  
-
-    await this.jobOrderService.acknowlege(data);
-
-    return null;
+  }  
+  
+  private validateRow(  
+    row: any,  
+    rowNumber: number,  
+    existJobOrder: any,  
+  ): ValidationResult {  
+    const errors: ValidationError[] = [];  
+    const requiredFields = [  
+      { cell: 'B', name: 'NO. JO' },  
+      { cell: 'BO', name: 'NAMA PETUGAS' },  
+    ];  
+  
+    // Validate required fields  
+    requiredFields.forEach((field) => {  
+      if (!row.getCell(field.cell).value) {  
+        errors.push({  
+        row: rowNumber,  
+          column: field.name,  
+          value: null,  
+          message: `${field.name} tidak boleh kosong`,  
+        });  
+      }  
+    });  
+  
+    // Validate job order existence  
+    if (row.getCell('B').value && !existJobOrder) {  
+      errors.push({  
+        row: rowNumber,  
+        column: 'NO. JO',  
+        value: row.getCell('B').value.toString(),  
+        message: 'NO. JO tidak ditemukan',  
+      });  
+    }  
+  
+    if (errors.length === 0) {  
+      return {  
+        isValid: true,  
+        data: {  
+          no: row.getCell('B').value.toString(),  
+          officer_name: row.getCell('BO').value.toString(),  
+        },  
+        errors: [],  
+      };  
+    }  
+  
+    return {  
+      isValid: false,  
+      data: null,  
+      errors,  
+    };  
+  }  
+  
+  private async validateJobOrders(rows: any[]): Promise<any[]> {  
+    return await Promise.all(  
+      rows  
+        .map((row) => row.values)  
+        .map((item) =>  
+          this.jobOrderService.findOneBy({  
+            no: item[2],  
+            status: 'Open',  
+          }),  
+        ),  
+    );  
   }
 
   @Get('template-acknowledge/download')

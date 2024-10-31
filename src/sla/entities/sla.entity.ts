@@ -1,44 +1,31 @@
-import { Exclude, Expose } from 'class-transformer';
+export class SLAEntity {  
+  id: number;  
+  job_order_no: string;  
+  vendor_id: number;  
+  region_id: number;  
+  region_group_id: number;  
+  tid: string;  
+  mid: string;  
+  sla_region: number;  
+  open_time: Date;  
+  target_time: Date;  
+  status_sla: string;  
+  solved_time?: Date;  
+  status?: string;  
+  duration?: number;  
+  created_by?: number;  
+  updated_by?: number;  
+  created_at: Date;  
+  updated_at: Date;  
+  deleted_at?: Date;  
 
-export class DocSLAEntity {
-  constructor(partial: Partial<DocSLAEntity>) {
-    Object.assign(this, partial);
-  }
+  // Relasi dengan entity lain (jika ada)  
+  // Misalnya:  
+  // vendor: Vendor;  
+  // region: Region;  
+  // ... dll  
 
-  @Expose()
-  id: number;
-  @Expose()
-  job_order_no: string;
-  @Expose()
-  vendor_id: number;
-  @Expose()
-  region_id: number;
-  @Expose()
-  mid: string;
-  @Expose()
-  tid: string;
-  @Expose()
-  sla_region?: number;
-  @Expose()
-  open_time?: Date;
-  @Expose()
-  target_time?: Date;
-  @Expose()
-  status_sla?: string;
-  @Expose()
-  solved_time?: Date;
-  @Expose()
-  status?: string;
-  @Expose()
-  duration?: string;
-  @Exclude()
-  created_by?: number;
-  @Exclude()
-  updated_by?: number;
-  @Exclude()
-  created_at?: Date;
-  @Exclude()
-  updated_at?: Date;
-  @Exclude()
-  deleted_at?: Date;
+  constructor(partial: Partial<SLAEntity>) {  
+    Object.assign(this, partial);  
+  }  
 }
