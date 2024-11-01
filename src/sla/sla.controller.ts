@@ -12,12 +12,14 @@ import {
   Req,
   HttpCode,
   InternalServerErrorException,
+  Header,
+  Res,
 } from '@nestjs/common';
 import { PageDto } from '@smpm/common/decorator/page.dto';
 import { ParamIdDto } from '@smpm/common/decorator/param-id.dto';
 import { AccessTokenGuard } from '@smpm/common/guards/access-token.guard';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuditService } from '@smpm/audit/audit.service';
 import { PrismaService } from '@smpm/prisma/prisma.service';
 import { PageOptionSLADto } from './dto/page-option-sla.dto';
@@ -135,6 +137,32 @@ export class SlaController {
       updated_by: user.sub,
     });
   }
+
+  @Get('export/JobOrder')  
+  @HttpCode(200)  
+  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')  
+  @Header('Content-Disposition', 'attachment; filename=regular_sla_data.xlsx')  
+  async exportRegularToExcel(@Res() res: Response) {  
+    try {  
+      const buffer = await this.slaService.exportJobOrderToExcel();  
+      res.send(buffer);  
+    } catch (error) {  
+      throw new InternalServerErrorException('Failed to export regular SLA data: ' + error.message);  
+    }  
+  }  
+
+  @Get('export/Preventive')  
+  @HttpCode(200)  
+  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')  
+  @Header('Content-Disposition', 'attachment; filename=preventive_sla_data.xlsx')  
+  async exportPreventiveToExcel(@Res() res: Response) {  
+    try {  
+      const buffer = await this.slaService.exportPreventiveToExcel();  
+      res.send(buffer);  
+    } catch (error) {  
+      throw new InternalServerErrorException('Failed to export preventive SLA data: ' + error.message);  
+    }  
+  }  
 
   private getBrowserFromUserAgent(userAgent: string): string {
     if (userAgent.includes('Chrome')) return 'Chrome';

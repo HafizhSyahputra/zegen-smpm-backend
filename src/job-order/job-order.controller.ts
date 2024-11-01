@@ -342,10 +342,15 @@ export class JobOrderController {
         console.log('selectedNominal:', selectedNominal);
 
         const merchantCategory = row.getCell('BM').value ? row.getCell('BM').value.toString() : null; 
-        const correspondingScope = merchantCategoryScopeMapping[merchantCategory] || 'Unknown Scope';   
         const jobOrderType = row.getCell('E').value ? row.getCell('E').value.toString() : null;  
+        let correspondingScope;  
+        if (jobOrderType === 'Preventive Maintenance') {  
+          correspondingScope = 'Pemeliharaan secara berkala';  
+        } else {  
+          correspondingScope = merchantCategoryScopeMapping[merchantCategory] || 'Unknown Scope';  
+        }  
         const correspondingAction = jobOrderActionMapping[jobOrderType] || 'Unknown Action';  
-
+        
         if (errors.length == 0) { 
           const relevantSlaRegions = await this.jobOrderService.findSlaByGroupRegionAndScope(  
             selectedRegion.region_group,  

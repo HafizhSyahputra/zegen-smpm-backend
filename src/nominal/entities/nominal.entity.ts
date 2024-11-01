@@ -11,6 +11,8 @@ export class NominalEntity implements NominalJobOrder {
   @Expose()
   jenis: string;
   @Expose()
+  vendor_id: number;
+  @Expose()
   nominal: string;
   @Expose()
   tipe: string;

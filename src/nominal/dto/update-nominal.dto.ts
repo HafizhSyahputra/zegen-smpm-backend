@@ -11,5 +11,9 @@ export class UpdateNominalDto {
 
   @IsOptional()
   @IsString()
+  vendor_id?: number;
+
+  @IsOptional()
+  @IsString()
   tipe?: string;
 }

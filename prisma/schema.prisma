@@ -216,6 +216,8 @@ model Vendor {
   ActivityVendorReport ActivityVendorReport[]
 
   SLA SLA[]
+
+  NominalJobOrder NominalJobOrder[]
 }
 
 model Region {
@@ -408,6 +410,7 @@ model ElectronicDataCaptureMachine {
 model NominalJobOrder {
   id         Int       @id @default(autoincrement())
   jenis      String    @unique
+  vendor_id  Int?
   nominal    String
   tipe       String
   created_by Int?
@@ -415,6 +418,8 @@ model NominalJobOrder {
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+
+  vendor Vendor? @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model JobOrder {

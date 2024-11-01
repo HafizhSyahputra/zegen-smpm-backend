@@ -1,9 +1,13 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateNominalDto {
   @IsNotEmpty()
   @IsString()
   jenis: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  vendor_id: number;
 
   @IsNotEmpty()
   @IsString()
