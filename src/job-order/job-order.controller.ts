@@ -1386,7 +1386,7 @@ export class JobOrderController {
         data: stagingJobOrderData,  
       });  
 
-      const amount = createActivityJobOrderDto.products ? createActivityJobOrderDto.products.length : 0;  
+      const amount = 1;  
       const location = `${jobOrder.address1}, ${jobOrder.address2}, ${jobOrder.address3}, ${jobOrder.address4} ${jobOrder.postal_code}`;  
 
       await this.prisma.activityVendorReport.create({

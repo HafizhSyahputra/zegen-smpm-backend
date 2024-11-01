@@ -19,12 +19,6 @@ export class SLAEntity {
   updated_at: Date;  
   deleted_at?: Date;  
 
-  // Relasi dengan entity lain (jika ada)  
-  // Misalnya:  
-  // vendor: Vendor;  
-  // region: Region;  
-  // ... dll  
-
   constructor(partial: Partial<SLAEntity>) {  
     Object.assign(this, partial);  
   }  

@@ -425,8 +425,6 @@ model JobOrder {
   type                                                       String
   date                                                       DateTime  @db.Date
   nominal_awal                                               String?
-  nominal_akhir                                              String?
-  sla_penalty                                                String?
   mid                                                        String
   tid                                                        String
   officer_name                                               String?
@@ -515,20 +513,22 @@ model JobOrder {
   StagingJobOrder StagingJobOrder[]
 
   ActivityVendorReport ActivityVendorReport[]
+
+  SLA SLA[]
 }
 
 model SLA_Region {
-  id_sla         Int       @id @default(autoincrement())
-  group_region   Int
-  action         String    @db.VarChar(255)
-  scope          String    @db.VarChar(255)
-  hour           Int?
-  target         Int?
-  created_by     Int?
-  updated_by     Int?
-  created_at     DateTime  @default(now()) @db.Date
-  updated_at     DateTime  @updatedAt @db.Date
-  deleted_at     DateTime?
+  id_sla       Int       @id @default(autoincrement())
+  group_region Int
+  action       String    @db.VarChar(255)
+  scope        String    @db.VarChar(255)
+  hour         Int?
+  target       Int?
+  created_by   Int?
+  updated_by   Int?
+  created_at   DateTime  @default(now()) @db.Date
+  updated_at   DateTime  @updatedAt @db.Date
+  deleted_at   DateTime?
 
   regionGroup Group_Wilayah? @relation(fields: [group_region], references: [id_group])
 
@@ -536,33 +536,33 @@ model SLA_Region {
 }
 
 model SLA {
-  id              Int                          @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   job_order_no    String
   vendor_id       Int
   region_id       Int
-  region_group_id Int                          @default(1)
+  region_group_id Int       @default(1)
   tid             String
   mid             String
   sla_region      Int
   open_time       DateTime
   target_time     DateTime?
-  status_sla      String                       @default("In Progress")
+  status_sla      String    @default("In Progress")
   solved_time     DateTime?
   status          String?
-  duration        Float?                       @default(0)
-  penalty_amount  String?                      @db.VarChar(255)
-  is_penalty      Boolean                      @default(false)
+  duration        Float?    @default(0)
   created_by      Int?
   updated_by      Int?
-  created_at      DateTime                     @default(now()) @db.Date
-  updated_at      DateTime                     @updatedAt @db.Date
+  created_at      DateTime  @default(now()) @db.Date
+  updated_at      DateTime  @updatedAt @db.Date
   deleted_at      DateTime?
-  slaRegion       SLA_Region                   @relation(fields: [sla_region], references: [id_sla], onDelete: NoAction, onUpdate: NoAction)
-  regionGroup     Group_Wilayah                @relation(fields: [region_group_id], references: [id_group], onDelete: NoAction, onUpdate: NoAction)
-  region          Region                       @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  vendor          Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  merchant        Merchant                     @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
-  edc             ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
+
+  jobOrder    JobOrder                     @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
+  slaRegion   SLA_Region                   @relation(fields: [sla_region], references: [id_sla], onDelete: NoAction, onUpdate: NoAction)
+  regionGroup Group_Wilayah                @relation(fields: [region_group_id], references: [id_group], onDelete: NoAction, onUpdate: NoAction)
+  region      Region                       @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendor      Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  merchant    Merchant                     @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
+  edc         ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([target_time])
   @@index([solved_time])
@@ -1067,20 +1067,20 @@ model Group_Wilayah {
 
 model ProviderSimcard {
   id_provider_simcard Int       @id @default(autoincrement())
-   name_provider       String
-   created_by          Int?
-   updated_by          Int?
-   created_at          DateTime  @default(now()) @db.Date
-   updated_at          DateTime  @updatedAt @db.Date
-   deleted_at          DateTime?
+  name_provider       String
+  created_by          Int?
+  updated_by          Int?
+  created_at          DateTime  @default(now()) @db.Date
+  updated_at          DateTime  @updatedAt @db.Date
+  deleted_at          DateTime?
 }
 
 model Payment {
-  id_payment Int       @id @default(autoincrement())
+  id_payment   Int       @id @default(autoincrement())
   name_payment String
-  created_by Int?
-  updated_by Int?
-  created_at DateTime  @default(now()) @db.Date
-  updated_at DateTime  @updatedAt @db.Date
-  deleted_at DateTime?
+  created_by   Int?
+  updated_by   Int?
+  created_at   DateTime  @default(now()) @db.Date
+  updated_at   DateTime  @updatedAt @db.Date
+  deleted_at   DateTime?
 }
