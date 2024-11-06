@@ -45,70 +45,84 @@ export class NominalController {
     return data;
   }
 
-  @Post()
-  async create(
-    @Body() createNominalDto: CreateNominalDto,
-    @User() user: any,
-    @Req() req: Request,
-  ): Promise<NominalEntity> {
-    const create = new NominalEntity(
-      await this.nominalService.create(createNominalDto, user?.sub),
-    );
+  @Post()  
+  async create(  
+    @Body() createNominalDto: CreateNominalDto,  
+    @User() user: any,  
+    @Req() req: Request,  
+  ): Promise<NominalEntity> {  
+    try {  
+      const create = new NominalEntity(  
+        await this.nominalService.create(createNominalDto, user?.sub),  
+      );  
 
-    await this.auditService.create({
-      Url: req.url,
-      ActionName: 'Create Nominal',
-      MenuName: 'Nominal Job Order',
-      DataBefore: '',
-      DataAfter: JSON.stringify(create),
-      UserName: user.name,
-      IpAddress: req.ip,
-      ActivityDate: new Date(),
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
-      AppSource: 'Desktop',
-      created_by: user.sub,
-      updated_by: user.sub,
-    });
+      await this.auditService.create({  
+        Url: req.url,  
+        ActionName: 'Create Nominal',  
+        MenuName: 'Nominal Job Order',  
+        DataBefore: '',  
+        DataAfter: JSON.stringify(create),  
+        UserName: user.name,  
+        IpAddress: req.ip,  
+        ActivityDate: new Date(),  
+        Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+        OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+        AppSource: 'Desktop',  
+        created_by: user.sub,  
+        updated_by: user.sub,  
+      });  
 
-    return {
-      ...create,
-    };
-  }
+      return {  
+        ...create,  
+      };  
+    } catch (error) {  
+      if (error instanceof BadRequestException) {  
+        throw error;  
+      }  
+      throw new BadRequestException('Gagal membuat data nominal');  
+    }  
+  }  
 
-  @Patch(':id')
-  async update(
-    @Param() param: ParamIdDto,
-    @Body() updateNominalDto: UpdateNominalDto,
-    @User() user: any,
-    @Req() req: Request,
-  ): Promise<NominalEntity> {
-    const find = await this.nominalService.findOne(param.id);
-    if (!find) throw new BadRequestException('Data not found.');
+  @Patch(':id')  
+  async update(  
+    @Param() param: ParamIdDto,  
+    @Body() updateNominalDto: UpdateNominalDto,  
+    @User() user: any,  
+    @Req() req: Request,  
+  ): Promise<NominalEntity> {  
+    try {  
+      const find = await this.nominalService.findOne(param.id);  
+      if (!find) throw new BadRequestException('Data not found.');  
 
-    const oldData = await this.nominalService.findOne(Number(param.id));
-    const update = new NominalEntity(
-      await this.nominalService.update(param.id, updateNominalDto, user?.sub),
-    );
+      const oldData = await this.nominalService.findOne(Number(param.id));  
+      const update = new NominalEntity(  
+        await this.nominalService.update(param.id, updateNominalDto, user?.sub),  
+      );  
 
-    await this.auditService.create({
-      Url: req.url,
-      ActionName: 'Nominal Update',
-      MenuName: 'Nominal Job Order',
-      DataBefore: JSON.stringify(oldData),
-      DataAfter: JSON.stringify(update),
-      UserName: user.name,
-      IpAddress: req.ip,
-      ActivityDate: new Date(),
-      Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),
-      OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),
-      AppSource: 'Desktop',
-      created_by: user.sub,
-      updated_by: user.sub,
-    });
+      await this.auditService.create({  
+        Url: req.url,  
+        ActionName: 'Nominal Update',  
+        MenuName: 'Nominal Job Order',  
+        DataBefore: JSON.stringify(oldData),  
+        DataAfter: JSON.stringify(update),  
+        UserName: user.name,  
+        IpAddress: req.ip,  
+        ActivityDate: new Date(),  
+        Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
+        OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
+        AppSource: 'Desktop',  
+        created_by: user.sub,  
+        updated_by: user.sub,  
+      });  
 
-    return update;
-  }
+      return update;  
+    } catch (error) {  
+      if (error instanceof BadRequestException) {  
+        throw error;  
+      }  
+      throw new BadRequestException('Gagal mengupdate data nominal');  
+    }  
+  }  
 
   @Delete(':id')
   async remove(

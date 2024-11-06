@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateNominalDto {
   @IsOptional()
@@ -10,7 +10,7 @@ export class UpdateNominalDto {
   nominal?: string;
 
   @IsOptional()
-  @IsString()
+  @IsNumber()
   vendor_id?: number;
 
   @IsOptional()

@@ -9,8 +9,8 @@ import { UpdateSlaDto } from './dto/update-sla.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import * as ExcelJS from 'exceljs';  
-import { Buffer } from 'buffer';  
+import * as ExcelJS from 'exceljs';
+import { Buffer } from 'buffer';
 
 @Injectable()
 export class SlaService {
@@ -119,7 +119,6 @@ export class SlaService {
       let hasMore = true;
 
       while (hasMore) {
-        // Fetch records in smaller batches
         const records = await this.prisma.sLA.findMany({
           where: {
             target_time: { lt: now },
@@ -140,15 +139,19 @@ export class SlaService {
           break;
         }
 
-        // Process current batch
-        const batchResult = await this.processRecordsBatch(records, now);
-        updated += batchResult;
+        const chunkSize = 10;
+        for (let i = 0; i < records.length; i += chunkSize) {
+          const chunk = records.slice(i, i + chunkSize);
+          const batchResult = await this.processRecordsBatch(chunk, now);
+          updated += batchResult;
+        }
+
         processed += records.length;
         currentBatch++;
 
         this.logger.log(
           `Processed batch ${currentBatch}: ${records.length} records, ` +
-            `${batchResult} updated. Total: ${processed} processed, ${updated} updated`,
+            `${updated} updated. Total: ${processed} processed`,
         );
 
         // Small delay between batches to prevent overwhelming the database
@@ -221,200 +224,252 @@ export class SlaService {
     }
   }
 
-  async exportJobOrderToExcel(): Promise<Buffer> {  
-    try {  
-      const data = await this.prisma.sLA.findMany({  
-        where: {  
-          deleted_at: null,  
-          status_sla: {  
-            in: ['Archived', 'Not Archived']  
-          }, 
-          jobOrder: {  
-            type: {  
-              not: 'Preventive Maintenance'  
-            }  
-          }  
-        },  
-        include: {  
-          jobOrder: true,  
-          edc: true,  
+  async exportJobOrderToExcel(): Promise<Buffer> {
+    try {
+      await this.updateDurationBatch();
+
+      const data = await this.prisma.sLA.findMany({
+        where: {
+          deleted_at: null,
+          status_sla: {
+            in: ['Archived', 'Not Archived'],
+          },
+          jobOrder: {
+            type: {
+              not: 'Preventive Maintenance',
+            },
+          },
+        },
+        include: {
+          jobOrder: true,
+          edc: true,
           slaRegion: {
             include: {
               regionGroup: true,
-            }
-          },  
-          region: true, 
-          merchant: true,  
-          vendor: true,  
-        },  
-      });  
+            },
+          },
+          region: true,
+          merchant: true,
+          vendor: true,
+        },
+      });
 
-      return await this.generateExcel(data, 'Regular Job Order SLA');  
-    } catch (error) {  
-      this.logger.error('Error exporting regular SLA data to Excel:', error);  
-      throw new Error('Failed to export regular SLA data to Excel');  
-    }  
-  }  
+      return await this.generateExcel(data, 'Job Order SLA');
+    } catch (error) {
+      this.logger.error('Error exporting regular SLA data to Excel:', error);
+      throw new Error('Failed to export regular SLA data to Excel');
+    }
+  }
 
-  async exportPreventiveToExcel(): Promise<Buffer> {  
-    try {  
-      const data = await this.prisma.sLA.findMany({  
-        where: {  
-          deleted_at: null, 
-          status_sla: {  
-            in: ['Archived', 'Not Archived']  
-          },  
-          jobOrder: {  
-            type: 'Preventive Maintenance'  
-          }  
-        },  
-        include: {  
-          jobOrder: true,  
-          edc: true,  
+  async exportPreventiveToExcel(): Promise<Buffer> {
+    try {
+      const data = await this.prisma.sLA.findMany({
+        where: {
+          deleted_at: null,
+          status_sla: {
+            in: ['Archived', 'Not Archived'],
+          },
+          jobOrder: {
+            type: 'Preventive Maintenance',
+          },
+        },
+        include: {
+          jobOrder: true,
+          edc: true,
           slaRegion: {
             include: {
               regionGroup: true,
+            },
+          },
+          region: true,
+          merchant: true,
+          vendor: true,
+        },
+      });
+
+      await this.updateDurationBatch();
+      return await this.generateExcel(data, 'Preventive Maintenance SLA');
+    } catch (error) {
+      this.logger.error('Error exporting preventive SLA data to Excel:', error);
+      throw new Error('Failed to export preventive SLA data to Excel');
+    }
+  }
+
+  private async generateExcel(data: any[], sheetName: string): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+
+    // Pisahkan data berdasarkan status_sla
+    const archivedData = data.filter((item) => item.status_sla === 'Archived');
+    const notArchivedData = data.filter(
+      (item) => item.status_sla === 'Not Archived',
+    );
+
+    const setupWorksheet = (worksheet: ExcelJS.Worksheet) => {
+      const BNI_PRIMARY: ExcelJS.Fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF005E6A' },
+      } as ExcelJS.FillPattern;
+
+      worksheet.columns = [
+        { header: 'Job Order No', key: 'job_order_no', width: 40 },
+        { header: 'Type', key: 'type', width: 25 },
+        { header: 'Serial Number', key: 'serial_number', width: 20 },
+        { header: 'Merk EDC', key: 'merk_edc', width: 15 },
+        { header: 'Type EDC', key: 'type_edc', width: 15 },
+        { header: 'Open Time', key: 'open_time', width: 20 },
+        { header: 'Target Time', key: 'target_time', width: 20 },
+        { header: 'Status SLA', key: 'status_sla', width: 15 },
+        { header: 'Solved Time', key: 'solved_time', width: 20 },
+        { header: 'Duration', key: 'duration', width: 20 },
+        { header: 'Scope', key: 'scope', width: 20 },
+        { header: 'Hour', key: 'hour', width: 10 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Target', key: 'target', width: 15 },
+        { header: 'Group Region', key: 'group_region', width: 30 },
+        { header: 'Region', key: 'wilayah', width: 20 },
+        { header: 'TID', key: 'tid', width: 15 },
+        { header: 'MID', key: 'mid', width: 15 },
+        { header: 'Merchant', key: 'merchant_name', width: 30 },
+        { header: 'Vendor Code', key: 'vendor_code', width: 18 },
+        { header: 'Vendor', key: 'vendor_name', width: 30 },
+      ];
+
+      worksheet.getRow(1).font = {
+        bold: true,
+        color: { argb: 'FFFFFF' },
+        size: 11,
+      };
+
+      worksheet.getRow(1).eachCell((cell) => {
+        cell.fill = BNI_PRIMARY;
+        cell.alignment = {
+          vertical: 'middle',
+          horizontal: 'center',
+          wrapText: true,
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    };
+
+    const formatRows = (items: any[]) =>
+      items.map((item) => ({
+        job_order_no: item.job_order_no,
+        type: item.jobOrder?.type,
+        serial_number: item.edc?.serial_number || '',
+        merk_edc: item.edc?.brand || '',
+        type_edc: item.edc?.brand_type || '',
+        open_time: item.open_time
+          ? new Date(item.open_time).toLocaleString()
+          : '',
+        target_time: item.target_time
+          ? new Date(item.target_time).toLocaleString()
+          : '',
+        status_sla: item.status_sla,
+        solved_time: item.solved_time
+          ? new Date(item.solved_time).toLocaleString()
+          : '',
+        duration: item.duration ? `${item.duration} Hours` : '0 Hours',
+        scope: item.jobOrder?.merchant_category || '',
+        // scope: item.slaRegion?.scope || '',
+        hour: item.slaRegion?.hour || 0,
+        status: item.status || '',
+        target: item.slaRegion?.target
+          ? parseFloat(item.slaRegion.target) / 100
+          : 0,
+        group_region: item.slaRegion?.regionGroup?.name_group || '',
+        wilayah: item.region?.name || '',
+        tid: item.tid,
+        mid: item.mid,
+        merchant_name: item.merchant?.name || '',
+        vendor_code: item.vendor?.code || '',
+        vendor_name: item.vendor?.name || '',
+      }));
+
+     const styleRows = (worksheet: ExcelJS.Worksheet) => {
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber > 1) {
+          row.eachCell((cell, colNumber) => {
+            const columnKey = worksheet.getColumn(colNumber).key;
+
+             if (columnKey === 'duration' || columnKey === 'hour' || columnKey === 'status' || columnKey === 'scope') {
+               cell.alignment = {
+                vertical: 'middle',
+                horizontal: 'right',
+              };
+            } else if (columnKey === 'target') {
+               cell.alignment = {
+                vertical: 'middle',
+                horizontal: 'right',
+              };
+              cell.numFmt = '0%';
+            } else if (columnKey === 'type') {
+              cell.alignment = {
+               vertical: 'middle',
+               horizontal: 'left',
+             }; 
+            } else {
+              cell.alignment = {
+                vertical: 'middle',
+                horizontal: 'center',
+              };
             }
-          },  
-          region: true, 
-          merchant: true,  
-          vendor: true,  
-        },  
-      });  
 
-      return await this.generateExcel(data, 'Preventive Maintenance SLA');  
-    } catch (error) {  
-      this.logger.error('Error exporting preventive SLA data to Excel:', error);  
-      throw new Error('Failed to export preventive SLA data to Excel');  
-    }  
-  }  
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' },
+            };
 
-  private async generateExcel(data: any[], sheetName: string): Promise<Buffer> {  
-    const workbook = new ExcelJS.Workbook();  
-    const worksheet = workbook.addWorksheet(sheetName);  
-  
-    const BNI_PRIMARY: ExcelJS.Fill = {  
-      type: 'pattern',  
-      pattern: 'solid',  
-      fgColor: { argb: 'FF005E6A' }  
-    } as ExcelJS.FillPattern;   
-  
-     worksheet.columns = [  
-      { header: 'Job Order No', key: 'job_order_no', width: 40 },  
-      { header: 'Serial Number', key: 'serial_number', width: 20 },  
-      { header: 'Merk EDC', key: 'merk_edc', width: 15 },  
-      { header: 'Type EDC', key: 'type_edc', width: 15 },  
-      { header: 'Open Time', key: 'open_time', width: 20 },  
-      { header: 'Target Time', key: 'target_time', width: 20 },  
-      { header: 'Status SLA', key: 'status_sla', width: 15 },  
-      { header: 'Solved Time', key: 'solved_time', width: 20 },  
-      { header: 'Duration', key: 'duration', width: 20 },  
-      { header: 'Scope', key: 'scope', width: 20 },  
-      { header: 'Hour', key: 'hour', width: 10 },  
-      { header: 'Status', key: 'status', width: 15 },  
-      { header: 'Target', key: 'target', width: 15 },  
-      { header: 'Group Region', key: 'group_region', width: 30 },  
-      { header: 'Region', key: 'wilayah', width: 20 },  
-      { header: 'TID', key: 'tid', width: 15 },  
-      { header: 'MID', key: 'mid', width: 15 },  
-      { header: 'Merchant', key: 'merchant_name', width: 30 },  
-      { header: 'Vendor Code', key: 'vendor_code', width: 18 },  
-      { header: 'Vendor', key: 'vendor_name', width: 30 },  
-    ];  
-  
-     worksheet.getRow(1).font = {   
-      bold: true,   
-      color: { argb: 'FFFFFF' },  
-      size: 11  
-    };  
-    
-     worksheet.getRow(1).eachCell((cell) => {  
-      cell.fill = BNI_PRIMARY;  
-      cell.alignment = {   
-        vertical: 'middle',   
-        horizontal: 'center',  
-        wrapText: true  
-      };  
-      cell.border = {  
-        top: { style: 'thin' },  
-        left: { style: 'thin' },  
-        bottom: { style: 'thin' },  
-        right: { style: 'thin' }  
-      };  
-    });  
-  
-    const rows = data  
-    .filter(item => item.status_sla === 'Archived' || item.status_sla === 'Not Archived')   
-    .map(item => ({  
-      job_order_no: item.job_order_no,  
-      serial_number: item.edc?.serial_number || '',  
-      merk_edc: item.edc?.brand || '',  
-      type_edc: item.edc?.brand_type || '',  
-      open_time: item.open_time ? new Date(item.open_time).toLocaleString() : '',  
-      target_time: item.target_time ? new Date(item.target_time).toLocaleString() : '',  
-      status_sla: item.status_sla,  
-      solved_time: item.solved_time ? new Date(item.solved_time).toLocaleString() : '',  
-      duration: item.duration ? `${item.duration} Hours` : '0 Hours',  
-      scope: item.slaRegion?.scope || '',  
-      hour: item.slaRegion?.hour || 0,  
-      status: item.status || '',  
-      target: item.slaRegion?.target || '',  
-      group_region: item.slaRegion?.regionGroup?.name_group || '',  
-      wilayah: item.region?.name || '',  
-      tid: item.tid,  
-      mid: item.mid,  
-      merchant_name: item.merchant?.name || '',  
-      vendor_code: item.vendor?.code || '',  
-      vendor_name: item.vendor?.name || '',  
-    }));    
-  
-    worksheet.addRows(rows);  
-  
-     worksheet.eachRow((row, rowNumber) => {  
-      if (rowNumber > 1) {   
-        row.eachCell((cell) => {  
-          cell.alignment = {   
-            vertical: 'middle',   
-            horizontal: 'center'  
-          };  
-          cell.border = {  
-            top: { style: 'thin' },  
-            left: { style: 'thin' },  
-            bottom: { style: 'thin' },  
-            right: { style: 'thin' }  
-          };  
-           if (rowNumber % 2 === 0) {  
-            cell.fill = {  
-              type: 'pattern',  
-              pattern: 'solid',  
-              fgColor: { argb: 'FFF5F5F5' }   
-            };  
-          }  
-        });  
-      }  
-    });  
-  
-     worksheet.autoFilter = {  
-      from: {  
-        row: 1,  
-        column: 1  
-      },  
-      to: {  
-        row: 1,  
-        column: worksheet.columns.length  
-      }  
-    };  
-  
-     worksheet.views = [  
-      {  
-        state: 'frozen',  
-        xSplit: 0,  
-        ySplit: 1,  
-        topLeftCell: 'A2',  
-        activeCell: 'A2'  
-      }  
-    ];  
-  
-    return await workbook.xlsx.writeBuffer() as Buffer;  
-  } 
+            if (rowNumber % 2 === 0) {
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFF5F5F5' },
+              };
+            }
+          });
+        }
+      });
+    };
+
+    const notArchivedSheet = workbook.addWorksheet(
+      `Not Archived - ${sheetName}`,
+    );
+    setupWorksheet(notArchivedSheet);
+    const notArchivedRows = formatRows(notArchivedData);
+    notArchivedSheet.addRows(notArchivedRows);
+    styleRows(notArchivedSheet);
+
+    const archivedSheet = workbook.addWorksheet(`Archived - ${sheetName}`);
+    setupWorksheet(archivedSheet);
+    const archivedRows = formatRows(archivedData);
+    archivedSheet.addRows(archivedRows);
+    styleRows(archivedSheet);
+
+    [notArchivedSheet, archivedSheet].forEach((sheet) => {
+      sheet.autoFilter = {
+        from: { row: 1, column: 1 },
+        to: { row: 1, column: sheet.columns.length },
+      };
+
+      sheet.views = [
+        {
+          state: 'frozen',
+          xSplit: 0,
+          ySplit: 1,
+          topLeftCell: 'A2',
+          activeCell: 'A2',
+        },
+      ];
+    });
+
+    return (await workbook.xlsx.writeBuffer()) as Buffer;
+  }
 }

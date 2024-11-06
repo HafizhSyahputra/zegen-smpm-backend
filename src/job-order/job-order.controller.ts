@@ -27,7 +27,7 @@ import { UserService } from '@smpm/user/user.service';
 import { VendorService } from '@smpm/vendor/vendor.service';
 import * as dayjs from 'dayjs';
 import * as ExcelJS from 'exceljs';
-import { request, Request, Response } from 'express';
+import { Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PageOptionJobOrderDto } from './dto/page-option-job-order.dto';
@@ -39,7 +39,6 @@ import { MediaService } from '@smpm/media/media.service';
 import { ApproveService } from '@smpm/approve/approve.service';
 import { User } from '@smpm/common/decorator/currentuser.decorator';
 import { AuditService } from '@smpm/audit/audit.service';
-import { DocumentVendorService } from '@smpm/document-vendor/document-vendor.service';
 import { MerchantService } from '@smpm/merchant/merchant.service';
 import { ElectronicDataCaptureService } from '@smpm/electronic-data-capture/electronic-data-capture.service';
 import { ElectronicDataCaptureService as EDCService } from '@smpm/electronic-data-capture/electronic-data-capture.service';
@@ -49,6 +48,7 @@ import { PrismaService } from '@smpm/prisma/prisma.service';
 import { NominalService } from '@smpm/nominal/nominal.service';
 import { CreatePreventiveMaintenanceReportDto } from '@smpm/preventive-maintenance-report/dto/create-pm-report.dto';
 import { ValidationError, ValidationResult } from '@smpm/common/interfaces/config.interface';
+import * as mime from 'mime-types';
 
 @UseGuards(AccessTokenGuard)
 @Controller('job-order')
@@ -108,6 +108,39 @@ export class JobOrderController {
 
     return jobOrders;  
   }  
+
+  @Get('media/download/:filename')  
+  async downloadMedia(@Param('filename') filename: string, @Res() res: Response) {  
+    try {  
+      // Sanitasi filename untuk keamanan  
+      const sanitizedFilename = filename.replace(/\.\./g, '').replace(/[/\\]/g, '');  
+      const filePath = path.join(process.cwd(), 'uploads/job-order', sanitizedFilename);  
+      
+      // Periksa apakah file exists  
+      if (!fs.existsSync(filePath)) {  
+        throw new NotFoundException(`File ${sanitizedFilename} not found`);  
+      }  
+      
+      // Set header yang sesuai  
+      const mimeType = mime.lookup(filePath) || 'application/octet-stream';  
+      res.set({  
+        'Content-Type': mimeType,  
+        'Content-Disposition': `attachment; filename="${sanitizedFilename}"`,  
+        'Cache-Control': 'no-cache'  
+      });  
+      
+      // Stream file ke response  
+      const fileStream = fs.createReadStream(filePath);  
+      fileStream.pipe(res);  
+      
+    } catch (error) {  
+      console.error('Download error:', error);  
+      if (error instanceof NotFoundException) {  
+        throw error;  
+      }  
+      throw new InternalServerErrorException('Error downloading file');  
+    }  
+  }
 
   @Get('template/download')
   async downloadTemplateBulkInsert(@Res() res: Response) {
@@ -329,16 +362,18 @@ export class JobOrderController {
           });  
   
         const selectedNominal = allNominal.find(  
-          (x) => x.jenis === row.getCell('E').value?.toString(),  
+          (x) => x.jenis === row.getCell('E').value?.toString() &&   
+                  x.vendor_id === selectedVendor?.id  
         );  
+        
         if (!selectedNominal) {  
           errors.push({  
             row: rowNumber,  
             column: 'NOMINAL',  
             value: null,  
-            message: `Nominal tidak ditemukan untuk jenis ${row.getCell('E').value}`,  
+            message: `Nominal tidak ditemukan untuk jenis ${row.getCell('E').value} dan vendor ${selectedVendor?.code}`,  
           });  
-        }  
+        }
         console.log('selectedNominal:', selectedNominal);
 
         const merchantCategory = row.getCell('BM').value ? row.getCell('BM').value.toString() : null; 
@@ -365,7 +400,7 @@ export class JobOrderController {
           console.log('relevantSlaRegions:', relevantSlaRegions);
           console.log('SLA ID', slaIds);
           data.push({  
-            nominal_awal:selectedNominal.nominal, 
+            nominal_awal:selectedNominal?.nominal, 
             vendor_id: selectedVendor.id,  
             region_id: selectedRegion.id,  
             mid: selectedMid.mid,  
@@ -595,12 +630,16 @@ export class JobOrderController {
       },  
     });  
 
-   const updatePromises = jobOrdersWithNominals.map(async (jobOrder, index) => {  
-    const nominal = data[index].nominal_awal;   
-    if (nominal) {  
-      await this.jobOrderService.updateNominal(jobOrder.id, nominal);  
-    }  
-  });  
+    const updatePromises = jobOrdersWithNominals.map(async (jobOrder, index) => {  
+       const matchingNominal = allNominal.find(  
+        (x) => x.jenis === jobOrder.type &&   
+               x.vendor_id === jobOrder.vendor_id  
+      );  
+    
+      if (matchingNominal) {  
+        await this.jobOrderService.updateNominal(jobOrder.id, matchingNominal.nominal);  
+      }  
+    });
 
    await Promise.all(updatePromises);  
 

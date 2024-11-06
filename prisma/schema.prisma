@@ -218,6 +218,8 @@ model Vendor {
   SLA SLA[]
 
   NominalJobOrder NominalJobOrder[]
+
+  Payment Payment[]
 }
 
 model Region {
@@ -409,7 +411,7 @@ model ElectronicDataCaptureMachine {
 
 model NominalJobOrder {
   id         Int       @id @default(autoincrement())
-  jenis      String    @unique
+  jenis      String
   vendor_id  Int?
   nominal    String
   tipe       String
@@ -428,6 +430,7 @@ model JobOrder {
   region_id                                                  Int
   no                                                         String    @unique
   type                                                       String
+  preventive_type                                            String?
   date                                                       DateTime  @db.Date
   nominal_awal                                               String?
   mid                                                        String
@@ -1081,11 +1084,20 @@ model ProviderSimcard {
 }
 
 model Payment {
-  id_payment   Int       @id @default(autoincrement())
-  name_payment String
-  created_by   Int?
-  updated_by   Int?
-  created_at   DateTime  @default(now()) @db.Date
-  updated_at   DateTime  @updatedAt @db.Date
-  deleted_at   DateTime?
+  id_payment           Int       @id @default(autoincrement())
+  id_vendor            Int
+  vendor               Vendor    @relation(fields: [id_vendor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  job_order_ids        String?
+  job_order_report_ids String?
+  tgl_submit           DateTime?
+  tgl_approve          DateTime?
+  invoice_code         String
+  status               String
+  subject              String?
+  harga_total          Int?
+  created_by           Int?
+  updated_by           Int?
+  created_at           DateTime  @default(now()) @db.Date
+  updated_at           DateTime  @updatedAt @db.Date
+  deleted_at           DateTime?
 }
