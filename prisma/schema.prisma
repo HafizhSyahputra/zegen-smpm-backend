@@ -192,6 +192,7 @@ model Vendor {
   id                           Int                            @id @default(autoincrement())
   name                         String
   jenis                        String?
+  no_perjanjian_kerjasama      String?
   code                         String?                        @unique
   description                  String?
   created_by                   Int?
@@ -342,30 +343,17 @@ model DocumentMerchant {
 }
 
 model DocumentVendor {
-  id                 Int       @id @default(autoincrement())
-  job_order_no       String
-  // mid          String
-  // tid          String
-  // vendor_id    Int
-  // region_id    Int
-  edc_brand          String?
-  edc_type           String?
-  jo_type            String?
-  vendor_name        String?
-  tanggal_perjanjian DateTime?
-  file1              String?   @db.Text
-  file2              String?   @db.Text
-  created_by         Int?
-  updated_by         Int?
-  created_at         DateTime  @default(now())
-  updated_at         DateTime  @updatedAt
-  deleted_at         DateTime?
-
-  // merchant Merchant                     @relation(fields: [mid], references: [mid], onDelete: NoAction, onUpdate: NoAction)
-  // edc      ElectronicDataCaptureMachine @relation(fields: [tid], references: [tid], onDelete: NoAction, onUpdate: NoAction)
-  // region   Region                       @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  // vendor   Vendor                       @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  jobOrder JobOrder @relation(fields: [job_order_no], references: [no], onDelete: NoAction, onUpdate: NoAction)
+  id                      Int       @id @default(autoincrement())
+  vendor_name             String?
+  no_perjanjian_kerjasama String?
+  tanggal_perjanjian      DateTime?
+  file1                   String?   @db.Text
+  file2                   String?   @db.Text
+  created_by              Int?
+  updated_by              Int?
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
+  deleted_at              DateTime?
 }
 
 model ElectronicDataCaptureMachine {
@@ -513,8 +501,6 @@ model JobOrder {
   ReceivedIn ReceivedIn[]
 
   ReceivedOut ReceivedOut[]
-
-  DocumentVendor DocumentVendor[]
 
   PreventiveMaintenanceReport PreventiveMaintenanceReport[]
 
@@ -1094,6 +1080,7 @@ model Payment {
   invoice_code         String
   status               String
   subject              String?
+  reason               String?
   harga_total          Int?
   created_by           Int?
   updated_by           Int?

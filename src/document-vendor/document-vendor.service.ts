@@ -21,26 +21,16 @@ export class DocumentVendorService {
     file2?: Express.Multer.File,  
     createdBy?: number,  
   ): Promise<DocVendorEntity> {  
-    const { job_order_no, edc_brand, edc_type, jo_type, vendor_name, tanggal_perjanjian } = createDocVendorDto;  
+    const { no_perjanjian_kerjasama, vendor_name, tanggal_perjanjian } = createDocVendorDto;  
     const parsedDate = new Date(tanggal_perjanjian);
     const file1Path = file1 ? path.join('uploads', 'document-vendor', file1.originalname) : null;  
     const file2Path = file2 ? path.join('uploads', 'document-vendor', file2.originalname) : null;  
 
      const createdDocument = await this.prisma.documentVendor.create({  
       data: {  
-        job_order_no,  
-        edc_brand,
-        edc_type,
-        jo_type,
+        no_perjanjian_kerjasama,
         vendor_name,
         tanggal_perjanjian: parsedDate,
-        // vendor_id,
-        // mid,
-        // tid,
-        // region_id,  
-        // longitude,
-        // latitude,
-        // location,  
         file1: file1Path,  
         file2: file2Path,  
         created_by: createdBy,  
@@ -97,13 +87,6 @@ export class DocumentVendorService {
         skip,
         take,
         orderBy,
-        include: {
-          // vendor: true,
-          jobOrder: true,
-          // region: true,
-          // merchant: true,
-          // edc: true,
-        },
       }),
       this.prisma.documentVendor.count({ where: filter }),
     ]);
@@ -119,13 +102,6 @@ export class DocumentVendorService {
   async findOne(id: number): Promise<DocumentVendor | null> {
     return this.prisma.documentVendor.findUnique({
       where: { id, deleted_at: null },
-      include: {
-        // vendor: true,
-        jobOrder: true,
-        // region: true,
-        // merchant: true,
-        // edc: true,
-      },
     });
   }
 

@@ -4,16 +4,10 @@ import { IsOptional, IsString, Validate } from 'class-validator';
 export class UpdateDocVendorDto {
   @IsOptional()
   @IsString()
-  edc_brand?: string;
-  @IsOptional()
-  @IsString()
-  edc_type?: string;
-  @IsOptional()
-  @IsString()
-  jo_type?: string;
-  @IsOptional()
-  @IsString()
   vendor_name?: string;
+  @IsOptional()
+  @IsString()
+  no_perjanjian_kerjasama?: string;
   @IsOptional()
   @IsString()
   tanggal_perjanjian?: string;

@@ -10,43 +10,15 @@ import {
 export class CreateDocVendorDto {
   @IsNotEmpty()
   @IsString()
-  @Validate(IsExist, ['JobOrder', 'no'])
-  job_order_no: string;
-  @IsNotEmpty()
-  @IsString()
-  edc_brand: string;
-  @IsNotEmpty()
-  @IsString()
-  edc_type: string;
-  @IsNotEmpty()
-  @IsString()
-  jo_type: string;
+  no_perjanjian_kerjasama: string;
+  
   @IsNotEmpty()
   @IsString()
   vendor_name: string;
+
   @IsNotEmpty()
   @IsString()
   tanggal_perjanjian: string;
-
-  // @IsNotEmpty()
-  // @IsNumber()
-  // @Validate(IsExist, ['Vendor', 'id'])
-  // vendor_id: number;
-
-  // @IsNotEmpty()
-  // @IsNumber()
-  // @Validate(IsExist, ['Region', 'id'])
-  // region_id: number;
-
-  // @IsNotEmpty()
-  // @IsNumber()
-  // @Validate(IsExist, ['Merchant', 'mid'])
-  // mid: string;
-
-  // @IsNotEmpty()
-  // @IsNumber()
-  // @Validate(IsExist, ['ElectronicDataCaptureMachine', 'tid'])
-  // tid: string;
 
   @IsOptional()
   @IsString()

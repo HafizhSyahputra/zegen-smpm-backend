@@ -8,25 +8,11 @@ export class DocVendorEntity {
   @Expose()
   id: number;
   @Expose()
-  job_order_no: string;
-  @Expose()
-  edc_brand: string;
-  @Expose()
-  edc_type: string;
-  @Expose()
-  jo_type: string;
+  no_perjanjian_kerjasama: string;
   @Expose()
   vendor_name: string;
   @Expose()
   tanggal_perjanjian: Date;
-  // @Expose()
-  // vendor_id: number;
-  // @Expose()
-  // region_id: number;
-  // @Expose()
-  // mid: string;
-  // @Expose()
-  // tid: string;
   @Expose()
   file1?: string;
   @Expose()
