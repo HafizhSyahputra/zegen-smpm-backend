@@ -10,6 +10,9 @@ export class VendorEntity implements Vendor {
   id: number;
 
   @Expose()
+  no_perjanjian_kerjasama: string;
+
+  @Expose()
   name: string;
   @Expose()
   jenis: string;
