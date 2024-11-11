@@ -170,15 +170,16 @@ export class JobOrderController {
       dirPath: './uploads/bulk/job-order',  
       prefixName: 'job-order',  
       ext: ['xlsx'],  
-    }),  
+    })  
   )  
   @Post('bulk/upload')  
   async uploadBulk(  
     @Req() req: Request,  
     @User() user: any,  
     @UploadedFiles() files: Express.Multer.File[],  
+    @Body() body: { preventive_type: string }  
   ) {  
-    if (!files || files.length == 0) {  
+    if (!files || files.length === 0) {  
       throw new BadRequestException('File tidak boleh kosong');  
     }  
   
@@ -201,8 +202,6 @@ export class JobOrderController {
       this.nominalService.getAll(),  
     ]);  
   
-    console.log('allNominal:', allNominal);  
-  
     const data: Prisma.JobOrderUncheckedCreateInput[] = [];  
     const errors: {  
       row: number;  
@@ -210,6 +209,7 @@ export class JobOrderController {
       value: string;  
       message: string;  
     }[] = [];  
+  
     const jobOrderTypeCode = {  
       'New Installation': 'IS',  
       'CM Replace': 'CM',  
@@ -219,85 +219,49 @@ export class JobOrderController {
       'Cancel Installation': 'CI',  
       'Cancel Withdrawal': 'CW',  
     };  
+  
     const ownerStatusCode = {  
       Sewa: 'SW',  
       Milik: 'MS',  
     };  
-
+  
     const slaIds: number[] = [];  
-    const slaHours: number[] = []; 
-     const jobOrderActionMapping: { [key: string]: string } = {  
-      'Withdrawal': 'Penarikan',  
+    const slaHours: number[] = [];  
+    const jobOrderActionMapping: { [key: string]: string } = {  
+      Withdrawal: 'Penarikan',  
       'New Installation': 'Pemasangan',  
       'CM Replace': 'Penggantian Unit',  
       'Preventive Maintenance': 'Preventive Maintenance',  
-      'CM Re-init': 'Corrective Maintenance'  
+      'CM Re-init': 'Corrective Maintenance',  
     };  
-
+  
     const merchantCategoryScopeMapping: { [key: string]: string } = {  
-      'Retail': 'RETAIL',  
+      Retail: 'RETAIL',  
       'Local Chainstore': 'CHAINSTORE',  
       'National Chainstore': 'MALL',  
-      'Strategic': 'CLUSTER PRIORITAS',  
-      'Agen46': 'AGEN'  
+      Strategic: 'CLUSTER PRIORITAS',  
+      Agen46: 'AGEN',  
     };  
   
     worksheet.eachRow({ includeEmpty: false }, async (row, rowNumber) => {  
       if (rowNumber >= 4) {  
-        [  
-          {  
-            cell: 'C',  
-            name: 'KODE WILAYAH',  
-          },  
-          {  
-            cell: 'D',  
-            name: 'KODE VENDOR',  
-          },  
-          {  
-            cell: 'E',  
-            name: 'JENIS JO',  
-          },  
-          {  
-            cell: 'G',  
-            name: 'MID',  
-          },  
-          {  
-            cell: 'H',  
-            name: 'TID',  
-          },  
-          {  
-            cell: 'I',  
-            name: 'NAMA MERCHANT',  
-          },  
-          {  
-            cell: 'J',  
-            name: 'Address 1',  
-          },  
-          {  
-            cell: 'K',  
-            name: 'Address 2',  
-          },  
-          {  
-            cell: 'L',  
-            name: 'Address 3',  
-          },  
-          {  
-            cell: 'M',  
-            name: 'Address 4',  
-          },  
-          {  
-            cell: 'R',  
-            name: 'PIC',  
-          },  
-          {  
-            cell: 'S',  
-            name: 'No.Telepon 1',  
-          },  
-          {  
-            cell: 'BN',  
-            name: 'KATEGORI SEWA/MILIK',  
-          },  
-        ].forEach((item) => {  
+        const requiredColumns = [  
+          { cell: 'C', name: 'KODE WILAYAH' },  
+          { cell: 'D', name: 'KODE VENDOR' },  
+          { cell: 'E', name: 'JENIS JO' },  
+          { cell: 'G', name: 'MID' },  
+          { cell: 'H', name: 'TID' },  
+          { cell: 'I', name: 'NAMA MERCHANT' },  
+          { cell: 'J', name: 'Address 1' },  
+          { cell: 'K', name: 'Address 2' },  
+          { cell: 'L', name: 'Address 3' },  
+          { cell: 'M', name: 'Address 4' },  
+          { cell: 'R', name: 'PIC' },  
+          { cell: 'S', name: 'No.Telepon 1' },  
+          { cell: 'BN', name: 'KATEGORI SEWA/MILIK' },  
+        ];  
+  
+        requiredColumns.forEach((item) => {  
           if (!row.getCell(item.cell).value)  
             errors.push({  
               row: rowNumber,  
@@ -310,7 +274,7 @@ export class JobOrderController {
         });  
   
         const selectedRegion = allRegion.find(  
-          (x) => x.code == row.getCell('C').value?.toString(),  
+          (x) => x.code == row.getCell('C').value?.toString()  
         );  
         if (row.getCell('C').value && !selectedRegion)  
           errors.push({  
@@ -323,7 +287,7 @@ export class JobOrderController {
           });  
   
         const selectedVendor = allVendor.find(  
-          (x) => x.code == row.getCell('D').value?.toString(),  
+          (x) => x.code == row.getCell('D').value?.toString()  
         );  
         if (row.getCell('D').value && !selectedVendor)  
           errors.push({  
@@ -336,7 +300,7 @@ export class JobOrderController {
           });  
   
         const selectedMid = allMid.find(  
-          (x) => x.mid == row.getCell('G').value?.toString(),  
+          (x) => x.mid == row.getCell('G').value?.toString()  
         );  
         if (row.getCell('G').value && !selectedMid)  
           errors.push({  
@@ -349,7 +313,7 @@ export class JobOrderController {
           });  
   
         const selectedTid = allTid.find(  
-          (x) => x.tid == row.getCell('H').value?.toString(),  
+          (x) => x.tid == row.getCell('H').value?.toString()  
         );  
         if (row.getCell('H').value && !selectedTid)  
           errors.push({  
@@ -362,10 +326,10 @@ export class JobOrderController {
           });  
   
         const selectedNominal = allNominal.find(  
-          (x) => x.jenis === row.getCell('E').value?.toString() &&   
-                  x.vendor_id === selectedVendor?.id  
+          (x) => x.jenis === row.getCell('E').value?.toString() &&  
+                 x.vendor_id === selectedVendor?.id  
         );  
-        
+  
         if (!selectedNominal) {  
           errors.push({  
             row: rowNumber,  
@@ -373,34 +337,18 @@ export class JobOrderController {
             value: null,  
             message: `Nominal tidak ditemukan untuk jenis ${row.getCell('E').value} dan vendor ${selectedVendor?.code}`,  
           });  
-        }
-        console.log('selectedNominal:', selectedNominal);
-
-        const merchantCategory = row.getCell('BM').value ? row.getCell('BM').value.toString() : null; 
-        const jobOrderType = row.getCell('E').value ? row.getCell('E').value.toString() : null;  
-        let correspondingScope;  
-        if (jobOrderType === 'Preventive Maintenance') {  
-          correspondingScope = 'Pemeliharaan secara berkala';  
-        } else {  
-          correspondingScope = merchantCategoryScopeMapping[merchantCategory] || 'Unknown Scope';  
         }  
-        const correspondingAction = jobOrderActionMapping[jobOrderType] || 'Unknown Action';  
-        
-        if (errors.length == 0) { 
-          const relevantSlaRegions = await this.jobOrderService.findSlaByGroupRegionAndScope(  
-            selectedRegion.region_group,  
-            correspondingScope,  
-            correspondingAction  
-          );  
-          
-          const slaId = relevantSlaRegions.length ? relevantSlaRegions[0].id_sla : null;  
-          const slaHour = relevantSlaRegions.length ? relevantSlaRegions[0].hour : 0;   
-          slaIds.push(slaId || 0);  
-          slaHours.push(slaHour || 0); 
-          console.log('relevantSlaRegions:', relevantSlaRegions);
-          console.log('SLA ID', slaIds);
+  
+        const merchantCategory = row.getCell('BM').value  
+          ? row.getCell('BM').value.toString()  
+          : null;  
+        const jobOrderType = row.getCell('E').value  
+          ? row.getCell('E').value.toString()  
+          : null;  
+      
+        if (errors.length === 0) {  
           data.push({  
-            nominal_awal:selectedNominal?.nominal, 
+            nominal_awal: selectedNominal?.nominal,  
             vendor_id: selectedVendor.id,  
             region_id: selectedRegion.id,  
             mid: selectedMid.mid,  
@@ -593,21 +541,21 @@ export class JobOrderController {
             ownership: row.getCell('BN').value  
               ? row.getCell('BN').value.toString()  
               : null,
+            preventive_type: body.preventive_type,  
           });  
         }  
       }  
     });  
-    
+  
     if (errors.length > 0)  
       throw new BadRequestException({  
         message: 'Terdapat data yang tidak valid pada file yang diupload',  
         errors,  
       });  
-      
   
     await this.auditService.create({  
       Url: req.url,  
-      ActionName: 'Bulk Create Job Order',
+      ActionName: 'Bulk Create Job Order',  
       MenuName: 'Job Order',  
       DataBefore: '',  
       DataAfter: JSON.stringify(data),  
@@ -620,68 +568,109 @@ export class JobOrderController {
       created_by: user.sub,  
       updated_by: user.sub,  
     });  
-
-  const createdJobOrders = await this.jobOrderService.createMany(data);   
-
+  
+    const createdJobOrders = await this.jobOrderService.createMany(data);  
+    
     const now = new Date();  
     const jobOrdersWithNominals = await this.jobOrderService.getAll({  
       created_at: {  
-        gte: new Date(now.getTime() - 1000),  
+        gte: new Date(now.getTime() - 100),  
       },  
     });  
-
+  
     const updatePromises = jobOrdersWithNominals.map(async (jobOrder, index) => {  
-       const matchingNominal = allNominal.find(  
-        (x) => x.jenis === jobOrder.type &&   
-               x.vendor_id === jobOrder.vendor_id  
-      );  
-    
+      const matchingNominal = allNominal.find(  
+        (x) => x.jenis === jobOrder.type &&  
+              x.vendor_id === jobOrder.vendor_id  
+            );  
+  
       if (matchingNominal) {  
         await this.jobOrderService.updateNominal(jobOrder.id, matchingNominal.nominal);  
       }  
-    });
+    });  
+    
+    await Promise.all(updatePromises);  
+    
+    const updatePreventiveType = jobOrdersWithNominals.filter((jobOrder) => jobOrder.type === 'Preventive Maintenance')  
+      .map(async (jobOrder) => {  
+        await this.jobOrderService.updatePreventiveType(jobOrder.id, {  
+          preventive_type: body.preventive_type,  
+        });  
+      });  
 
-   await Promise.all(updatePromises);  
+    await Promise.all(updatePreventiveType);  
+    console.log('Created Job Orders:', createdJobOrders);  
+    console.log('Job Orders with Nominals:', jobOrdersWithNominals);  
+    console.log('Nominals:', allNominal);  
 
-   const stagingRecords = jobOrdersWithNominals.map((jobOrder) => ({  
-    job_order_no: jobOrder.no,  
-    staging_id: 1,   
-    created_by: user.sub,  
-    updated_by: user.sub,  
-  }));  
-
-     const SLA = jobOrdersWithNominals.map((jobOrder, index) => {  
-      const openTime = new Date(now.getTime() - 1000);  
-      const targetTime = new Date(openTime.getTime() + (slaHours[index] * 60 * 60 * 1000));   
+    const stagingRecords = jobOrdersWithNominals.map((jobOrder) => ({  
+      job_order_no: jobOrder.no,  
+      staging_id: 1,  
+      created_by: user.sub,  
+      updated_by: user.sub,  
+    }));  
   
-      return {  
+    const SLA: Prisma.SLACreateManyInput[] = await Promise.all(  
+      jobOrdersWithNominals.map(async (jobOrder, index) => {  
+      
+        let correspondingScope;  
+        if (jobOrder.type === 'Preventive Maintenance') {  
+          correspondingScope = body.preventive_type;  
+        } else {  
+          const merchantCategory = jobOrder.merchant_category;  
+          correspondingScope = merchantCategoryScopeMapping[merchantCategory] || 'Unknown Scope';  
+        }  
+        
+        const relevantSlaRegions = await this.jobOrderService.findSlaByGroupRegionAndScope(  
+          jobOrder.region.region_group,  
+          correspondingScope,  
+          jobOrderActionMapping[jobOrder.type] || 'Unknown Action'  
+        );  
+        console.log("relevantSLA : ", relevantSlaRegions)
+    
+        const slaId = relevantSlaRegions.length ? relevantSlaRegions[0].id_sla : null;
+        console.log("SLA ID : ", slaId)
+        const slaHour = relevantSlaRegions.length ? relevantSlaRegions[0].hour : 0;  
+        slaIds.push(slaId || 0);  
+        slaHours.push(slaHour || 0);  
+
+        const openTime = new Date(now.getTime() - 1000);  
+        const targetTime = new Date(openTime.getTime() + (slaHours[index] * 60 * 60 * 1000));  
+
+        return {  
           job_order_no: jobOrder.no,  
-          vendor_id: jobOrder.vendor_id,   
-          region_id: jobOrder.region_id,   
-          tid: jobOrder.tid,   
-          mid: jobOrder.mid,   
-          region_group_id: jobOrder.region.region_group,   
-          sla_region: slaIds[index] || 0,  
-          open_time: openTime,   
-          target_time: targetTime,      
+          vendor_id: jobOrder.vendor_id,  
+          region_id: jobOrder.region_id,  
+          tid: jobOrder.tid,  
+          mid: jobOrder.mid,  
+          region_group_id: jobOrder.region.region_group,  
+          sla_region: slaId || 0,  
+          open_time: openTime,  
+          target_time: targetTime || null,  
+          status_sla: 'In Progress',
           status: 'Open',  
           created_by: user.sub,  
-          updated_by: user.sub,    
-      };  
-  });
+          updated_by: user.sub,  
+        };  
+      })  
+    );  
+    
     try {  
-      await this.prisma.stagingJobOrder.createMany({  
-        data: stagingRecords,  
-      });  
-      await this.prisma.sLA.createMany({  
-        data: SLA,  
-      });  
-
+      await Promise.all([  
+        this.prisma.stagingJobOrder.createMany({  
+          data: stagingRecords,  
+        }),  
+        this.prisma.sLA.createMany({  
+          data: SLA,  
+        }),  
+      ]);  
+      console.log('Created Staging Job Orders:', stagingRecords);  
+      console.log('Created SLA:', SLA);  
     } catch (error) {  
-      console.error('Error creating :', error);  
+      console.error('Error creating SLA:', error);  
       throw new BadRequestException('Failed to create staging job orders');  
-    }  
-
+    }
+  
     return {  
       data_uploaded_count: data.length,  
     };  

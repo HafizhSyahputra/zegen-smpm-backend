@@ -27,6 +27,9 @@ export class JobOrderEntity {
   type: string;
 
   @Expose()
+  preventive_type?: string;
+
+  @Expose()
   date: Date;
 
   @Expose()
