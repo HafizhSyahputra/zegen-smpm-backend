@@ -121,6 +121,10 @@ export class CreateActivityJobOrderDto {
   information: string;
 
   @IsOptional()
+  @IsString()
+  cancel_reason: string;
+
+  @IsOptional()
   evidence: File[];
 
   @IsOptional()

@@ -64,9 +64,12 @@ export class JobOrderEntity {
 
   @Expose()
   ownership: string;
-  
-  @Expose()  
+
+  @Expose()
   nominal_awal: string;
+
+  @Expose()
+  cancel_reason?: string;
 
   @Exclude()
   created_by: number;
@@ -94,8 +97,10 @@ export class JobOrderEntity {
   @Expose()
   @Transform(({ value }) => transformEntity(JobOrderReportEntity, value))
   JobOrderReport: JobOrderReportEntity;
-  
+
   @Expose()
-  @Transform(({ value }) => transformEntity(PreventiveMaintenanceReportEntity, value))
+  @Transform(({ value }) =>
+    transformEntity(PreventiveMaintenanceReportEntity, value),
+  )
   PreventiveMaintenanceReport: PreventiveMaintenanceReportEntity;
 }

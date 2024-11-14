@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { JobOrder, Prisma, SLA_Region, StagingJobOrder } from '@prisma/client';
 import { ColumnJobOrder, JobOrderStatus } from '@smpm/common/constants/enum';
 import { PageMetaDto } from '@smpm/common/decorator/page-meta.dto';
@@ -9,10 +9,13 @@ import { AcknowledgeDto } from '@smpm/electronic-data-capture/dto/acknowledge.dt
 import { PrismaService } from '@smpm/prisma/prisma.service';
 import { PageOptionJobOrderDto } from './dto/page-option-job-order.dto';
 import { JobOrderEntity } from './entities/job-order.entity';
+import { PaymentService } from '@smpm/payment/payment.service';
 
 @Injectable()
 export class JobOrderService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService,
+    private readonly paymentService: PaymentService,
+  ) {}
 
   async findAllOpen(
     pageOptionJobOrderDto: PageOptionJobOrderDto,
@@ -337,16 +340,94 @@ export class JobOrderService {
     return data;  
   }  
 
-  async createMany(data: Prisma.JobOrderUncheckedCreateInput[]) {  
-    try {  
-      return await this.prismaService.jobOrder.createMany({  
-        data,  
-      });  
-    } catch (error) {  
-      console.error('Error saat menyimpan job orders:', error);  
-      throw new BadRequestException('Gagal menyimpan job orders');  
-    }  
-  }  
+  // async createMany(data: Prisma.JobOrderUncheckedCreateInput[]) {  
+  //   try {  
+  //     return await this.prismaService.jobOrder.createMany({  
+  //       data,  
+  //     });  
+  //   } catch (error) {  
+  //     console.error('Error saat menyimpan job orders:', error);  
+  //     throw new BadRequestException('Gagal menyimpan job orders');  
+  //   }  
+  // }
+  
+  private generateInvoiceCode(): string {
+    // Contoh sederhana: INV + timestamp
+    return `INV-${Date.now()}`;
+  }
+
+  
+  async createMany(data: Prisma.JobOrderUncheckedCreateInput[], vendorId: number | null, createdBy: number) {
+    try {
+      // 1. Buat Job Orders
+      const createdJobOrders = await this.prismaService.jobOrder.createMany({
+        data: data.map(item => ({
+          ...item,
+          created_by: createdBy,
+          updated_by: createdBy
+        }))
+      });
+  
+      // 2. Dapatkan vendor_id dari data pertama
+      const firstJobOrder = data[0];
+      const actualVendorId = vendorId || firstJobOrder.vendor_id;
+  
+      if (!actualVendorId) {
+        throw new BadRequestException('vendor_id tidak ditemukan dalam data');
+      }
+  
+      // 3. Dapatkan semua Job Orders yang baru dibuat
+      const createdJobs = await this.prismaService.jobOrder.findMany({
+        where: {
+          vendor_id: actualVendorId,
+          created_at: {
+            gte: new Date(new Date().getTime() - 5000) // Ambil yang dibuat dalam 5 detik terakhir
+          }
+        },
+        select: {
+          id: true,
+          nominal_awal: true
+        }
+      });
+  
+      if (createdJobs.length === 0) {
+        throw new BadRequestException('Tidak ada job order yang berhasil dibuat');
+      }
+  
+      // 4. Hitung total harga
+      const totalHarga = createdJobs.reduce((sum, job) => {
+        const nominal = job.nominal_awal ? parseFloat(job.nominal_awal) : 0;
+        return sum + nominal;
+      }, 0);
+  
+      // 5. Siapkan job order IDs
+      const jobOrderIds = createdJobs.map(job => job.id);
+  
+      // 6. Buat atau update payment menggunakan transaction
+      const payment = await this.prismaService.$transaction(async (prisma) => {
+        return await this.paymentService.addJobOrdersToPayment({
+          vendorId: actualVendorId,
+          jobOrderIds,
+          totalHarga,
+          createdBy
+        });
+      });
+  
+      console.log('Created Payment:', payment); // Tambahkan log untuk debugging
+  
+      return {
+        jobOrders: createdJobOrders,
+        payment: payment,
+        jobOrderIds: jobOrderIds,
+        totalHarga: totalHarga
+      };
+  
+    } catch (error) {
+      console.error('Error dalam createMany:', error);
+      throw new BadRequestException(`Gagal menyimpan job orders dan payment: ${error.message}`);
+    }
+  }
+
 
   async updatePreventiveType(id: number, data: Partial<Prisma.JobOrderUpdateInput>) {  
     try {  
@@ -358,7 +439,7 @@ export class JobOrderService {
       console.error('Error updating job order:', error);  
       throw new BadRequestException('Gagal memperbarui job order');  
     }  
-}  
+  }   
   async updateNominal(id: number, nominal: string) {  
     return await this.prismaService.jobOrder.update({  
         where: { id },  
@@ -447,6 +528,45 @@ export class JobOrderService {
     });  
   }
 
+  async updatePaymentWithJobOrderReport(jobOrderNo: string, reportId: number) {
+    // Cari job order untuk mendapatkan payment terkait
+    const jobOrder = await this.prismaService.jobOrder.findUnique({
+      where: { no: jobOrderNo },
+      select: { id: true }
+    });
+  
+    if (!jobOrder) {
+      throw new NotFoundException(`Job Order ${jobOrderNo} tidak ditemukan`);
+    }
+  
+    // Cari payment yang memiliki job order ini
+    const payment = await this.prismaService.payment.findFirst({
+      where: {
+        job_order_ids: {
+          contains: jobOrder.id.toString()
+        }
+      }
+    });
+  
+    if (payment) {
+      // Update payment dengan menambahkan job order report ID
+      const existingReportIds = payment.job_order_report_ids 
+        ? JSON.parse(payment.job_order_report_ids) 
+        : [];
+      
+      const updatedReportIds = [...existingReportIds, reportId];
+  
+      await this.prismaService.payment.update({
+        where: { id_payment: payment.id_payment },
+        data: {
+          job_order_report_ids: JSON.stringify(updatedReportIds),
+          updated_at: new Date()
+        }
+      });
+    }
+  }
+
+
   getAll(where: Prisma.JobOrderWhereInput = {}) {
     return this.prismaService.jobOrder.findMany({
       where,
@@ -515,39 +635,125 @@ export class JobOrderService {
       where,
     });
   }
-  createActivityReport(
+  async createActivityReport(
     data: Prisma.JobOrderReportUncheckedCreateInput,
     mediaEvidence?: { media_id: number }[],
     mediaOptional?: { media_id: number }[],
   ) {
-    return this.prismaService.jobOrderReport.create({
-      data: {
-        ...data,
-        MediaJobOrderReportProofOfVisit: {
-          create: mediaEvidence,
+    try {
+      // Buat report
+      const report = await this.prismaService.jobOrderReport.create({
+        data: {
+          ...data,
+          MediaJobOrderReportProofOfVisit: {
+            create: mediaEvidence,
+          },
+          MediaJobOrderReportOptionalPhoto: {
+            create: mediaOptional,
+          },
         },
-        MediaJobOrderReportOptionalPhoto: {
-          create: mediaOptional,
-        },
-      },
-    });
+      });
+  
+      // Cari job order terkait
+      const jobOrder = await this.prismaService.jobOrder.findUnique({
+        where: { no: data.job_order_no }
+      });
+  
+      if (!jobOrder) {
+        throw new NotFoundException(`Job Order ${data.job_order_no} not found`);
+      }
+  
+      // Update payment
+      await this.updatePaymentWithReport(jobOrder.id, report.id);
+  
+      return report;
+    } catch (error) {
+      console.error('Error creating activity report:', error);
+      throw error;
+    }
   }
-  createPreventiveMaintenanceReport(
+  async createPreventiveMaintenanceReport(
     data: Prisma.PreventiveMaintenanceReportUncheckedCreateInput,
     mediaEvidence?: { media_id: number }[],
     mediaOptional?: { media_id: number }[],
   ) {
-    return this.prismaService.preventiveMaintenanceReport.create({
-      data: {
-        ...data,
-        MediaJobOrderReportProofOfVisit: {
-          create: mediaEvidence,
+    try {
+      // Buat report
+      const report = await this.prismaService.preventiveMaintenanceReport.create({
+        data: {
+          ...data,
+          MediaJobOrderReportProofOfVisit: {
+            create: mediaEvidence,
+          },
+          MediaJobOrderReportOptionalPhoto: {
+            create: mediaOptional,
+          },
         },
-        MediaJobOrderReportOptionalPhoto: {
-          create: mediaOptional,
-        },
-      },
-    });
+      });
+  
+      // Cari job order terkait
+      const jobOrder = await this.prismaService.jobOrder.findUnique({
+        where: { no: data.job_order_no }
+      });
+  
+      if (!jobOrder) {
+        throw new NotFoundException(`Job Order ${data.job_order_no} not found`);
+      }
+  
+      // Update payment
+      await this.updatePaymentWithReport(jobOrder.id, report.id);
+  
+      return report;
+    } catch (error) {
+      console.error('Error creating PM report:', error);
+      throw error;
+    }
+  }
+
+  private async updatePaymentWithReport(jobOrderId: number, reportId: number) {
+    try {
+      // Cari payment yang memiliki job order ini
+      const payment = await this.prismaService.payment.findFirst({
+        where: {
+          job_order_ids: {
+            contains: jobOrderId.toString()
+          }
+        }
+      });
+  
+      if (payment) {
+        // Parse existing IDs
+        const existingJobOrderIds = payment.job_order_ids 
+          ? JSON.parse(payment.job_order_ids) 
+          : [];
+        const existingReportIds = payment.job_order_report_ids 
+          ? JSON.parse(payment.job_order_report_ids) 
+          : [];
+  
+        // Update payment dengan menambahkan report ID baru
+        await this.prismaService.payment.update({
+          where: { id_payment: payment.id_payment },
+          data: {
+            job_order_ids: JSON.stringify([...new Set([...existingJobOrderIds, jobOrderId])]),
+            job_order_report_ids: JSON.stringify([...new Set([...existingReportIds, reportId])]),
+            updated_at: new Date()
+          }
+        });
+  
+        console.log('Payment updated successfully:', {
+          paymentId: payment.id_payment,
+          jobOrderId,
+          reportId,
+          updatedJobOrderIds: [...new Set([...existingJobOrderIds, jobOrderId])],
+          updatedReportIds: [...new Set([...existingReportIds, reportId])]
+        });
+      } else {
+        console.warn(`No payment found for job order ID: ${jobOrderId}`);
+      }
+    } catch (error) {
+      console.error('Error updating payment with report:', error);
+      throw new Error(`Failed to update payment with report: ${error.message}`);
+    }
   }
 
   createActivityReportProduct(data: Prisma.JobOrderReportProductCreateInput) {

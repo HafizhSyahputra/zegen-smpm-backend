@@ -58,6 +58,9 @@ export class ActivityVendorReportEntity {
   information: string;
 
   @Expose()
+  cancel_reason? : string;
+
+  @Expose()
   arrival_time?: Date;
 
   @Expose()

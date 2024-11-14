@@ -11,12 +11,13 @@ import { NotificationsModule } from '@smpm/notifications/notifications.module';
 import { UserService } from '@smpm/user/user.service';  
 import { NotificationsService } from '@smpm/notifications/notifications.service';  
 import { AuthModule } from '@smpm/auth/auth.module'; // Tambahkan import ini  
+import { PaymentService } from '@smpm/payment/payment.service';
 
 @Module({  
   imports: [  
     PrismaModule,   
     NotificationsModule,  
-    AuthModule, // Tambahkan AuthModule ke imports  
+    AuthModule, 
   ],  
   providers: [  
     ReceivedOutService,   
@@ -24,7 +25,8 @@ import { AuthModule } from '@smpm/auth/auth.module'; // Tambahkan import ini
     MediaService,   
     JobOrderService,   
     UserService,   
-    NotificationsService  
+    NotificationsService,
+    PaymentService,
   ],  
   controllers: [ReceivedOutController],  
   exports: [ReceivedOutService],  

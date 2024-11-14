@@ -19,6 +19,8 @@ import { ReceivedOutModule } from '@smpm/received-out/received-out.module';
 import { ReceivedInService } from '@smpm/received-in/received-in.service';
 import { ReceivedOutService } from '@smpm/received-out/received-out.service';
 import { NominalService } from '@smpm/nominal/nominal.service';
+import { PaymentService } from '@smpm/payment/payment.service';
+import { PaymentModule } from '@smpm/payment/payment.module';
 
 @Module({
   imports: [
@@ -42,6 +44,7 @@ import { NominalService } from '@smpm/nominal/nominal.service';
     ReceivedInService,
     ReceivedOutService,
     NominalService,
+    PaymentService,
   ],
 })
 export class JobOrderModule {}

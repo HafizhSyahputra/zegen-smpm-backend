@@ -27,6 +27,7 @@ import { NominalModule } from './nominal/nominal.module';
 import { ActivityVendorReportModule } from './activity-vendor-report/activity-vendor-report.module';
 import { SlaModule } from './sla/sla.module';
 import { BullModule } from '@nestjs/bull';  
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { BullModule } from '@nestjs/bull';
     NominalModule,
     ActivityVendorReportModule,
     SlaModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

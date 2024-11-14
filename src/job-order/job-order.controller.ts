@@ -560,7 +560,7 @@ export class JobOrderController {
       DataBefore: '',  
       DataAfter: JSON.stringify(data),  
       UserName: user.name,  
-      IpAddress: req.ip,  
+      IpAddress: req.ip,   
       ActivityDate: new Date(),  
       Browser: this.getBrowserFromUserAgent(req.headers['user-agent'] || ''),  
       OS: this.getOSFromUserAgent(req.headers['user-agent'] || '', req),  
@@ -569,12 +569,16 @@ export class JobOrderController {
       updated_by: user.sub,  
     });  
   
-    const createdJobOrders = await this.jobOrderService.createMany(data);  
+    const createdBy = user.sub; 
+
+    const createdJobOrders = await this.jobOrderService.createMany(data, null , createdBy);
+    
+    // const createdJobOrders = await this.jobOrderService.createMany(data);  
     
     const now = new Date();  
     const jobOrdersWithNominals = await this.jobOrderService.getAll({  
       created_at: {  
-        gte: new Date(now.getTime() - 100),  
+        gte: new Date(now.getTime() - 1000),  
       },  
     });  
   
@@ -620,22 +624,23 @@ export class JobOrderController {
           const merchantCategory = jobOrder.merchant_category;  
           correspondingScope = merchantCategoryScopeMapping[merchantCategory] || 'Unknown Scope';  
         }  
-        
+
+        // Mencari SLa
         const relevantSlaRegions = await this.jobOrderService.findSlaByGroupRegionAndScope(  
           jobOrder.region.region_group,  
           correspondingScope,  
           jobOrderActionMapping[jobOrder.type] || 'Unknown Action'  
         );  
         console.log("relevantSLA : ", relevantSlaRegions)
-    
-        const slaId = relevantSlaRegions.length ? relevantSlaRegions[0].id_sla : null;
-        console.log("SLA ID : ", slaId)
-        const slaHour = relevantSlaRegions.length ? relevantSlaRegions[0].hour : 0;  
-        slaIds.push(slaId || 0);  
-        slaHours.push(slaHour || 0);  
+        
+        // Perhitungan Jam SLA
+        slaIds.push(...relevantSlaRegions.map((sla) => sla.id_sla));  
+        slaHours.push(...relevantSlaRegions.map((sla) => sla.hour));
 
         const openTime = new Date(now.getTime() - 1000);  
-        const targetTime = new Date(openTime.getTime() + (slaHours[index] * 60 * 60 * 1000));  
+        const targetTime = new Date(  
+          openTime.getTime() + (Math.max(...slaHours) * 60 * 60 * 1000)  
+        );    
 
         return {  
           job_order_no: jobOrder.no,  
@@ -644,7 +649,7 @@ export class JobOrderController {
           tid: jobOrder.tid,  
           mid: jobOrder.mid,  
           region_group_id: jobOrder.region.region_group,  
-          sla_region: slaId || 0,  
+          sla_region:  Math.max(...slaIds),  
           open_time: openTime,  
           target_time: targetTime || null,  
           status_sla: 'In Progress',
@@ -1169,6 +1174,7 @@ export class JobOrderController {
             edc_note: createActivityJobOrderDto.edc_note,  
             edc_action: createActivityJobOrderDto.edc_action,  
             information: createActivityJobOrderDto.information,  
+            cancel_reason: createActivityJobOrderDto.cancel_reason,
             arrival_time: new Date(createActivityJobOrderDto.arrival_time),  
             start_time: new Date(createActivityJobOrderDto.start_time),  
             end_time: new Date(createActivityJobOrderDto.end_time),  
@@ -1201,6 +1207,7 @@ export class JobOrderController {
             edc_second_note: isCMJobOrder ? createActivityJobOrderDto.edc_second_note : undefined,  
             edc_second_action: isCMJobOrder ? createActivityJobOrderDto.edc_second_action : undefined, 
             information: createActivityJobOrderDto.information,  
+            cancel_reason: createActivityJobOrderDto.cancel_reason,
             arrival_time: new Date(createActivityJobOrderDto.arrival_time),  
             start_time: new Date(createActivityJobOrderDto.start_time),  
             end_time: new Date(createActivityJobOrderDto.end_time),  
@@ -1409,6 +1416,7 @@ export class JobOrderController {
         pm_report_id: jobOrder.type === 'Preventive Maintenance' ? report.id : null,  
         photo_evidence: photoEvidencePaths.join(','),  
         reason: report.information,  
+        cancel_type: report.cancel_reason,
         photo_optional: photoOptionalPaths.join(','),   
         created_by: user.sub,  
         updated_by: user.sub,  
@@ -1442,6 +1450,7 @@ export class JobOrderController {
             edc_note: createActivityJobOrderDto.edc_note,  
             edc_action: createActivityJobOrderDto.edc_action,  
             information: createActivityJobOrderDto.information,  
+            cancel_reason: createActivityJobOrderDto.cancel_reason,
             arrival_time:  new Date(createActivityJobOrderDto.arrival_time),  
             start_time:  new Date(createActivityJobOrderDto.start_time),  
             end_time:  new Date(createActivityJobOrderDto.end_time),  
