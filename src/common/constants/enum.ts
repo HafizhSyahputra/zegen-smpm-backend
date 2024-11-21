@@ -294,6 +294,19 @@ export enum ColumnNominal {
   tipe = 'tipe'  
 } 
 
+export enum ColumnBeritaAcara {
+  id_berita_acara = 'id_berita_acara',
+  id_vendor = 'id_vendor',
+  path_file = 'path_file',
+  job_order_ids = 'job_order_ids',
+  job_order_report_ids = 'job_order_report_ids',
+  tgl_submit = 'tgl_submit',
+  note = 'note',
+  status = 'status',
+  subject = 'subject',
+}
+
+
 export enum ColumnPreventiveMaintenanceReport {
   id = 'id',
   job_order_no = 'job_order_no',

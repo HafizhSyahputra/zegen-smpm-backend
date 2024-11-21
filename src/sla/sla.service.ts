@@ -106,193 +106,179 @@ export class SlaService {
     });
   }
 
-  async updateDurationBatch(): Promise<{
-    totalUpdated: number;
-    totalProcessed: number;
-  }> {
-    const now = new Date();
-    let processed = 0;
-    let updated = 0;
-    let currentBatch = 0;
-
-    try {
-      let hasMore = true;
-
-      while (hasMore) {
-        const records = await this.prisma.sLA.findMany({
-          where: {
-            target_time: { lt: now },
-            solved_time: null,
-            deleted_at: null,
-          },
-          select: {
-            id: true,
-            target_time: true,
-            duration: true,
-          },
-          skip: currentBatch * this.BATCH_SIZE,
-          take: this.BATCH_SIZE,
-        });
-
-        if (records.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        const chunkSize = 10;
-        for (let i = 0; i < records.length; i += chunkSize) {
-          const chunk = records.slice(i, i + chunkSize);
-          const batchResult = await this.processRecordsBatch(chunk, now);
-          updated += batchResult;
-        }
-
-        processed += records.length;
-        currentBatch++;
-
-        this.logger.log(
-          `Processed batch ${currentBatch}: ${records.length} records, ` +
-            `${updated} updated. Total: ${processed} processed`,
-        );
-
-        // Small delay between batches to prevent overwhelming the database
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-
-      return { totalUpdated: updated, totalProcessed: processed };
-    } catch (error) {
-      this.logger.error('Error in updateDurationBatch:', error);
-      throw error;
-    }
-  }
-
-  private async processRecordsBatch(
-    records: any[],
-    now: Date,
-  ): Promise<number> {
-    let updatedInBatch = 0;
-
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        for (const record of records) {
-          const targetTime = new Date(record.target_time);
-          if (isNaN(targetTime.getTime())) {
-            this.logger.warn(`Invalid target_time for SLA ID ${record.id}`);
-            continue;
-          }
-
-          const elapsedMs = now.getTime() - targetTime.getTime();
-          const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));
-          const newDuration = Math.max(elapsedHours, record.duration || 0);
-
-          await tx.sLA.update({
-            where: { id: record.id },
-            data: {
-              duration: newDuration,
-              status_sla: 'Not Archived',
-              updated_at: now,
-            },
-          });
-
-          updatedInBatch++;
-        }
-      });
-
-      return updatedInBatch;
-    } catch (error) {
-      this.logger.error(`Error processing batch:`, error);
-      throw error;
-    }
-  }
-
-  @Cron(CronExpression.EVERY_HOUR)
-  async handleCronUpdateDuration() {
-    this.logger.log('Starting scheduled SLA duration update');
-    try {
-      await this.slaQueue.add(
-        'update-duration',
-        { timestamp: new Date().toISOString() },
-        {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 5000,
-          },
-        },
-      );
-    } catch (error) {
-      this.logger.error('Failed to queue SLA update:', error);
-    }
-  }
-
-  async exportJobOrderToExcel(): Promise<Buffer> {
-    try {
-      await this.updateDurationBatch();
-
-      const data = await this.prisma.sLA.findMany({
-        where: {
-          deleted_at: null,
-          status_sla: {
-            in: ['Archived', 'Not Archived'],
-          },
-          jobOrder: {
-            type: {
-              not: 'Preventive Maintenance',
-            },
-          },
-        },
-        include: {
-          jobOrder: true,
-          edc: true,
-          slaRegion: {
-            include: {
-              regionGroup: true,
-            },
-          },
-          region: true,
-          merchant: true,
-          vendor: true,
-        },
-      });
-
-      return await this.generateExcel(data, 'Job Order SLA');
-    } catch (error) {
-      this.logger.error('Error exporting regular SLA data to Excel:', error);
-      throw new Error('Failed to export regular SLA data to Excel');
-    }
-  }
-
-  async exportPreventiveToExcel(): Promise<Buffer> {
-    try {
-      const data = await this.prisma.sLA.findMany({
-        where: {
-          deleted_at: null,
-          status_sla: {
-            in: ['Archived', 'Not Archived'],
-          },
-          jobOrder: {
-            type: 'Preventive Maintenance',
-          },
-        },
-        include: {
-          jobOrder: true,
-          edc: true,
-          slaRegion: {
-            include: {
-              regionGroup: true,
-            },
-          },
-          region: true,
-          merchant: true,
-          vendor: true,
-        },
-      });
-
-      await this.updateDurationBatch();
-      return await this.generateExcel(data, 'Preventive Maintenance SLA');
-    } catch (error) {
-      this.logger.error('Error exporting preventive SLA data to Excel:', error);
-      throw new Error('Failed to export preventive SLA data to Excel');
-    }
+  private async processRecordsBatch(  
+    records: any[],  
+    now: Date,  
+  ): Promise<number> {  
+    let updatedInBatch = 0;  
+  
+    try {  
+      // Gunakan prisma langsung, bukan transaksi  
+      for (const record of records) {  
+        const targetTime = new Date(record.target_time);  
+        if (isNaN(targetTime.getTime())) {  
+          this.logger.warn(`Invalid target_time for SLA ID ${record.id}`);  
+          continue;  
+        }  
+  
+        const elapsedMs = now.getTime() - targetTime.getTime();  
+        const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));  
+        const newDuration = Math.max(elapsedHours, record.duration || 0);  
+  
+        try {  
+          await this.prisma.sLA.update({  
+            where: { id: record.id },  
+            data: {  
+              duration: newDuration,  
+              status_sla: 'Not Archived',  
+              updated_at: now,  
+            },  
+          });  
+  
+          updatedInBatch++;  
+        } catch (updateError) {  
+          this.logger.error(`Error updating SLA record ${record.id}:`, updateError);  
+        }  
+      }  
+  
+      return updatedInBatch;  
+    } catch (error) {  
+      this.logger.error(`Error processing batch:`, error);  
+      throw error;  
+    }  
+  }  
+  
+  async updateDurationBatch(): Promise<{  
+    totalUpdated: number;  
+    totalProcessed: number;  
+  }> {  
+    const now = new Date();  
+    let processed = 0;  
+    let updated = 0;  
+    let currentBatch = 0;  
+  
+    try {  
+      let hasMore = true;  
+  
+      while (hasMore) {  
+        const records = await this.prisma.sLA.findMany({  
+          where: {  
+            target_time: { lt: now },  
+            solved_time: null,  
+            deleted_at: null,  
+          },  
+          select: {  
+            id: true,  
+            target_time: true,  
+            duration: true,  
+          },  
+          skip: currentBatch * this.BATCH_SIZE,  
+          take: this.BATCH_SIZE,  
+        });  
+  
+        if (records.length === 0) {  
+          hasMore = false;  
+          break;  
+        }  
+  
+        // Proses dalam batch yang lebih kecil untuk mencegah overload  
+        const chunkSize = 10;  
+        for (let i = 0; i < records.length; i += chunkSize) {  
+          const chunk = records.slice(i, i + chunkSize);  
+          const batchResult = await this.processRecordsBatch(chunk, now);  
+          updated += batchResult;  
+        }  
+  
+        processed += records.length;  
+        currentBatch++;  
+  
+        this.logger.log(  
+          `Processed batch ${currentBatch}: ${records.length} records, ` +  
+          `${updated} updated. Total: ${processed} processed`,  
+        );  
+  
+        // Tambahkan delay kecil antar batch  
+        await new Promise((resolve) => setTimeout(resolve, 200));  
+      }  
+  
+      return { totalUpdated: updated, totalProcessed: processed };  
+    } catch (error) {  
+      this.logger.error('Error in updateDurationBatch:', error);  
+      throw error;  
+    }  
+  }  
+  
+  async exportJobOrderToExcel(): Promise<Buffer> {  
+    try {  
+      // Hapus await di sini jika ingin proses update tidak memblokir  
+      this.updateDurationBatch();  
+  
+      const data = await this.prisma.sLA.findMany({  
+        where: {  
+          deleted_at: null,  
+          status_sla: {  
+            in: ['Archived', 'Not Archived'],  
+          },  
+          jobOrder: {  
+            type: {  
+              not: 'Preventive Maintenance',  
+            },  
+          },  
+        },  
+        include: {  
+          jobOrder: true,  
+          edc: true,  
+          slaRegion: {  
+            include: {  
+              regionGroup: true,  
+            },  
+          },  
+          region: true,  
+          merchant: true,  
+          vendor: true,  
+        },  
+      });  
+  
+      return await this.generateExcel(data, 'Job Order SLA');  
+    } catch (error) {  
+      this.logger.error('Error exporting regular SLA data to Excel:', error);  
+      throw new Error('Failed to export regular SLA data to Excel');  
+    }  
+  }  
+  
+  async exportPreventiveToExcel(): Promise<Buffer> {  
+    try {  
+       this.updateDurationBatch();  
+  
+      const data = await this.prisma.sLA.findMany({  
+        where: {  
+          deleted_at: null,  
+          status_sla: {  
+            in: ['Archived', 'Not Archived'],  
+          },  
+          jobOrder: {  
+            type: 'Preventive Maintenance',  
+          },  
+        },  
+        include: {  
+          jobOrder: true,  
+          edc: true,  
+          slaRegion: {  
+            include: {  
+              regionGroup: true,  
+            },  
+          },  
+          region: true,  
+          merchant: true,  
+          vendor: true,  
+        },  
+      });  
+  
+      return await this.generateExcel(data, 'Preventive Maintenance SLA');  
+    } catch (error) {  
+      this.logger.error('Error exporting preventive SLA data to Excel:', error);  
+      throw new Error('Failed to export preventive SLA data to Excel');  
+    }  
   }
 
   private async generateExcel(data: any[], sheetName: string): Promise<Buffer> {

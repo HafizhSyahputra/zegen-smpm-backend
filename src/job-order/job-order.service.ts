@@ -429,17 +429,21 @@ export class JobOrderService {
   }
 
 
-  async updatePreventiveType(id: number, data: Partial<Prisma.JobOrderUpdateInput>) {  
+  async updatePreventiveType(id: number, preventiveType: string) {  
     try {  
       return await this.prismaService.jobOrder.update({  
-        where: { id },  
-        data,  
+        where: {  
+          id: id,  
+        },  
+        data: {  
+          preventive_type: preventiveType,  
+        },  
       });  
     } catch (error) {  
       console.error('Error updating job order:', error);  
       throw new BadRequestException('Gagal memperbarui job order');  
     }  
-  }   
+  } 
   async updateNominal(id: number, nominal: string) {  
     return await this.prismaService.jobOrder.update({  
         where: { id },  

@@ -504,6 +504,8 @@ model JobOrder {
   ActivityVendorReport ActivityVendorReport[]
 
   SLA SLA[]
+
+  BeritaAcara BeritaAcara[]
 }
 
 model SLA_Region {
@@ -719,6 +721,8 @@ model JobOrderReport {
   Approved Approved[]
 
   StagingJobOrder StagingJobOrder[]
+
+  BeritaAcara BeritaAcara[]
 }
 
 model ActivityVendorReport {
@@ -1069,23 +1073,43 @@ model ProviderSimcard {
 }
 
 model Payment {
-  id_payment           Int       @id @default(autoincrement())
-  id_vendor            Int
-  vendor               Vendor    @relation(fields: [id_vendor], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  job_order_ids        String?
+  id_payment Int       @id @default(autoincrement())
+  id_vendor Int   
+  vendor     Vendor    @relation(fields: [id_vendor], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  job_order_ids String?
   job_order_report_ids String?
-  tgl_submit           DateTime?
-  tgl_approve          DateTime?
-  approved_by          Int?
-  note                 String?
-  invoice_code         String
-  status               String
-  subject              String?
-  reason               String?
-  harga_total          String?
-  created_by           Int?
-  updated_by           Int?
-  created_at           DateTime  @default(now()) @db.Date
-  updated_at           DateTime  @updatedAt @db.Date
-  deleted_at           DateTime?
+  tgl_submit DateTime?
+  tgl_approve DateTime?
+  approved_by Int?
+  note String?
+  invoice_code String
+  status String
+  subject String?
+  reason String?
+  harga_total String?
+  created_by Int?
+  updated_by Int?
+  created_at DateTime  @default(now()) @db.Date
+  updated_at DateTime  @updatedAt @db.Date  
+  deleted_at DateTime?
+}
+
+
+model BeritaAcara {
+  id_berita_acara Int       @id @default(autoincrement())
+  id_vendor Int
+  path_file String?
+  job_order_ids Int?
+  joborder JobOrder? @relation(fields: [job_order_ids], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  job_order_report_ids Int?
+  jobroderreport JobOrderReport? @relation(fields: [job_order_report_ids], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tgl_submit DateTime?
+  note String?
+  status String
+  subject String?
+  created_by Int?
+  updated_by Int?
+  created_at DateTime  @default(now()) @db.Date
+  updated_at DateTime  @updatedAt @db.Date
+  deleted_at DateTime?
 }

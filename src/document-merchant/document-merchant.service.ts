@@ -87,10 +87,6 @@ export class DocumentMerchantService {
         skip,
         take,
         orderBy,
-        // include: {
-        //   merchant: true,
-        //   // region: true,
-        // },
       }),
       this.prisma.documentMerchant.count({ where: filter }),
     ]);
@@ -105,11 +101,7 @@ export class DocumentMerchantService {
 
   async findOne(id: number): Promise<DocumentMerchant | null> {
     return this.prisma.documentMerchant.findUnique({
-      where: { id, deleted_at: null },
-      // include: {
-      //   merchant: true,
-      //   // region: true,
-      // },
+      where: { id, deleted_at: null }
     });
   }
 

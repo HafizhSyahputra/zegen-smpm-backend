@@ -28,6 +28,7 @@ import { ActivityVendorReportModule } from './activity-vendor-report/activity-ve
 import { SlaModule } from './sla/sla.module';
 import { BullModule } from '@nestjs/bull';  
 import { PaymentModule } from './payment/payment.module';
+import { BeritaAcaraModule } from './berita-acara/berita-acara.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { PaymentModule } from './payment/payment.module';
     ActivityVendorReportModule,
     SlaModule,
     PaymentModule,
+    BeritaAcaraModule,
   ],
   controllers: [AppController],
   providers: [AppService],

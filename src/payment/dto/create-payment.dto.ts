@@ -1,6 +1,4 @@
-// src/payment/dto/create-payment.dto.ts
-
-import { IsInt, IsOptional, IsString, IsNotEmpty, isString } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsNotEmpty } from 'class-validator';
 
 export class CreatePaymentDto {
   @IsInt()
@@ -33,7 +31,7 @@ export class CreatePaymentDto {
   
   @IsOptional()
   @IsString()
-  status?: string; // Tambahkan properti ini
+  status?: string; 
 
   @IsOptional()
   @IsInt()

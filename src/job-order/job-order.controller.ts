@@ -578,7 +578,7 @@ export class JobOrderController {
     const now = new Date();  
     const jobOrdersWithNominals = await this.jobOrderService.getAll({  
       created_at: {  
-        gte: new Date(now.getTime() - 1000),  
+        gte: new Date(now.getTime() - 1500),  
       },  
     });  
   
@@ -594,15 +594,19 @@ export class JobOrderController {
     });  
     
     await Promise.all(updatePromises);  
+
+    const preventiveTypesByMerchant: { [key: string]: string } = {};  
     
     const updatePreventiveType = jobOrdersWithNominals.filter((jobOrder) => jobOrder.type === 'Preventive Maintenance')  
       .map(async (jobOrder) => {  
-        await this.jobOrderService.updatePreventiveType(jobOrder.id, {  
-          preventive_type: body.preventive_type,  
-        });  
+        const preventiveType = body[`preventive_type_${jobOrder.merchant_name}`];  
+        if (preventiveType) {  
+          await this.jobOrderService.updatePreventiveType(jobOrder.id, preventiveType);  
+        }  
       });  
 
-    await Promise.all(updatePreventiveType);  
+    await Promise.all(updatePreventiveType); 
+    console.log('Preventive Types by Merchant:', preventiveTypesByMerchant);
     console.log('Created Job Orders:', createdJobOrders);  
     console.log('Job Orders with Nominals:', jobOrdersWithNominals);  
     console.log('Nominals:', allNominal);  
@@ -616,32 +620,33 @@ export class JobOrderController {
   
     const SLA: Prisma.SLACreateManyInput[] = await Promise.all(  
       jobOrdersWithNominals.map(async (jobOrder, index) => {  
-      
         let correspondingScope;  
         if (jobOrder.type === 'Preventive Maintenance') {  
-          correspondingScope = body.preventive_type;  
+          correspondingScope = preventiveTypesByMerchant[jobOrder.merchant_name];  
         } else {  
           const merchantCategory = jobOrder.merchant_category;  
           correspondingScope = merchantCategoryScopeMapping[merchantCategory] || 'Unknown Scope';  
         }  
-
-        // Mencari SLa
+    
+        // Mencari SLA  
         const relevantSlaRegions = await this.jobOrderService.findSlaByGroupRegionAndScope(  
           jobOrder.region.region_group,  
           correspondingScope,  
           jobOrderActionMapping[jobOrder.type] || 'Unknown Action'  
         );  
-        console.log("relevantSLA : ", relevantSlaRegions)
-        
-        // Perhitungan Jam SLA
-        slaIds.push(...relevantSlaRegions.map((sla) => sla.id_sla));  
-        slaHours.push(...relevantSlaRegions.map((sla) => sla.hour));
-
+        console.log("relevantSLA : ", relevantSlaRegions);  
+    
+        const slaIds = new Set<number>();  
+        relevantSlaRegions.forEach((sla) => {  
+          slaIds.add(sla.id_sla);  
+          slaHours.push(sla.hour);  
+        });  
+    
         const openTime = new Date(now.getTime() - 1000);  
         const targetTime = new Date(  
           openTime.getTime() + (Math.max(...slaHours) * 60 * 60 * 1000)  
-        );    
-
+        );  
+    
         return {  
           job_order_no: jobOrder.no,  
           vendor_id: jobOrder.vendor_id,  
@@ -649,16 +654,16 @@ export class JobOrderController {
           tid: jobOrder.tid,  
           mid: jobOrder.mid,  
           region_group_id: jobOrder.region.region_group,  
-          sla_region:  Math.max(...slaIds),  
+          sla_region: Math.max(...slaIds), 
           open_time: openTime,  
           target_time: targetTime || null,  
-          status_sla: 'In Progress',
+          status_sla: 'In Progress',  
           status: 'Open',  
           created_by: user.sub,  
           updated_by: user.sub,  
         };  
       })  
-    );  
+    );
     
     try {  
       await Promise.all([  
